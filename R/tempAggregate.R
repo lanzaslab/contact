@@ -1,0 +1,314 @@
+#' Smooth Location Data Points Over Time
+#'
+#' Aggregate location data by secondAgg seconds over the course of each day represented in the dataset. The function smooths xy data forwards (smooth.type == 1) or backwards (smooth.type == 2) according to a data-point-averaging loess smoothing methodology.As part of the smoothing process, tempAggregate fills in any missing values (either due to a lack of data transmission or faulty prior interpolation). We recognize that this procedure is not sensitive to individual presence at given timesteps (e.g., some individuals may be missing on certain days, hours, etc., and therefore may produce inaccurate location aggregates if days/hours exist where individuals are not present in the dataset (e.g., they were purposefully removed, or moved outside of the monitoring area)). To increase accuracy, package users may specify a resolutionLevel ("full" or "reduced") to process individuals' locations at different resolutions. If resolution == "reduced", if no locations of individuals exist over any secondAgg time block, NAs will be produced for the time blocks of interest. 
+#' @param x List or data frame that will be filtered.
+#' @param id Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column withe colname "id" exists in x. Defaults to NULL.
+#' @param point.x Description imminent
+#' @param point.y Description imminent
+#' @param dateTime Description imminent
+#' @param secondAgg Description imminent
+#' @param extrapolate.left Description imminent
+#' @param extrapolate.right Description imminent
+#' @param resolutionLevel Description imminent
+#' @param parallel Description imminent
+#' @param na.rm Description imminent
+#' @param smooth.type Description imminent
+#' @keywords data-processing smoothing location point
+#' @export
+#' @examples
+#' Examples imminent
+
+#Do cool stuff
+
+
+tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
+
+  Agg.generator<-function(x, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type){
+    if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
+      originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+    }
+
+    if(length(x) > 0){ #for some reason using an "else" statement would always result in an originTab table with 0 records...
+      if(length(id) > 0){
+        if(length(id) == 1 && is.na(match(id[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than id being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "id" values (i.e., if the ids in different list entries are different)
+          x$id <- x[,match(id, names(x))]
+        }else{ #if length(id) > 1
+          x$id = id
+        }
+      }
+      idVec1 <- x$id
+
+      if(length(point.x) > 0){
+        if(length(point.x) == 1 && is.na(match(point.x[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+          x$x <- x[,match(point.x, names(x))]
+        }else{ #if length(point.x) > 1
+          x$x = point.x
+        }
+      }
+      if(length(point.y) > 0){
+        if(length(point.y) == 1 && is.na(match(point.y[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+          x$y <- x[,match(point.y, names(x))]
+        }else{ #if length(point.y) > 1
+          x$y = point.y
+        }
+      }
+      xyFrame1<- data.frame(x = x$x, y = x$y)
+
+      if(length(dateTime) > 0){
+
+        if(length(dateTime) == 1 && is.na(match(dateTime[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+          x$dateTime <- x[,match(dateTime, names(x))]
+        }else{ #if length(dateTime) > 1
+          x$dateTime = dateTime
+        }
+      }
+      dateTimeVec<-x$dateTime
+      bindlist1<-list(idVec1, xyFrame1, dateTimeVec)
+      originTab <- do.call("cbind", bindlist1)
+      names(originTab)[c(1,ncol(originTab))]<-c("id", "dateTime")
+    }
+    originTab$date = lubridate::date(x$dateTime)
+
+    ###The following lines creating the totalSecond column in originTab (derived from datetime.append) were added to version 01102019 to remove the need for including the dayID and  totalSecond columns initially, and to fix there error where the total seconds at breakpoints (n) exceeds the number of seconds in the dataset (coord.tmp) (Note: the specific error produced was "Error in coord.tmp[n, 1] : subscript out of bounds")
+    originTab<-originTab[order(originTab$dateTime),] #Just in case the data wasn't already ordered in this way.
+    timevec <- originTab$dateTime
+
+    daySecondVec = lubridate::hour(timevec) * 3600 + lubridate::minute(timevec) * 60 + lubridate::second(timevec) #This calculates a day-second
+    dates = unique(originTab$date)
+    dayIDVec = NULL
+    dayIDseq = seq(1,(length(dates)),1)
+    for(b in dayIDseq){
+      dayID = rep(b,length(which(originTab$date == dates[which(dayIDseq == b)])))
+      dayIDVec = c(dayIDVec, dayID)
+    }
+
+    originTab$totalSecond <- ((dayIDVec - min(dayIDVec))*86400) + daySecondVec + 1 #This calculates the total second (the cumulative second across the span of the study's timeframe) # We add the "+ 1" because lubridate::second goes from 0-59, but for our purposes, we need 1-60 b/c these these seconds will relate to rownumbers (n) later on, and cannot take a 0 value.
+    leftExtrap = extrapolate.left
+    rightExtrap = extrapolate.right
+    
+    if(resolutionLevel == "r" || resolutionLevel == "re" || resolutionLevel == "red" || resolutionLevel == "redu" || resolutionLevel == "reduc" || resolutionLevel == "reduce" || resolutionLevel == "REDUCED" || resolutionLevel == "R" || resolutionLevel == "RE" || resolutionLevel == "RED" || resolutionLevel == "REDU" || resolutionLevel == "REDUC" || resolutionLevel == "REDUCE"){ #if users input anything into the resolutionLevel argument that even resembles "reduced," the function will interpret that as what they were intending. Any other value will result in the function keeping resolutionLevel as "full."
+      resolutionLevel = "reduced"
+    }
+
+    Processing_and_Aggregation_Procedures<-function(brk.point, originTab, extrapolate.left = leftExtrap, extrapolate.right = rightExtrap, resolutionLevel, smooth.type){
+
+      Nseconds.aggregate=function(coord, secondAgg) {
+        m=secondAgg
+        tmp1<-coord[,1]
+        tmp2<-coord[,2]
+        tmp1.mx<-matrix(tmp1,nrow=m) # aggregate to m seconds
+        tmp2.mx<-matrix(tmp2,nrow=m)
+        tmp1.mmin<-apply(tmp1.mx,2,mean,na.rm = TRUE)
+        tmp2.mmin<-apply(tmp2.mx,2,mean,na.rm = TRUE)
+        tmp.mmin<-cbind(tmp1.mmin, tmp2.mmin)
+        return(tmp.mmin)
+      }
+
+      coord.tmp<-matrix(rep(0,length(unique(lubridate::date(originTab$dateTime)))*24*60*60*2),ncol=2)
+
+      data.one=originTab[c(brk.point[1]:brk.point[2]),]
+      data.len=nrow(data.one)
+      xcol<-match("x", names(data.one))
+      ycol<-match("y", names(data.one))
+
+      tmp=as.numeric(data.one[1,c(xcol,ycol)])
+
+      n=data.one[1,match("totalSecond", names(data.one))] # get current position at 1st data point (previous point)
+
+      if(extrapolate.left == TRUE){ #This section extrapolates the left tails of individuals' paths by filling in the missing time between the first recorded second and the first second of the day. It assumes that the individual starts the first second of the day at the same place it spent the first recorded second.
+        coord.tmp[1:n,1]=tmp[1]
+        coord.tmp[1:n,2]=tmp[2]
+
+      }else{ #if extrapolate.left == FALSE
+
+        if(n > 1){ #Note that n cannot be smaller than "1," as "totalSecond" calculated above cannot be smaller than 1.
+          coord.tmp[1:(n-1),1]=NA
+          coord.tmp[1:(n-1),2]=NA
+        }
+        coord.tmp[n,1]=tmp[1] #This is the timepoint where individuals first appear in the dataset
+        coord.tmp[n,2]=tmp[2]
+      }
+
+      #Interpolate missing values: The point of the code below is to fill in any missing values (either due to a lack of data transmition or faulty prior interpolation). This code works by setting n initially to the first value of totalSecond's column of data.one. Using a loop, it sets the first value of n.current to the ith row(starting at 2) of "totalSecond". A temporal object "tmp" pulls the xy coordinates from the the ith row of data.one. Then, it sets the xy coordinates of coord.tmp, starting at n + 1 position to the n.current position to values of tmp. This works because n moves up by 1 second, while n.current(and data.len) moves at whatever interval spacing the data is in in data.one (in seconds). It inches along, filling in the slots small or large until it reaches the last data point.
+
+      if(data.len > 1){
+        for (i in 2:data.len) { #this grabs the second position 1:length of the subset; thats because it moves from the first second to last on in set looking for holes
+          n.current=data.one[i,match("totalSecond", names(data.one))] #this grabs the next second from the subset
+          if(smooth.type == 1){ #forwards smoothing
+            if((n.current - n) > secondAgg & resolutionLevel == "reduced"){ #So if there are many secondAgg or greater seconds with no data, and resolutionLevel is set to "reduced," the function will set these coordinates to NA
+              tmp1 = c(NA,NA)
+            }else{ #if there  are fewer than secondAgg with no data, or resolutionLevel is "full," then the points will be smoothed normally.
+              tmp1=as.numeric(data.one[(i-1),xcol:ycol]) #this pulls the value from the preceding second to tmp1
+            }
+            tmp2=as.numeric(data.one[i,xcol:ycol]) #this pulls the value from the current second to tmp2; #Because tmp2 represents a known data point, it would not be changed to NA
+            if((n.current - n) > 1){ #This is needed here, because if the difference between n.current and n == 1, there is nothing to smooth (smoothing forward in these cases would overwrite actually-observed xy values)
+              coord.tmp[(n+1):(n.current - 1),1]=tmp1[1] #this takes the value of tmp, and assigns it to all the slots beween n and n.current -1
+              coord.tmp[(n+1):(n.current - 1),2]=tmp1[2]
+            }
+            coord.tmp[n.current,1]=tmp2[1] #this takes the value of tmp, and assigns it to all the n.current slot
+            coord.tmp[n.current,2]=tmp2[2]
+          }
+          if(smooth.type == 2){ #backwards smoothing
+            tmp=as.numeric(data.one[i,xcol:ycol]) #this pulls the value from that second to tmp
+            if((n.current - n) > secondAgg & resolutionLevel == "reduced"){ #So if there are many secondAgg or greater seconds with no data, and resolutionLevel is set to "reduced," the function will set these coordinates to NA
+              coord.tmp[(n+1):(n.current -1),1]=NA #this fills all the slots beween n and n.current with NAs
+              coord.tmp[(n+1):(n.current -1),2]=NA
+              coord.tmp[n.current,1]=tmp[1] #this takes the value of tmp, and assigns it to the n.current slot (because n.current will always be a known point.)
+              coord.tmp[n.current,2]=tmp[2]
+            }else{ #if there  are fewer than secondAgg with no data, or resolutionLevel is "full," then the points will be smoothed normally.
+              coord.tmp[(n+1):n.current,1]=tmp[1] #this takes the value of tmp, and assigns it to all the slots beween n and n.current
+              coord.tmp[(n+1):n.current,2]=tmp[2]
+              }
+
+          }
+          n=n.current # assign n with most current position
+        }
+      }
+
+      if(nrow(coord.tmp) > max(data.one$totalSecond)){ #This step will only proceed if there are empty spaces at the end of coord.tmp (i.e., the last rownumber does not exceed the maximum potential number of second in the dataset)
+        if(extrapolate.right == TRUE){#Extrapolate Right Tail: this simply fills in the rest of the values using the location of the last datavalue
+          tmp=as.numeric(data.one[length(data.one[,xcol]), c(xcol,ycol)])
+          coord.tmp[(n+1):nrow(coord.tmp),1]=tmp[1]
+          coord.tmp[(n+1):nrow(coord.tmp),2]=tmp[2]
+
+        }else{ #if extrapolate.right == FALSE
+
+          coord.tmp[(n+1):nrow(coord.tmp),1]=NA #This reports NAs following the last instance of observed movement
+          coord.tmp[(n+1):nrow(coord.tmp),2]=NA
+
+        }
+      }
+
+      loc.aggregate = Nseconds.aggregate(coord.tmp, brk.point[4])
+      return(loc.aggregate)
+    }
+
+    originTab<-originTab[order(originTab$id, originTab$dateTime),] #This sorts the dataset by individuals' IDs and timestep
+    rownames(originTab) <-seq(1,nrow(originTab),1) #This is necessary for the brk.points to be accurate.
+
+    locmatrix <- NULL
+    start.brk <- NULL
+    locTable <- NULL
+    dateSeq <- unique(originTab$date)
+    indivSeq <- unique(originTab$id)
+
+    for(i in indivSeq){ #This loop determines the rows in the dataset where each individual's path begins.
+      start.brk = c(start.brk, min(which(originTab$id == i)))
+    }
+
+    if(length(start.brk) > 1){end.brk=c(start.brk[2:length(indivSeq)]-1, nrow(originTab))}
+    if(length(start.brk) == 1){end.brk=nrow(originTab)}
+    brk.point<-cbind(start.brk,end.brk,seq(1, length(end.brk),1), secondAgg) #these two vectors offset beginning and endpoints for obsercations from different individuals.
+
+    if (parallel == TRUE){
+      cl<-parallel::makeCluster(parallel::detectCores())
+      locmatrix<-parallel::parApply(cl, brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type) ##Note, this procedure produces a table that in which the first half is the x axis, and the second is the y axis. You have to merge (see code below)
+      parallel::stopCluster(cl)
+    }else{locmatrix<-apply(brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type)}
+
+    #The code below breaks the table into the x and y coordinates that we'd expect here.
+    for (m in 1:length(indivSeq)){
+      xvec<-locmatrix[1:(length(locmatrix[,1])/2),m]
+      yvec<-locmatrix[((length(locmatrix[,1])/2)+1):length(locmatrix[,1]),m]
+      id1 = rep(indivSeq[m],length(xvec))
+
+      datesAgg = NULL
+
+      for(n in 1:length(dateSeq)){
+        date = data.frame(date = rep(dateSeq[n],(nrow(locmatrix)/2)/length(dateSeq)))
+        datesAgg = data.frame(data.table::rbindlist(list(datesAgg,date)))
+
+      }
+      tempTable = data.frame(id = id1, x = xvec, y = yvec, date = datesAgg)
+      tempTable1 = NULL
+
+      for(o in 1:length(dateSeq)){
+        datesub = subset(tempTable, date == unique(tempTable$date)[o])
+        datesub$year = lubridate::year(datesub$date)
+        datesub$month = lubridate::month(datesub$date)
+        datesub$day = lubridate::day(datesub$date)
+        rownames(datesub) = seq(1,nrow(datesub),1)
+        datesub$UID = as.numeric(rownames(datesub))
+
+        H = floor((datesub$UID - 1)/(60*(60/secondAgg)))
+        M = floor((datesub$UID - 1)/(60/secondAgg)) - (H*60)
+        S = round((datesub$UID/(60/secondAgg) - floor(datesub$UID/(60/secondAgg)))*60)
+        S = c(0,S[1:(length(S) - 1)]) #I can't seem to get a zero-second starting point without this step
+        Hour = ifelse(H < 10, paste(0,H, sep = ""), H)
+        Minute = ifelse(M < 10, paste(0,M, sep = ""), M)
+        Second = ifelse(S < 10, paste(0,S, sep = ""), S)
+
+        datesub$time = paste(Hour,":", Minute, ":", Second, sep ="")
+        date.time = paste(datesub[,match("date",names(datesub))], datesub[,match("time",names(datesub))], sep = " ")
+        timevec = lubridate::ymd_hms(date.time)
+        datesub$dateTime = timevec
+        datesub$hour = H
+        datesub$minute = M
+        datesub$second = S
+
+        tempTable1 = data.frame(data.table::rbindlist(list(tempTable1,datesub)))
+      }
+      locTable = data.frame(data.table::rbindlist(list(locTable,tempTable1)))
+    }
+
+    locTable <- locTable[,-match("UID",names(datesub))] #removes the UID column to save space
+
+    id.finder<-function(id, idSeq.subset, data.sub){
+      if(isTRUE(id%in%idSeq.subset) == FALSE){ #This looks to see if individuals present over the course of the dataset were present in a given time frame (i.e., had at least one recorded location).
+        removeVec <- which(data.sub$id == id)
+        return(removeVec)
+      }
+    }
+
+    if(resolutionLevel == "reduced"){ #if resolutionLevel is "reduced," there may be NaN values in the dataset (if secondAgg timeblock consisting only of NAs was averaged in the Nseconds.Aggregate function). For later processing, we want them to be NAs
+      NaNVec<-which(is.nan(locTable$x) == TRUE)
+      if(length(NaNVec)> 0){
+        locTable$x[NaNVec] <-NA
+      }
+      
+    }
+    
+    if(na.rm == TRUE){
+      navec <- which(is.na(locTable$x) == TRUE)
+      if (length(navec) >= 1){
+        locTable <- locTable[-navec,] #removes all observations related to specific individuals individual where an NA location was reported (i.e., where the function determined they were absent from the data at a specific resolution).
+      }
+    }
+
+    locTable<-locTable[order(locTable$id, locTable$dateTime),]
+    rownames(locTable)<-seq(1,nrow(locTable),1)
+
+    locTable <- locTable[,-c(match("date",names(locTable)), match("year",names(locTable)), match("month",names(locTable)), match("day",names(locTable)), match("time",names(locTable)), match("hour",names(locTable)), match("minute",names(locTable)), match("second",names(locTable)))] #removes all the strictly unnecessary columns to reduce file size. All these columns can be later derrived again from the dateTime column.
+
+    if(length(id) == 1 && is.na(match(id[1], names(x))) == FALSE){ #if id is representative of a column name, this maintains that column name in the output file
+      names(locTable)[match("id",names(locTable))] <- id
+    }
+    if(length(point.x) == 1 && is.na(match(point.x[1], names(x))) == FALSE){ #if point.x is representative of a column name, this maintains that column name in the output file
+      names(locTable)[match("x",names(locTable))] <- point.x
+    }
+    if(length(point.y) == 1 && is.na(match(point.y[1], names(x))) == FALSE){ #if point.y is representative of a column name, this maintains that column name in the output file
+      names(locTable)[match("y",names(locTable))] <- point.y
+    }
+    if(length(dateTime) == 1 && is.na(match(dateTime[1], names(x))) == FALSE){ #if dateTime is representative of a column name, this maintains that column name in the output file
+      names(locTable)[match("dateTime",names(locTable))] <- dateTime
+    }
+
+    return(locTable)
+  }
+  list.breaker<-function(x,y,id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type){
+    input<- data.frame(y[unname(unlist(x[1]))])
+    tempAgg<-Agg.generator(input, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type)
+    return(tempAgg)
+  }
+
+  if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
+    breakFrame<- data.frame(seq(1,length(x),1))
+    list.Agg <- apply(breakFrame, 1, list.breaker,y = x,id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
+    return(list.Agg)
+
+  }else{ #if x is a dataFrame
+    frame.Agg<- Agg.generator(x, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type)
+    return(frame.Agg)
+  }
+
+}
