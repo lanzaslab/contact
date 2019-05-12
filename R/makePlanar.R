@@ -8,9 +8,9 @@
 #' @param x Data frame or matrix containing geographic data. Defaults to NULL.
 #' @param x.lon Vector of length(nrow(x)) or singular character data, detailng the relevant colname in x, that denotes what longitude information will be used. If argument == NULL, makePlanar assumes a column with the colname "lon" exists in x. Defaults to NULL.
 #' @param x.lat Vector of length(nrow(x)) or singular character data, detailng the relevant colname in x, that denotes what latitude information will be used. If argument == NULL, makePlanar assumes a column with the colname "lat" exists in x. Defaults to NULL.
-#' @param origin.lon Description imminent
-#' @param origin.lat Description imminent
-#' @param datum Description imminent
+#' @param origin.lon Numerical. Describes the longitude will be used as the origin-point longitude for the azimuthal-equidistant projection. If NULL, defaults to the longitude of the data set's centroid. Defaults to NULL.
+#' @param origin.lat Numerical. Describes the lattitude will be used as the origin-point lattitude for the azimuthal-equidistant projection. If NULL, defaults to the lattitude of the data set's centroid. Defaults to NULL.
+#' @param datum Character string describing the datum used to generate x.lon and x.lat. Defaults to "WGS84."
 #' @keywords data-processing point location planar GRC
 #' @export
 #' @examples

@@ -2,33 +2,36 @@
 #'
 #' This function appends date-time information to a dataset in POSIXct date_time format. It also uses functions from the lubridate package and minor calculations to parse out month, day, hour, minute, second, daySecond (the sequentially ordered second of a day), and totalSecond (sequentially ordered second over the course of the study period) of observations in a given dataset with date (format: "mdy" =  month/day/year, "ymd" =  year/month/day, "dmy" =  day/month/year, or "ydm" =  year/day/month (note: no preceding zeroes should be included before numbers <10)) and time (format: hour:minute:second (note:preceding zeroes must be included before numbers < 10, ex. 00:00:01)) information, appends this metadata to the dataset,and can assign each day a unique ID.
 #' @param x List or data frame to which new information will be appended.
-#' @param date Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column withe colname "date" exists in x, or that the dateTime argument != NULL. Defaults to NULL.
-#' @param time Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what time information will be used. If argument == NULL, datetime.append assumes a column withe colname "time" exists in x, or that the dateTime argument != NULL. Defaults to NULL.
-#' @param dateTime Description imminent
-#' @param dateFormat Description imminent
-#' @param dateFake Logical. If dateFake == TRUE, the function will assign fake date information, beginning 01/01/startYear, to each of the timestamps. Defaults to FALSE.
-#' @param startYear Description imminent
-#' @param changeTimezone Description imminent
+#' @param date Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column with the colname "date" exists in x, or that the dateTime argument != NULL. Defaults to NULL.
+#' @param time Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what time information will be used. If argument == NULL, datetime.append assumes a column with the colname "time" exists in x, or that the dateTime argument != NULL. Defaults to NULL.
+#' @param dateTime Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, date and time arguments must be appropriately defined, OR "date and "time" columns must exist in x. Defaults to NULL.
+#' @param dateFormat Character string. Defines how date information is presented. Takes values "mdy" (i.e., month/day/year), "ymd" (i.e., year/month/day), "dmy" (i.e., day/month/year), or "ydm" (i.e., year/day/month). Defaults to "mdy."  
+#' @param dateFake Logical. If TRUE, the function will assign fake date information, beginning 01/01/startYear, to each of the timestamps. Defaults to FALSE.
+#' @param startYear Numerical. Denotes what year fake date information will begin if dateFake == TRUE. Defaults to 2000.
 #' @param tz.in Character. Identifies the timezone associated with the time/dateTime argument input. Defaults to "UTC." Timezone names often take the form "Country/City." See the listing of timezones at: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
 #' @param tz.out Character. Identifies the timezone that the output dateTime information will be converted to. If NULL, tz.out will be identical to tz.in. Defaults to NULL. Timezone names often take the form "Country/City." See the listing of timezones at: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
-#' @param month Description imminent
-#' @param day Description imminent
-#' @param year Description imminent
-#' @param hour Description imminent
-#' @param minute Description imminent
-#' @param second Description imminent
-#' @param daySecond Description imminent
-#' @param dayID Description imminent
+#' @param month Logical. If TRUE, output will contain a "month" column with relevant information derived from dateTime information. Defaults to FALSE.
+#' @param day Logical. If TRUE, output will contain a "day" column with relevant information  derived from dateTime information. Defaults to FALSE.
+#' @param year Logical. If TRUE, output will contain a "year" column with relevant information derived from dateTime information. Defaults to FALSE.
+#' @param hour Logical. If TRUE, output will contain a "hour" column with relevant information derived from dateTime information. Defaults to FALSE.
+#' @param minute Logical. If TRUE, output will contain a "minute" column with relevant information derived from dateTime information. Defaults to FALSE.
+#' @param second Logical. If TRUE, output will contain a "second" column with relevant information derived from dateTime information. Defaults to FALSE.
+#' @param daySecond Logical. If TRUE, output will contain a "daySecond" column with information detailing what the second of a given day the associated dateTime value corresponds to. Defaults to FALSE.
 #' @param startID Description imminent
 #' @param totalSecond Description imminent
 #' @keywords date time date-time
 #' @export
 #' @examples
-#' Examples imminent
+#' data("calves")
+#' head(calves) #observe that the date and time columns are separate. Later processing functions require each relocation event to be associated with a unique dateTime object. 
+#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+#' head(calves.dateTime) #see now that a dateTime column exists.
+#' 
+#' More examples will be added imminently
 
-datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFormat = "mdy", dateFake = FALSE, startYear = 2000, tz.in = "UTC", tz.out = NULL, month = FALSE, day = FALSE, year = FALSE, hour = FALSE, minute = FALSE, second = FALSE, daySecond = FALSE, dayID = FALSE, startID = 1, totalSecond = FALSE){
+datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFormat = "mdy", dateFake = FALSE, startYear = 2000, tz.in = "UTC", tz.out = NULL, month = FALSE, day = FALSE, year = FALSE, hour = FALSE, minute = FALSE, second = FALSE, daySecond = FALSE, totalSecond = FALSE){
   
-  generate.append<-function(x, date, time, dateTime, dateFormat, dateFake, startYear, changeTimezone, timezone, month, day, year, hour, minute, second, daySecond, dayID, startID, totalSecond){
+  generate.append<-function(x, date, time, dateTime, dateFormat, dateFake, startYear, tz.in, tz.out, month, day, year, hour, minute, second, daySecond, totalSecond){
     dateFake.func<-function(timestamp, dateFormat, startYear){
       monthSeq<-c("01","02","03","04","05","06","07","08","09","10","11","12")
       numDays1<-NULL
@@ -157,10 +160,11 @@ datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFo
         cbindTab$daySecond <- daySecondVec
       }
     }
-    if(dayID == TRUE | totalSecond == TRUE){ #in some cases, calculating specific dayIDs may not be worth the time it takes to process it. In the event that specific dayIDs are not needded for future analyses, you can opt to skip evaluating it.
+    if(totalSecond == TRUE){ 
+      startID <- 1
       x<-x[order(timevec),] #Just in case the data wasn't already ordered in this way.
       cbindTab<-cbindTab[order(timevec),]
-      daySecondVec <-daySecondVec[order(timevec)] #added 02/05/2019 after Dan pointed out that that daySecondVec was not sorted properly and was therefore not creating accurate totalSeconds. I chose to sort this vector rather than direct the function to cbindTab$daySecond, because doing the latter would require users to have set daySecond == TRUE. 
+      daySecondVec <-daySecondVec[order(timevec)] 
       timevec <-timevec[order(timevec)]
       lub.dates = lubridate::date(timevec)
       dateseq = unique(lub.dates)
@@ -170,9 +174,6 @@ datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFo
         ID = rep(b,length(which(lub.dates == dateseq[which(dayIDseq == b)])))
         dayIDVec = c(dayIDVec, ID)
       } #This part of the function takes awhile (especially for large datasets), but may be useful in the future for subsetting and viewing data.
-      if(dayID == TRUE){
-        cbindTab$dayID = dayIDVec
-      }
     }
 
     if(totalSecond == TRUE){ #assumes dayIDs are sequential
@@ -184,10 +185,10 @@ datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFo
   }
 
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
-    list.dateTime <- lapply(x, generate.append, date, time, dateTime, dateFormat, dateFake, startYear, changeTimezone, timezone, month, day, year, hour, minute, second, daySecond, dayID, startID, totalSecond)
+    list.dateTime <- lapply(x, generate.append, date, time, dateTime, dateFormat, dateFake, startYear, tz.in, tz.out, month, day, year, hour, minute, second, daySecond, totalSecond)
     return(list.dateTime)
   }else{ #if x is a dataFrame
-    frame.dateTime<- generate.append(x, date, time, dateTime, dateFormat, dateFake, startYear, changeTimezone, timezone, month, day, year, hour, minute, second, daySecond, dayID, startID, totalSecond)
+    frame.dateTime<- generate.append(x, date, time, dateTime, dateFormat, dateFake, startYear, tz.in, tz.out, month, day, year, hour, minute, second, daySecond, totalSecond)
     return(frame.dateTime)
   }
 }

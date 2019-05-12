@@ -2,14 +2,14 @@
 #'
 #' Calculate distances between each individual, reported in x, and a fixed point(s)/polygon(s), reported in y, at each timestep. In this case, we suggest removing duplicate entries with the dup function and converting the input to a SpatialPointsDataFrame prior to running the function.
 #'
-#' Inputs x and y must be spatial objects of class sf (i.e., shapefile), SpatialPointsDataFrame, or SpatialPolygonsDataFrame.
+#' This variant of dist2Area requires that x and y inputs must be spatial objects of class sf (i.e., shapefile), SpatialPointsDataFrame, or SpatialPolygonsDataFrame.
 #' If inputs are SpatialMultiPointsDataFrame, which have one-to-many cardinality, you will receive this error: "Error in .pointsToMatrix(p) : points should be vectors of length 2, matrices with 2 columns, or inheriting from a SpatialPoints* object." 
-#' @param x Description imminent
-#' @param y Description imminent
-#' @param x.id Description imminent
-#' @param y.id Description imminent
-#' @param dateTime Description imminent
-#' @param parallel Description imminent
+#' @param x Spatial object containing real-time-location data for individuals. 
+#' @param y Spatial object containing fixed-area polygons/points for which we will calculate distances relative to tracked individuals at all time steps.
+#' @param x.id Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.
+#' @param y.id Vector of length nrow(y) or singular character data, detailing the relevant colname in y, that denotes what unique ids for fixed-area polygons/points will be used. If argument == NULL, the function assumes a column with the colname "id" exists in y. Defaults to NULL.
+#' @param dateTime Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
+#' @param parallel Logical. If TRUE, sub-functions within the dist2Area_sf wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
 #' @keywords data-processing polygon point location spatial
 #' @export
 #' @examples

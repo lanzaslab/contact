@@ -1,21 +1,34 @@
-#' Identify Interpersonal Contacts
+#' Identify Inter-animal Contacts
 #'
-#' This function uses the output from dist.all to determine when tracked individuals are in "contact" with one another. Individuals are said to be in a "contact" event (h) if they are observed within a given distance (<= dist.threshold) at a given timestep(i). Sec.threshold dictates the maximum amount of time a single, potential "contact" event should exist. For example, if sec.threshold=10, only "contacts" occurring within 10secs of one another will be regarded as a single "contact" event of duration sum(h). If in this case, a time difference between contacts was 11 seconds, the function will report two separate contact events.
-#' @param x Output from the dist.all function. Can be either a data frame or list.
-#' @param dist.threshold Description imminent
-#' @param sec.threshold Description imminent
-#' @param blocking Description imminent
-#' @param blockUnit Description imminent
-#' @param blockLength Description imminent
-#' @param equidistant.time Description imminent
-#' @param parallel Description imminent
-#' @param reportParameters Description imminent
+#' This function uses the output from dist.all to determine when and for how long tracked individuals are in "contact" with one another. Individuals are said to be in a "contact" event if they are observed within a given distance (<= dist.threshold) at a given timestep. Contacts are broken when individuals are observed outside the specified distance threshold from one another for > sec.threshold seconds. Sec.threshold dictates the maximum amount of time between concurrent observations during which potential "contact" events remain unbroken. For example, if sec.threshold=10, only "contacts" occurring within 10secs of one another will be regarded as a single "contact" event of duration sum(h). If in this case, a time difference between contacts was 11 seconds, the function will report two separate contact events.
+#' The output of this function is a data frame containing a time-ordered contact edge set detailing inter-animal contacts.
+#' @param x Output from the dist.all function. Can be either a data frame or non-data-frame list.
+#' @param dist.threshold Numeric. Radial distance (in meters) within which "contact" can be said to occur. Defaults to 1. Note: If you are defining conttacts as occurring when polygons intersect, set dist.threshold to 0.
+#' @param sec.threshold Numeric. Dictates the maximum amount of time between concurrent observations during which potential "contact" events remain unbroken. Defaults to 10. 
+#' @param blocking Logical. If TRUE, contacts will be evaluated for temporal blocks spanning blockLength blockUnit (e.g., 6 hours) within the data set. Defaults to FALSE.
+#' @param blockUnit Numerical. Describes the number blockUnits within each temporal block. Defaults to 1.
+#' @param blockLength Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Describes the temporal unit associated with each block. Defaults to "hours."
+#' @param equidistant.time Logical. If TRUE, location fixes in individuals' movement paths are temporally equidistant (e.g., all fix intervals are 30seconds). Defaults to FALSE. Note: This is a time-saving argument. A sub-function here calculates the time difference (dt) between each location fix. If all fix intervals are identical, it saves a lot of time.
+#' @param parallel Logical. If TRUE, sub-functions within the contactDur.all wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
+#' @param reportParameters Logical. If TRUE, function argument values will be appended to output data frame(s). Defaults to TRUE.
 #' @keywords data-processing contact
 #' @export
 #' @examples
-#' Examples imminent
+#' #load the calves data set
+#' data(calves)
+#' 
+#' #pre-process the data
+#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+#'
+#' #generate empirical time-ordered network edges.
+#' calves.dist<-dist2All(x = calves.agg, parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint.
+#' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
+#' calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #Contacts are defined here as occurring when calves were within 1 m of one another.
+#' 
+#' More examples will be added later.
 
-contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE){ 
+contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE){ 
   timeDifference = function(x){
     t1 = unname(unlist(x[1]))
     t2 = unname(unlist(x[2]))
@@ -160,10 +173,14 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, b
     comboFrame = data.frame(unique(dist.all.reduced$id),dist.threshold,sec.threshold)
     duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all.reduced)	
     durationTable = data.frame(data.table::rbindlist(duration))
-    durationTable$block<- unique(dist.all$block)
-    durationTable$block.start<- unique(dist.all$block.start)
-    durationTable$block.end<- unique(dist.all$block.end)
-    durationTable$numBlocks<- unique(dist.all$numBlocks)
+    if(nrow(durationTable) > 0){ #if there was at least one contact duration, block information is appended to the data frame. If there are no observations, durationTable becomes NULL
+      durationTable$block<- unique(dist.all$block)
+      durationTable$block.start<- unique(dist.all$block.start)
+      durationTable$block.end<- unique(dist.all$block.end)
+      durationTable$numBlocks<- unique(dist.all$numBlocks)
+    }else{
+      durationTable <- NULL
+    }
     return(durationTable)
   }
   
@@ -237,24 +254,21 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, b
       }
       duration.block = lapply(blockList, durFinder.block.List, dist.threshold, sec.threshold, equidistant.time)	
       durationTable <- data.frame(data.table::rbindlist(duration.block))
-      
-      #Here we change components of the durationTable to the appropriate data type.
-      durationTable[,match("block", names(durationTable))]<- as.factor(durationTable[,match("block", names(durationTable))])
-      durationTable[,match("block.start", names(durationTable))]<- as.factor(durationTable[,match("block.start", names(durationTable))])
-      durationTable[,match("block.end", names(durationTable))]<- as.factor(durationTable[,match("block.end", names(durationTable))])
-      durationTable[,match("numBlocks", names(durationTable))]<- as.factor(durationTable[,match("numBlocks", names(durationTable))])       
-      
+      if(nrow(durationTable) > 0){ #Here we change components of the durationTable to the appropriate data type. This only occurs if there was at least one observation, however (otherwise an error will be produced). 
+        durationTable[,match("block", names(durationTable))]<- as.factor(durationTable[,match("block", names(durationTable))])
+        durationTable[,match("block.start", names(durationTable))]<- as.factor(durationTable[,match("block.start", names(durationTable))])
+        durationTable[,match("block.end", names(durationTable))]<- as.factor(durationTable[,match("block.end", names(durationTable))])
+        durationTable[,match("numBlocks", names(durationTable))]<- as.factor(durationTable[,match("numBlocks", names(durationTable))])       
+      }
     }else{ #If blocking == FALSE
       durationTable <- durFinder.noblock(x,parallel, dist.threshold, sec.threshold, equidistant.time)
     }
-    
-    #Here we change the rest of the components of the durationTable to the appropriate data type.
-    durationTable[,match("dyadMember1", names(durationTable))]<- as.factor(durationTable[,match("dyadMember1", names(durationTable))])
-    durationTable[,match("dyadMember2", names(durationTable))]<- as.factor(durationTable[,match("dyadMember2", names(durationTable))])
-    durationTable[,match("dyadID", names(durationTable))]<- as.factor(durationTable[,match("dyadID", names(durationTable))])
-    durationTable[,match("contactDuration", names(durationTable))]<- as.integer(durationTable[,match("contactDuration", names(durationTable))])
-
-    if(nrow(durationTable) >0){ #added 1/11 to ensure that even if no contacts existed in the dataset, no error will be returned if reportParameters == TRUE
+    if(nrow(durationTable) > 0){ 
+      #Here we change the rest of the components of the durationTable to the appropriate data type.
+      durationTable[,match("dyadMember1", names(durationTable))]<- as.factor(durationTable[,match("dyadMember1", names(durationTable))])
+      durationTable[,match("dyadMember2", names(durationTable))]<- as.factor(durationTable[,match("dyadMember2", names(durationTable))])
+      durationTable[,match("dyadID", names(durationTable))]<- as.factor(durationTable[,match("dyadID", names(durationTable))])
+      durationTable[,match("contactDuration", names(durationTable))]<- as.integer(durationTable[,match("contactDuration", names(durationTable))])
       if(reportParameters == TRUE){
         durationTable$distThreshold = dist.threshold
         durationTable$secThreshold = sec.threshold
@@ -264,7 +278,6 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, b
         }
       }
     }
-    
     return(durationTable)
   }
   

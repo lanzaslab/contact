@@ -1,11 +1,13 @@
 #' Append TimeBlock Information to a Data Frame
 #'
 #' Appends "block," "block.start," "block.end," and "numBlocks" columns to an input data frame (x) with a dateTime (see dateTime.append) column. This allows users to "block" data into blockLength-blockUnit-long (e.g., 10-min-long) temporal blocks. If x == NULL, the function output will be a data frame with "dateTime" and block-related columns.
-#' @param x Description imminent
-#' @param dateTime Description imminent
-#' @param blockLength Description imminent
-#' @param blockUnit Description imminent
-#' @keywords data-processing
+#' 
+#' This is a sub-function that can be found in the contactDur functions.
+#' @param x Data frame containing dateTime information, and to which block information will be appended. if NULL, dateTime input relies solely on the dateTime argument.
+#' @param dateTime Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
+#' @param blockUnit Numerical. Describes the number blockUnits within each temporal block. Defaults to 1.
+#' @param blockLength Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Defaults to "hours."
+#' @keywords data-processing sub-function
 #' @export
 #' @examples
 #' Examples imminent

@@ -9,26 +9,28 @@ mps(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL,
   filterOutput = TRUE)
 }
 \arguments{
-\item{x}{List or data frame that will be filtered.}
+\item{x}{List or data frame containing real-time location data that will be filtered.}
 
 \item{id}{Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column withe colname "id" exists in x. Defaults to NULL.}
 
-\item{point.x}{Description imminent}
+\item{point.x}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.}
 
-\item{point.y}{Description imminent}
+\item{point.y}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.}
 
-\item{dateTime}{Description imminent}
+\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{mpsThreshold}{Description imminent}
+\item{mpsThreshold}{Numerical. Distance (in meters) representing the maximum distance individuals can realistically travel over a single second.}
 
-\item{lonlat}{Description imminent}
+\item{lonlat}{Logical. If TRUE, point.x and point.y contain geographic coordinates (i.e., longitude and lattitude). If FALSE, point.x and point.y contain planar coordinates. Defaults to FALSE.}
 
-\item{parallel}{Description imminent}
+\item{parallel}{Logical. If TRUE, sub-functions within the mps wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.}
 
-\item{filterOutput}{Description imminent}
+\item{filterOutput}{Logical. If TRUE, output will be a data frame or list of data frames (depending on whether or not x is a data frame or not) containing only points that adhere to the mpsThreshold rule. If FALSE, no observartions are removed and an "mps" column is appended to x,which reports the avg distance per second individuals moved to get from observation i-1 to observation i. Defaults to TRUE.}
+
+\item{id}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.}
 }
 \description{
-mps (a.k.a. Movement-per-Second Filter) identifies and removes timepoints when tracked individuals were observed moving faster than a set distance threshold (representing either the great-circle distance between two points a planar distance metric, depending on whether or not lonlat == TRUE or FALSE, respectively) per second. (i.e., if it is impossible/highly unlikely that individuals moved faster than a given speed (mps), we can assume that any instances when they were observed doing so were the result of erroneous reporting, and should be removed). When running the mps filter, users have the option of setting lonlat == TRUE (by default lonlat == FALSE). lonlat is a logical argument that tells the function to calculate the distance between points on the WGS ellipsoid (if lonlat == TRUE), or on a plane (lonlat == FALSE) (see raster::pointDistance). If lonlat == TRUE, coordinates should be in degrees. Otherwise, coordinates should represent planar ('Euclidean') space (e.g. units of meters).
+mps (a.k.a. Meters-per-Second Filter) identifies and removes timepoints when tracked individuals were observed moving faster than a set distance threshold (representing either the great-circle distance between two points a planar distance metric, depending on whether or not lonlat == TRUE or FALSE, respectively) per second. (i.e., if it is impossible/highly unlikely that individuals moved faster than a given speed (mps), we can assume that any instances when they were observed doing so were the result of erroneous reporting, and should be removed). When running the mps filter, users have the option of setting lonlat == TRUE (by default lonlat == FALSE). lonlat is a logical argument that tells the function to calculate the distance between points on the WGS ellipsoid (if lonlat == TRUE), or on a plane (lonlat == FALSE) (see raster::pointDistance). If lonlat == TRUE, coordinates should be in degrees. Otherwise, coordinates should represent planar ('Euclidean') space (e.g. units of meters).
 }
 \details{
 If users are not actually interested in filtering datasets, but rather, determining what observations should be filtered, they may set filterOutput == FALSE. By doing so, this function will append up an "mps" column to the dataset, which reports the avg distance per second individuals moved to get from observation i-1 to observation i.

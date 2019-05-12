@@ -10,27 +10,69 @@
 #'
 #' Because this function needs information (dist, dx, dy) from 2 points on an individual's path to work, at least the first point in each individual's path will be removed (the function will report NAs for adjusted locations). Also note that if the distance between an individual's first point in their path and the second one is 0, the function will also report NAs for the second point's adjusted coordinates. The first non-NA values will only be reported for the instance where dist > 0.
 #'
-#' In the output, if input was previously processed using tempAggregate at a Day or Hour resolutionLevel, dt > secondAgg indicates that tracked individuals were missing in the original dataset on a given day or hour, respectively. In this case, the assumption that individuals are facing a given direction because they moved from the previous timepoint may not be accurate. Consider removing these rows (rows following one with dt > secondAgg; remember that dt indicates the time between recording xy coordinates in row i to row i + 1) from your dataset.
-#' @param x Description imminent
-#' @param id Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column withe colname "id" exists in x. Defaults to NULL.
-#' @param point.x Description imminent
-#' @param point.y Description imminent
-#' @param dateTime Description imminent
-#' @param StartLocation Description imminent
-#' @param UpDownRepositionLen Description imminent
-#' @param LeftRightRepositionLen Description imminent
-#' @param CenterPoint Description imminent
-#' @param MidPoints Description imminent
-#' @param StandingThreshold Description imminent
-#' @param parallel Description imminent
+#' In the output, if input was previously processed using tempAggregate with resolutionLevel == "reduced," dt > secondAgg indicates that tracked individuals were missing in the original dataset for a period of time. In this case, the assumption that individuals are facing a given direction because they moved from the previous timepoint may not be accurate. Consider removing these rows (rows following one with dt > secondAgg; remember that dt indicates the time between recording xy coordinates in row i to row i + 1) from your dataset.
+#' @param x Data frame or list of data frames containing real-time-location point data.  
+#' @param id Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.
+#' @param point.x Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.
+#' @param point.y Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.
+#' @param dateTime Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
+#' @param StartLocation Character string taking the values "UL," "UR," "DL," or "DR" describing where the reference point (i.e., point corresponding to xy-coordinates in the data set) lies on the rectangle that this function will delineate. Defaults to "UL."
+#' @param UpDownRepositionLen Numerical. Describes the height, in planar units (e.g., meters) of the output polygon. Planar units are inherent in the real-time-location input. Defaults to 1.
+#' @param LeftRightRepositionLen Numerical. Describes the width, in planar units (e.g., meters) of the output polygon. Planar units are inherent in the real-time-location input. Defaults to 1.
+#' @param CenterPoint Logical. If TRUE, in addition to the xy-coordinates for each polygon vertex, xy-coordinates for centroid of each polygon will be reported in the output. Defaults to FALSE.
+#' @param MidPoints Logical. If TRUE, in addition to the xy-coordinates for each polygon vertex, xy-coordinates for mid-point of each polygon edge will be reported in the output. Defaults to FALSE.
+#' @param immobThreshold Numerical. Describes what we call, the immobility threshold, which is a movement distance (in planar units) within which we assume individuals’ physical locations and orientations remain unchanged. This immobility threshold allows us to discount observed movements so miniscule that the majority of animals’ physical-space usage is likely unaffected (e.g., head shaking). Defaults to 0.
+#' @param parallel Logical. If TRUE, sub-functions within the referencePointToPolygon wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
 #' @keywords data-processing polygon point location planar
 #' @export
 #' @examples
-#' Examples imminent
+#' #read in the calves data set
+#' data("calves")
+#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+#' 
+#' #create our data set that shows calves average position every 10 seconds
+#' system.time(calves.10secSmoothed <- tempAggregate(x = calves, id = calves$calftag, point.x = calves$x, point.y = calves$y, dateTime = calves$dateTime, secondAgg = 10, extrapolate.left = TRUE, resolutionLevel = "Full", extrapolate.right = FALSE, na.rm = TRUE, smooth.type = 2))
+#' 
+#' ##Create 0.333 m X 0.333 m calf head polygons.
+#' #Note that this is done using the original reference points, which denote the locations of RFID tags on individuals' left ears.
+#' system.time(calf_heads <- referencePointToPolygon(x = calves.10secSmoothed, id = calves.10secSmoothed$id, dateTime = calves.10secSmoothed$dateTime, point.x = calves.10secSmoothed$x, point.y = calves.10secSmoothed$y, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, StandingThreshold = 0.1, parallel = TRUE))
+#' 
+#' #Because the head is not the same width of the body, and is assumed to be centered at the front of the body, before creating body polygons, we must move reference points (on the left ear) to the left by 0.3335 m to reposition them at the upper-left corner of calves bodies. Note that we are assuming ears are parallel to shoulder-tips. 
+#' system.time(leftShoulder.point<-repositionReferencePoint(x = calves.10secSmoothed, id = calves.10secSmoothed$id, dateTime = calves.10secSmoothed$dateTime, point.x = calves.10secSmoothed$x, point.y = calves.10secSmoothed$y, RepositionDir = "L", UpDownRepositionLen = 0, LeftRightRepositionLen = 0.3335, StandingThreshold = 0, parallel = TRUE)) #Note that we do not specify a standing threshold here. Rather, we will do so when we create the polygon.
+#' 
+#' #Now we can create generate the vertices for anterior- and posterior-body polygons. Rather than running the referencePointToPolygon function twice, we instead set MidPoints = TRUE, which will effectively identify vertices for the bottom of anterior bodies/top of posterior ones. 
+#' system.time(calf_bods <- referencePointToPolygon(x = leftShoulder.point, id = leftShoulder.point$id, dateTime = leftShoulder.point$dateTime, point.x = leftShoulder.point$x.adjusted, point.y = leftShoulder.point$y.adjusted, StartLocation = "UL", UpDownRepositionLen = 2, LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = TRUE, StandingThreshold = 0.1, parallel = TRUE))
+#' 
+#' #Now we can take vertices from calf_heads and calf_bod, and create a vertex set {V(ij)} delineating the calves full bodies (i.e., we essentially union the calf_heads and calf_bod polygons). Note that in this calf_FullBody data frame, vertex1 is located on calves left shoulders, and vertices are ordered in a clockwise direction from that point.
+#' calf_FullBody <- data.frame(calf_id = calf_bods$id, vertex1.x = calf_bods$cornerPoint1.x, vertex1.y = calf_bods$cornerPoint1.y, vertex2.x = calf_heads$cornerPoint4.x, vertex2.y = calf_heads$cornerPoint4.y, vertex3.x = calf_heads$cornerPoint1.x, vertex3.y = calf_heads$cornerPoint1.y, vertex4.x = calf_heads$cornerPoint2.x, vertex4.y = calf_heads$cornerPoint2.y, vertex5.x = calf_heads$cornerPoint3.x, vertex5.y = calf_heads$cornerPoint3.y, vertex6.x = calf_bods$cornerPoint2.x, vertex6.y = calf_bods$cornerPoint2.y, vertex7.x = calf_bods$cornerPoint3.x, vertex7.y = calf_bods$cornerPoint3.y, vertex8.x = calf_bods$cornerPoint4.x, vertex8.y = calf_bods$cornerPoint4.y, calf_heads[13:16], headVertices = "2,3,4,5", bodyVertices = "1,6,7,8", headArea = "0.333m X 0.333m", bodyArea = "1m X 2m")
+#' 
+#' #Additionally, we can break calf_bods into two data sets (calf_AntBod, and calf_PostBod), with identical columns to calf_heads (so the data sets can be bound together later).
+#' 
+#' calf_AntBod<-data.frame(calf_bods$id, calf_bods$cornerPoint1.x, calf_bods$cornerPoint1.y, calf_bods$cornerPoint2.x, calf_bods$cornerPoint2.y, calf_bods$midPoint2.x, calf_bods$midPoint2.y, calf_bods$midPoint4.x, calf_bods$midPoint4.y, calf_bods[,18:24])
+#' colnames(calf_AntBod) <- colnames(calf_heads) #ensure that colnames are the same as in calf_heads
+#' 
+#' calf_PostBod<-data.frame(calf_bods$id, calf_bods$midPoint4.x, calf_bods$midPoint4.y, calf_bods$midPoint2.x, calf_bods$midPoint2.y, calf_bods$cornerPoint3.x, calf_bods$cornerPoint3.y, calf_bods$cornerPoint4.x, calf_bods$cornerPoint4.y, calf_bods[,18:24])
+#' colnames(calf_PostBod) <- colnames(calf_heads) #ensure that colnames are the same as in calf_heads
+#' 
+#' #add a body identifier column to the data frames
+#' calf_heads$bodyPart <-"H"
+#' calf_AntBod$bodyPart<-"AB"
+#' calf_PostBod$bodyPart<-"PB"
+#' 
+#' #Bind these data frames together
+#' bindList<-list(calf_heads, calf_AntBod, calf_PostBod)
+#' calf_polygons <- data.frame(data.table::rbindlist(bindList))
+#' 
+#' #Finally, add a unique identifier for each calf polygon, poly(i)
+#' calf_polygons$calf_Poly.id <- paste(calf_polygons$id, calf_polygons$bodyPart, sep = "_")
+#' 
+#' #Now that we have defined the (x,y) coordinates for the vertex set V(ij), full-body, head, anterior-body, and posterior-body polygons, we can use these data sets to generate contact networks (see Supplemental Materials X).
+#' 
+#' CalfPolygonSets<-list(calf_FullBody, calf_polygons)
 
-referencePointToPolygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, StartLocation = "UL", UpDownRepositionLen = 1, LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = FALSE, StandingThreshold = 0, parallel = TRUE){
+referencePointToPolygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, StartLocation = "UL", UpDownRepositionLen = 1, LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0, parallel = TRUE){
 
-  poly.generator<-function(x, id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, StandingThreshold, parallel){
+  poly.generator<-function(x, id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, parallel){
     euc=function(x) {
       point1 = x.cor=unlist(c(x[1],x[2]))
       point2 = x.cor=unlist(c(x[3],x[4]))
@@ -1210,17 +1252,17 @@ referencePointToPolygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x
       return(CoordAdjusted)
 
     }
-    standingAdjustment.polygon = function(x, locMatrix, standingVec){
+    immobAdjustment.polygon = function(x, locMatrix, immobVec){
 
       dur = 0
       standDurTest <- FALSE
-      while (!standDurTest) { #This means when standDurTest == FALSE #This part of the function determines how long an individual has been standing.
-        standDurTest <- standingVec[(x[1] - (1 + dur))] == 0
+      while (!standDurTest) { #This means when standDurTest == FALSE #This part of the function determines how long an individual has been immob.
+        standDurTest <- immobVec[(x[1] - (1 + dur))] == 0
         standDurTest <- ifelse(is.na(standDurTest) == TRUE, TRUE, standDurTest) #This is for when x[1] -1 relates to the first observation for any individual (because those observations are NA)
         dur = (dur + 1)
       }
 
-      standFrame = data.frame(replaceRow = x[1], replacePoint2.x = locMatrix$cornerPoint2.x[(x[1] - dur)], replacePoint2.y = locMatrix$cornerPoint2.y[(x[1] - dur)], replacePoint3.x = locMatrix$cornerPoint3.x[(x[1] - dur)], replacePoint3.y = locMatrix$cornerPoint3.y[(x[1] - dur)], replacePoint4.x = locMatrix$cornerPoint4.x[(x[1] - dur)], replacePoint4.y = locMatrix$cornerPoint4.y[(x[1] - dur)]) #if individuals are standing, their location at a given timestep will be the same as at the previous timestep. There's no need to replace point1 because it is the pre-translated (a.k.a. original) location of the individual.
+      standFrame = data.frame(replaceRow = x[1], replacePoint2.x = locMatrix$cornerPoint2.x[(x[1] - dur)], replacePoint2.y = locMatrix$cornerPoint2.y[(x[1] - dur)], replacePoint3.x = locMatrix$cornerPoint3.x[(x[1] - dur)], replacePoint3.y = locMatrix$cornerPoint3.y[(x[1] - dur)], replacePoint4.x = locMatrix$cornerPoint4.x[(x[1] - dur)], replacePoint4.y = locMatrix$cornerPoint4.y[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep. There's no need to replace point1 because it is the pre-translated (a.k.a. original) location of the individual.
 
       return(standFrame)
     }
@@ -1368,7 +1410,7 @@ referencePointToPolygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x
     }
 
     polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 26)) #One row for each observation, Columns listed below
-    colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","upDownRepositionLength","leftRightRepositionLength","standing","standingThreshold", "dateTime","dt")
+    colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
 
     polygonMatrix$id = x$id
     polygonMatrix$cornerPoint1.x = x$x
@@ -1382,33 +1424,33 @@ referencePointToPolygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x
     polygonMatrix$startLocation = StartLocation
     polygonMatrix$upDownRepositionLength = UpDownRepositionLen
     polygonMatrix$leftRightRepositionLength = LeftRightRepositionLen
-    polygonMatrix$standingThreshold = StandingThreshold
+    polygonMatrix$immobThreshold = immobThreshold
     polygonMatrix$dateTime = x$dateTime
     polygonMatrix$dt = x$dt
 
-    polygonMatrix$standing = ifelse(xyFrame1[,3] > StandingThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted StandingThreshold, individuals are said to be "standing," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than StandingThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
+    polygonMatrix$immob = ifelse(xyFrame1[,3] > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
 
-    standlist = which(polygonMatrix$standing == 1)
+    standlist = which(polygonMatrix$immob == 1)
 
     if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
 
-      standingVec = polygonMatrix$standing
-      standlistFrame = data.frame(standing = standlist)
+      immobVec = polygonMatrix$immob
+      standlistFrame = data.frame(immob = standlist)
 
       if(parallel == TRUE){
         cl<-parallel::makeCluster(parallel::detectCores())
-        standingFrame = data.frame(data.table::rbindlist(parallel::parApply(cl, standlistFrame, 1, standingAdjustment.polygon, locMatrix = polygonMatrix, standingVec)))
+        immobFrame = data.frame(data.table::rbindlist(parallel::parApply(cl, standlistFrame, 1, immobAdjustment.polygon, locMatrix = polygonMatrix, immobVec)))
         parallel::stopCluster(cl)
       }else{
-        standingFrame = data.frame(data.table::rbindlist(apply(standlistFrame, 1, standingAdjustment.polygon, locMatrix = polygonMatrix, standingVec)))
+        immobFrame = data.frame(data.table::rbindlist(apply(standlistFrame, 1, immobAdjustment.polygon, locMatrix = polygonMatrix, immobVec)))
       }
-      if(nrow(standingFrame) > 0){
-        polygonMatrix[standingFrame$replaceRow,match("cornerPoint2.x", names(polygonMatrix))] = standingFrame$replacePoint2.x
-        polygonMatrix[standingFrame$replaceRow,match("cornerPoint2.y", names(polygonMatrix))] = standingFrame$replacePoint2.y
-        polygonMatrix[standingFrame$replaceRow,match("cornerPoint3.x", names(polygonMatrix))] = standingFrame$replacePoint3.x
-        polygonMatrix[standingFrame$replaceRow,match("cornerPoint3.y", names(polygonMatrix))] = standingFrame$replacePoint3.y
-        polygonMatrix[standingFrame$replaceRow,match("cornerPoint4.x", names(polygonMatrix))] = standingFrame$replacePoint4.x
-        polygonMatrix[standingFrame$replaceRow,match("cornerPoint4.y", names(polygonMatrix))] = standingFrame$replacePoint4.y
+      if(nrow(immobFrame) > 0){
+        polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.x", names(polygonMatrix))] = immobFrame$replacePoint2.x
+        polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.y", names(polygonMatrix))] = immobFrame$replacePoint2.y
+        polygonMatrix[immobFrame$replaceRow,match("cornerPoint3.x", names(polygonMatrix))] = immobFrame$replacePoint3.x
+        polygonMatrix[immobFrame$replaceRow,match("cornerPoint3.y", names(polygonMatrix))] = immobFrame$replacePoint3.y
+        polygonMatrix[immobFrame$replaceRow,match("cornerPoint4.x", names(polygonMatrix))] = immobFrame$replacePoint4.x
+        polygonMatrix[immobFrame$replaceRow,match("cornerPoint4.y", names(polygonMatrix))] = immobFrame$replacePoint4.y
       }
     }
 
@@ -1431,20 +1473,20 @@ referencePointToPolygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x
     return(polygonMatrix)
   }
 
-  list.breaker<-function(x,y,id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, StandingThreshold, parallel){
+  list.breaker<-function(x,y,id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, parallel){
     input<- data.frame(y[unname(unlist(x[1]))])
-    newPolygons<-poly.generator(input, id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, StandingThreshold, parallel)
+    newPolygons<-poly.generator(input, id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, parallel)
     return(newPolygons)
   }
 
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
     breakFrame<- data.frame(seq(1,length(x),1))
-    list.poly <- apply(breakFrame, 1, list.breaker,y = x,id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, StandingThreshold, parallel) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
+    list.poly <- apply(breakFrame, 1, list.breaker,y = x,id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, parallel) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
 
     return(list.poly)
 
   }else{ #if x is a dataFrame
-    frame.poly<- poly.generator(x,id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, StandingThreshold, parallel)
+    frame.poly<- poly.generator(x,id, dateTime, point.x, point.y, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, parallel)
 
     return(frame.poly)
   }

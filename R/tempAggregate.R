@@ -1,25 +1,34 @@
 #' Smooth Location Data Points Over Time
 #'
 #' Aggregate location data by secondAgg seconds over the course of each day represented in the dataset. The function smooths xy data forwards (smooth.type == 1) or backwards (smooth.type == 2) according to a data-point-averaging loess smoothing methodology.As part of the smoothing process, tempAggregate fills in any missing values (either due to a lack of data transmission or faulty prior interpolation). We recognize that this procedure is not sensitive to individual presence at given timesteps (e.g., some individuals may be missing on certain days, hours, etc., and therefore may produce inaccurate location aggregates if days/hours exist where individuals are not present in the dataset (e.g., they were purposefully removed, or moved outside of the monitoring area)). To increase accuracy, package users may specify a resolutionLevel ("full" or "reduced") to process individuals' locations at different resolutions. If resolution == "reduced", if no locations of individuals exist over any secondAgg time block, NAs will be produced for the time blocks of interest. 
-#' @param x List or data frame that will be filtered.
-#' @param id Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column withe colname "id" exists in x. Defaults to NULL.
-#' @param point.x Description imminent
-#' @param point.y Description imminent
-#' @param dateTime Description imminent
-#' @param secondAgg Description imminent
-#' @param extrapolate.left Description imminent
-#' @param extrapolate.right Description imminent
-#' @param resolutionLevel Description imminent
-#' @param parallel Description imminent
-#' @param na.rm Description imminent
-#' @param smooth.type Description imminent
+#' This function is based on real-time-location-data-smoothing methods presented by Dawson et al. 2019. 
+#' @param x Data frame or list of data frames containing real-time-location data.  
+#' @param id Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.
+#' @param point.x Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.
+#' @param point.y Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.
+#' @param dateTime Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
+#' @param secondAgg Numerical. The number of seconds over which tracked-individuals' location will be averaged. Defaults to 10.
+#' @param extrapolate.left Logical. If TRUE, individuals position at time points prior to their first location fix will revert to their first recorded location. If FALSE, NAs will be placed at these time points in individuals' movement paths. Defaults to FALSE.
+#' @param extrapolate.right Logical. If TRUE, individuals position at time points following their last location fix will revert to their final recorded location. If FALSE, NAs will be placed at these time points in individuals' movement paths. Defaults to FALSE.
+#' @param resolutionLevel Character string taking the value of "full" or "reduced."  If "full," if no known locations of individuals exist over any secondAgg time block, xy-coordinates revert to the last-known values for that individual. If "reduced," if no known locations of individuals exist over any secondAgg time block, NAs will be produced for the time blocks of interest. Defaults to "full."
+#' @param parallel Logical. If TRUE, sub-functions within the tempAggregate wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
+#' @param na.rm Logical. If TRUE, all unknown locations (i.e., xy-coordinate pairs reported as NAs) will be removed from the output. Defaults to TRUE. Note that if na.rm == FALSE, all aggregated location fixes will be temporally equidistant.
+#' @param smooth.type Numerical, taking the values 1 or 2. Indicates the type of smooting used to average individuals' xy-coordinates. If smooth.type == 1, data are smoothed forwards. If smooth.type == 2, data are smoothed backwards. Defaults to 1.
+#' @references Dawson, D.E., Farthing, T.S., Sanderson, M.W., and Lanzas, C. 2019. Transmission on empirical dynamic contact networks is influenced by data processing decisions. Epidemics 26:32-42. https://doi.org/10.1016/j.epidem.2018.08.003/
 #' @keywords data-processing smoothing location point
 #' @export
 #' @examples
-#' Examples imminent
-
-#Do cool stuff
-
+#' #read in the calves data set
+#' data("calves")
+#' head(calves) #observe that fix intervals occur ever 4-5 seconds.
+#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+#' calves.agg1<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals.
+#' head(calves.agg1) #now the fix intervals are every 10 seconds.
+#' calves.agg2<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = TRUE, smooth.type = 1) #smooth locations to 10-second fix intervals again, but with na.rm == TRUE.
+#' head(calves.agg2) #reported fix intervals are still generally every 10 secondsnow. However, if any calves were missing during a 10-second block, that location fix was removed, so fixes are no longer necessariliy temporally equidistant (e.g., observed fixes may be 10, 20, 30, etc. seconds apart).
+#' 
+#' 
+#' More examples will be added imminently
 
 tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
 

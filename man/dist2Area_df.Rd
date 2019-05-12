@@ -10,38 +10,54 @@ dist2Area_df(x = NULL, y = NULL, x.id = NULL, y.id = NULL,
   numVertices = 4)
 }
 \arguments{
-\item{x}{Description imminent}
+\item{x}{Data frame or list of data frames containing real-time-location data for individuals.}
 
-\item{y}{Description imminent}
+\item{y}{Data frame or list of data frames describing fixed-area polygons/points for which we will calculate distances relative to tracked individuals at all time steps. Polygons contained within the same data frame must have the same number of vertices.}
 
-\item{x.id}{Description imminent}
+\item{x.id}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.}
 
-\item{y.id}{Description imminent}
+\item{y.id}{Vector of length sum(nrow(data.frame(y[1:length(y)]))) or singular character data, detailing the relevant colname in y, that denotes what unique ids for fixed-area polygons/points will be used. If argument == NULL, the function assumes a column with the colname "id" may exist in y. If such a column does exist, fixed-area polygons will be assigned unique ids based on values in this column. If no such column exists, fixed-area polygons/points will be assigned sequential numbers as unique identifiers. Defaults to NULL.}
 
-\item{dateTime}{Description imminent}
+\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{point.x}{Description imminent}
+\item{point.x}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.}
 
-\item{point.y}{Description imminent}
+\item{point.y}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.}
 
-\item{poly.xy}{Description imminent}
+\item{poly.xy}{Columns within x denoting polygon xy-coordinates. Polygon coordinates must be arranged in the format of those in referencePointToPolygon output. Defaults to NULL.}
 
-\item{parallel}{Description imminent}
+\item{parallel}{Logical. If TRUE, sub-functions within the dist2Area_df wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.}
 
-\item{dataType}{Description imminent}
+\item{dataType}{Character string refering to the type of real-time-location data presented in x, taking values of "Point" or "Polygon." If argument == "Point," individuals' locations are drawn from point.x and point.y. If argument == "Polygon," individuals' locations are drawn from poly.xy. Defaults to "Point."}
 
-\item{lonlat}{Description imminent}
+\item{lonlat}{Logical. If TRUE, point.x and point.y contain geographic coordinates (i.e., longitude and lattitude). If FALSE, point.x and point.y contain planar coordinates. Defaults to FALSE.}
 
-\item{numVertices}{Description imminent}
+\item{numVertices}{Numerical. If dataType == "Polygon," users must specify the number of vertices contained in each polygon described in x. Defaults to 4. Note: all polygons must contain the same number of vertices.}
 }
 \description{
 Calculate distances (either planar or great circle - see dist.all) between each individual, reported in x, and a fixed point(s)/polygon(s), reported in y, at each timestep.
 }
 \details{
 Polygon coordinates (in both x and y inputs) must be arranged in the format of those in referencePointToPolygon outputs (i.e., col1 = point1.x, col2 = point1.y, col3 =point2.x, col4 = point2.y, etc., with points listed in a clockwise (or counter-clockwise) order).
+This variant of dist2Area requires x and y inputs to be non-spatial data.
 }
 \examples{
-Examples imminent
+#load the calves data set
+data(calves)
+
+#pre-process the data
+calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+
+#delineate the water trough polygon (showing where the water trough in the calves' feedlot pen is)
+water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x coordinates
+water_trough.y<- c(62.44815 62.73341 61.93864 61.67411) #water y coordintates
+water_poly<-data.frame(point1.x = water_trough.x[1], point1.y = water_trough.y[1], point2.x = water_trough.x[2], point2.y = water_trough.y[2], point3.x = water_trough.x[3], point3.y = water_trough.y[3], point4.x = water_trough.x[4], point4.y = water_trough.y[4])
+
+#generate empirical time-ordered network edges.
+water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = TRUE, x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals and the water polygon at each timepoint.
+
+More examples coming later
 }
 \keyword{GRC}
 \keyword{data-processing}

@@ -14,11 +14,11 @@ makePlanar(x = NULL, x.lon = NULL, x.lat = NULL, origin.lon = NULL,
 
 \item{x.lat}{Vector of length(nrow(x)) or singular character data, detailng the relevant colname in x, that denotes what latitude information will be used. If argument == NULL, makePlanar assumes a column with the colname "lat" exists in x. Defaults to NULL.}
 
-\item{origin.lon}{Description imminent}
+\item{origin.lon}{Numerical. Describes the longitude will be used as the origin-point longitude for the azimuthal-equidistant projection. If NULL, defaults to the longitude of the data set's centroid. Defaults to NULL.}
 
-\item{origin.lat}{Description imminent}
+\item{origin.lat}{Numerical. Describes the lattitude will be used as the origin-point lattitude for the azimuthal-equidistant projection. If NULL, defaults to the lattitude of the data set's centroid. Defaults to NULL.}
 
-\item{datum}{Description imminent}
+\item{datum}{Character string describing the datum used to generate x.lon and x.lat. Defaults to "WGS84."}
 }
 \description{
 This function converts long/lat data (decimal degrees) from a geographic coordinate system to planar coordinates using a custom azimuthal equidistant projection, and appends these new coordinates to an input data frame (x). By default, the function assumes longitude and latitude coordinates were produced using the WGS84 datum, but users may change this datum if they wish.

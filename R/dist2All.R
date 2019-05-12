@@ -5,23 +5,33 @@
 #' If dataType == "Point," users have the option of setting lonlat == TRUE (by default lonlat == FALSE). lonlat is a logical argument that tells the function to calculate the distance between points on the WGS ellipsoid (if lonlat == TRUE), or on a plane (lonlat == FALSE) (see raster::pointDistance). If lonlat == TRUE, coordinates should be in degrees. Otherwise, coordinates should represent planar ('Euclidean') space (e.g. units of meters).This function is not currently able to calculate distances between polygons on the WGS ellipsoid (i.e., if dataType == "Polygon," lonlat must = FALSE). We aim to address this issue in future versions.
 #'
 #' Note that if inputting a separate matrix/dataframe with polygon xy coordinates (poly.xy), coordinates must be arranged in the format of those in referencePointToPolygon outputs (i.e., col1 = point1.x, col2 = point1.y, col3 =point2.x, col4 = point2.y, etc., with points listed in a clockwise (or counter-clockwise) order).
-#' @param x Description imminent
-#' @param id Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column withe colname "id" exists in x. Defaults to NULL.
-#' @param point.x Description imminent
-#' @param point.y Description imminent
-#' @param dateTime Description imminent
-#' @param poly.xy Description imminent
-#' @param elev Description imminent
-#' @param parallel Description imminent
-#' @param dataType Description imminent
-#' @param lonlat Description imminent
-#' @param numVertices Description imminent
+#' @param x Data frame or list of data frames containing real-time-location data.  
+#' @param id Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.
+#' @param point.x Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.
+#' @param point.y Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.
+#' @param dateTime Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
+#' @param poly.xy Columns within x denoting polygon xy-coordinates. Polygon coordinates must be arranged in the format of those in referencePointToPolygon output. Defaults to NULL.
+#' @param elev Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes vertical positioning of each individual in 3D space (e.g., elevation).  If argument != NULL, relative vertical positioning will be incorporated into distance calculations. Defaults to NULL.
+#' @param parallel Logical. If TRUE, sub-functions within the dist2All wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
+#' @param dataType Character string refering to the type of real-time-location data presented in x, taking values of "Point" or "Polygon." If argument == "Point," individuals' locations are drawn from point.x and point.y. If argument == "Polygon," individuals' locations are drawn from poly.xy. Defaults to "Point."
+#' @param lonlat Logical. If TRUE, point.x and point.y contain geographic coordinates (i.e., longitude and lattitude). If FALSE, point.x and point.y contain planar coordinates. Defaults to FALSE.
+#' @param numVertices Numerical. If dataType == "Polygon," users must specify the number of vertices contained in each polygon. Defaults to 4. Note: all polygons must contain the same number of vertices.
 #' @keywords data-processing polygon point location planar GRC
-#' @examples
-#' Examples imminent
 #' @export
+#' @examples
+#' #load the calves data set
+#' data(calves)
+#' 
+#' #pre-process the data
+#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+#'
+#' #generate empirical time-ordered network edges.
+#' calves.dist<-dist2All(x = calves.agg, parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint.
+#' 
+#' More examples will be added later
 
-dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = TRUE, dataType = "Point", lonlat = FALSE, numVertices = 4){
+dist2All<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = TRUE, dataType = "Point", lonlat = FALSE, numVertices = 4){
 
   create.distFrame<- function(x,distMat, indivSeq, idSeq, timestepIndivSeq,time){
 

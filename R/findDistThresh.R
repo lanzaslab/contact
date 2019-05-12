@@ -1,19 +1,29 @@
 #' Identify Distance Threshold for Contact
 #'
+#' Sample from a multiveriate normal distribution to create "in-contact" point pairs (n = n1) based on real-time-location systems accuracy, and generate distribution of length n2 describing average distances between point pairs. This function outputs upper confidence intervals associated with average distances between "in-contact" points.
 #' 
-#' @param n1 Number of points used in the expected-distance distribution(s). Defaults to 1000.
-#' @param n2 Number of expected-distance distribution iterations to be averaaged. Defaults to 1000.
-#' @param acc.Dist1 Accuracy distance for point 1.
-#' @param acc.Dist2 Accuracy distance for point 2. If == NULL, defaults to acc.Dist1 value.
-#' @param pWithin1 Percent of data points within acc.Dist of true locations for point 1. 
-#' @param pWithin2 Percent of data points within acc.Dist of true locations for point 2. If == NULL, defaults to pWithin1 value.
-#' @param delta Length representing biological mechanism for contact.
+#' This function is for adjusting contact-distance thresholds (spTh) to account for positional accuracty of real-time-location systems, assuming random (non-biased) error in location-fix positions relative to true locations. Essentially this function can be used to determine an adjusted spTh value that likely includes >= 99% of true contacts defined using the initial spTh.
+#' @param n1 Numerical. Number of points used in the expected-distance distribution(s). Defaults to 1000.
+#' @param n2 Numerical. Number of expected-distance distribution iterations to be averaaged. Defaults to 1000.
+#' @param acc.Dist1 Numerical. Accuracy distance for point 1.
+#' @param acc.Dist2 Numerical. Accuracy distance for point 2. If == NULL, defaults to acc.Dist1 value.
+#' @param pWithin1 Numerical. Percentage of data points within acc.Dist of true locations for point 1. 
+#' @param pWithin2 Numerical. Percentage of data points within acc.Dist of true locations for point 2. If == NULL, defaults to pWithin1 value.
+#' @param spTh Numerical. Pre-determined distance representing biological threshold for contact.
 #' @keywords contact location point
 #' @export
 #' @examples
-#' Examples imminent
+#' #Here we use findDistThresh to identify what spatial thresholds for contact likely report 99% of contacts in the calves system, previously defined as instances where individuals were within 0.5 m, and 0 m of one another for point- and polygon-based networks, respectively. Note that the accuracy of the RTLS used to collect the calves data set, as reported by the RTLS manufacturer, was "90% of points fall within 0.5 m of true locations."
+#'
+#' #Point-based contacts
+#' findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the initially-defined spatial threshold for contact
+#' 
+#' #Polygon-based contacts
+#' findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0)
+#' 
+#' #Note that because these confidence intervals are obtained from distributions generated from random samples, everytime this function is run, results will be slightly different. When we ran the function, the outputs indicated that adjusted spatial thresholds of 0.74 m and 0.56 m likely capture ≥ 99% of contacts, as previously defined for point- and polygon-based networks, respectively.
 
-findDistThresh<-function(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, delta = 0.666){
+findDistThresh<-function(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.666){
   
   dist.distributionFunc<-function(x){ #generate an expected-distance distribution from two points pulled from normal distributions with mean values at point1 and point2 x- and y-values, and standard deviations derived from the acc.Dist and pWithin values. 
   
@@ -32,7 +42,7 @@ findDistThresh<-function(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL
     conf2.2<-unlist(ifelse(conf2.1 >0, conf2.1,0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)) #if conf = 0, it is replaced with this value which is extremely close to 0, so that qnorm doesn't return an inf value
     zscore2<-abs(qnorm(conf2.2)) #calculate z-score
   
-    x1<-data.frame(p1.x = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p1.y = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p2.x = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[3]))/zscore2),p2.y = rnorm(unname(unlist(x[1])), mean = 1+unname(unlist(x[6])), sd = unname(unlist(x[3]))/zscore2)) #note that one of the points is delta-m away from the other
+    x1<-data.frame(p1.x = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p1.y = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p2.x = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[3]))/zscore2),p2.y = rnorm(unname(unlist(x[1])), mean = 1+unname(unlist(x[6])), sd = unname(unlist(x[3]))/zscore2)) #note that one of the points is spTh-m away from the other
     dist.distr<-apply(x1,1,euc)
     dist.mean<-mean(dist.distr)
     dist.sd<-sd(dist.distr)
@@ -58,7 +68,7 @@ findDistThresh<-function(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL
   inputFrame[,3]<-acc.Dist2
   inputFrame[,4]<-pWithin1
   inputFrame[,5]<-pWithin2
-  inputFrame[,6]<-delta
+  inputFrame[,6]<-spTh
   distributions<-apply(inputFrame,1,dist.distributionFunc) #creates a matrix of distance-distribution CI values
   dist.means <- apply(distributions, 1,mean)
   return(dist.means)

@@ -1,15 +1,30 @@
-#' Display Contact Events
+#' Summarize Contact Events
 #'
 #' This function takes the output from contactDur.all or contactDur.area and reports the number of durations when tracked individuals are in "contact" with one another (contactDur.all) or with specified fixed points/polygons (contactDur.area).
 #' 
 #' If x is a list, and avg == TRUE, this function will produce an extra data frame containing the mean column values for each id (per block if importBlocks == TRUE).
-#' @param x Output from the contactDur.all or contactDur.area functions. Can be either a data frame or list.
-#' @param importBlocks Description imminent
-#' @param avg Description imminent
-#' @keywords data-processing contact
+#' 
+#' This is a sub-function found within the contactTest and ntrkEdges function.
+#' @param x Output from the contactDur.all or contactDur.area functions. Can be either a data frame or list of data frames.
+#' @param importBlocks Logical. If true, each block in x will be analyzed separately. Defaults to FALSE. Note that the "block" column must exist in x.
+#' @param avg Logical. If TRUE, summary output from all data frames contained in x will be averaged together. Output will produce an extra data frame containing the mean column values for each id (per block if importBlocks == TRUE). Defaults to FALSE.
+#' @keywords data-processing contact sub-function
 #' @export
 #' @examples
-#' Examples imminent
+#' #load the calves data set
+#' data(calves)
+#' 
+#' #pre-process the data
+#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+#'
+#' #generate empirical time-ordered network edges.
+#' calves.dist<-dist2All_df(x = calves.agg, parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint.
+#' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
+#' 
+#' #summarize the contacts
+#' calves.contactSumm.NOblock <- summarizeContacts(calves.contact.block)
+#' calves.contactSumm.block <- summarizeContacts(calves.contact.block, importBlocks = TRUE)
 
 summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE){
   
@@ -194,7 +209,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE){
       blockVecFrame <- data.frame(unique(as.character(x$block)))
       summary.block <- apply(blockVecFrame, 1, blockSum, x, indivSeq, areaSeq) #according to Dan, this apply function is faster than parApply, so I've removed the parApply option 1/17
       summaryTable<- data.frame(data.table::rbindlist(summary.block))
-      summaryTable<-summaryTable[order(summaryTable$block,summaryTable$id),]
+      summaryTable<-summaryTable[order(as.numeric(as.character(summaryTable$block)),summaryTable$id),]
       
     }else{ #importBlocks == FALSE
       if(length(x$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
