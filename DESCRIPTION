@@ -1,5 +1,5 @@
 Package: contact
-Title: contact
+Title: Creating Contact and Social Networks
 Version: 0.0.0.9000
 Authors@R: 
     c(person(given = "Trevor", family = "Farthing", role = c("aut", "cre"), email = "tsfarthi@ncsu.edu"),
