@@ -4,7 +4,6 @@
 #'
 #' If users are not actually interested in filtering datasets, but rather, determining what observations should be filtered, they may set filterOutput == FALSE. By doing so, this function will append up an "mps" column to the dataset, which reports the avg distance per second individuals moved to get from observation i-1 to observation i.
 #' @param x List or data frame containing real-time location data that will be filtered.
-#' @param id Vector of length(nrow(data.frame(x))) or singular character data, detailng the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column withe colname "id" exists in x. Defaults to NULL.
 #' @param id Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.
 #' @param point.x Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.
 #' @param point.y Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.
@@ -87,12 +86,11 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     x$yVec1 <- yVec1
 
     if(length(x$totalSecond) > 0){ #if there is a totalSecond column (indicating the data has likely been processed using dateTime.append), then the totSecVec will be the totalSecond-column values, otherwise we need to calculate the totalSecond for each dateTime (using the same process as in dateTime.append)
-      x<-x[order(idVec1, dateTimeVec1),] #this sorts the data so that future processes will work
+      x<-x[order(x$idVec1, x$dateTimeVec1),] #this sorts the data so that future processes will work
       totSecVec<-x$totalSecond
     }else{
-      x<-x[order(dateTimeVec1),] #We need to ensure that the data is ordered in the same way as timeVec will be, so that all observations line up as they should.
-      timeVec<-dateTimeVec1
-      timeVec <-timeVec[order(timeVec)]
+      x<-x[order(x$dateTimeVec1),] #We need to ensure that the data is ordered in the same way as timeVec will be, so that all observations line up as they should.
+      timeVec<-x$dateTimeVec1
       daySecondVec <- lubridate::hour(timeVec) * 3600 + lubridate::minute(timeVec) * 60 + lubridate::second(timeVec) #This calculates a day-second
       lub.dates = lubridate::date(timeVec)
       dateseq = unique(lub.dates)
@@ -103,8 +101,9 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
         dayIDVec = c(dayIDVec, ID)
       } #This part of the function takes awhile (especially for large datasets)
       totSecVec <- ((dayIDVec - 1)*86400) + daySecondVec #This calculates the total second (the cumulative second across the span of the study's timeframe)
-      x<-x[order(idVec1, dateTimeVec1),] #this sorts the data so that future processes will work
-      totSecVec<-totSecVec[order(idVec1, dateTimeVec1)] #We need to make sure these observations have been ordered in the same way as  by idVec1 and dateTimeVec1
+      id_dateTime.order<-order(x$idVec1, x$dateTimeVec1) #Identify the necessary order so that the data so that future processes will work
+      x<-x[id_dateTime.order,] #this sorts the data so that future processes will work
+      totSecVec<-totSecVec[id_dateTime.order] #We need to make sure these observations have been ordered in the same way as  by idVec1 and dateTimeVec1
     }
     euc=function(x, dist.measurement) {
       point1 = x.cor=unlist(c(x[1],x[2]))

@@ -174,7 +174,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
         if(length(randVec1) > length(blockSeq)){ #if blockLength does not divide evenly into blocksPerUnit, length(randVec) may be greater than the actual number of blocks
           randVec1<-randVec1[1:length(blockSeq)]
         }
-        blockAbsence<-which(randVec1%in%unique(idFrame$block) == FALSE) #determine if individuals were actually present during randomly-pulled blocks. So, no we no which blocks are missing and can build the output data frame accordingly.
+        blockAbsence<-which(randVec1%in%unique(idFrame$block) == FALSE) #determine if individuals were actually present during randomly-pulled blocks. So, now we know which blocks are missing and can build the output data frame accordingly.
         if(length(blockAbsence) == length(randVec1)){ #if all blocks were empty, then there's no need to go any further
           randomxy <-NULL
         }else{ #if there was at least one populated block
@@ -182,6 +182,8 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
         rand.blockTab <- data.frame(randVec1)
         rand <-apply(rand.blockTab,1,xy.assignShuff, idFrame, dataType, numVertices)
         randCoord<- data.frame(data.table::rbindlist(rand))
+        
+        blockFrame.full<-subset(y, block <= blocksPerUnit)
         
         if(length(blockAbsence > 0)){ #So, if there is a missing block
           timestep.per.block <- length(unique(blockFrame.full$dateTime))/length(unique(blockFrame.full$block)) #pulls the number of timesteps per block. In the event that randVec pulls a starting block(s) that does not exist for the individual, NAs will be returned. Assuming that all timesteps are equidistant (as they should be when shuffleType == 2), this can only be the case if a block is pulled from a time before the individual began reporting tracks.
@@ -202,7 +204,6 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
             }
           }
         }
-        blockFrame.full<-subset(y, block <= blocksPerUnit)
         #outTable<- idFrame[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
         outTable<-data.frame(id = unname(unlist(x[1])), dateTime = unique(blockFrame.full$dateTime), blockLength = unique(blockFrame.full$blockLength)) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
         outTable<- outTable[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord

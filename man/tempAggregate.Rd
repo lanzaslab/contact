@@ -6,7 +6,7 @@
 \usage{
 tempAggregate(x = NULL, id = NULL, point.x = NULL, point.y = NULL,
   dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE,
-  extrapolate.right = FALSE, resolutionLevel = "Full",
+  extrapolate.right = FALSE, resolutionLevel = "full",
   parallel = TRUE, na.rm = TRUE, smooth.type = 1)
 }
 \arguments{

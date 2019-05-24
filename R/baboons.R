@@ -1,0 +1,26 @@
+#' Real-time location data for 26 baboons
+#'
+#' A dataset containing geographic real-time point locations for 26 baboons observed between August 1st and August 2nd 2012.
+#' This data set was first published on the movebank data repository. When using this data set, cite both references listed here. The following description appears in the README text provided for the repository entry verbatim.
+#' 
+#' This data file a subset of a larger one published by the Movebank Data Repository (www.datarepository.movebank.org). The larger data set on Movebank contains baboon locations between 08/01/2012 and 08/14/2012. As of the time of publication of this package, a version of the published animal tracking data set can be viewed on Movebank (www.movebank.org) in the study "Collective movement in wild baboons (data from Strandburg-Peshkin et al. 2015)". Individual attributes in the data files are defined below and in the Movebank Attribute Dictionary, available at www.movebank.org/node/2381.
+#' Note that according to data publishers, "this dataset does not include interpolated locations or locations that failed the speed filter (see Strandburg-Peshkin et al. 2015 for details)."
+#'
+#' @docType data
+#' @usage data(baboons)
+#' @format A data frame with 1967768 rows and 5 variables:
+#' \describe{
+#'   \item{timestamp}{The date and time a sensor measurement was taken. Time units are in UTC (Coordinated Universal Time) or GPS time, which is a few leap seconds different from UTC.}
+#'   \item{location.long}{The geographic longitude of a location along an animal track as estimated by the processed sensor data. Positive values are east of the Greenwich Meridian, negative values are west of it. Presented as decimal degrees based on the WGS84 reference system.}
+#'   \item{location.lat}{The geographic lattitude of a location along an animal track as estimated by the processed sensor data. Positive values are north of the equator, negative values are west of it. Presented as decimal degrees based on the WGS84 reference system.}
+#'   \item{individual.local.identifier}{A unique individual identifier for the animal, provided by the data owner.}
+#'   \item{dateTime}{The date and time, rounded to the nearest second that a sensor measurement was taken. Derrived from timestamps.}
+#' }
+#' @keywords datasets baboons point location geographic
+#' @references Strandburg-Peshkin A, Farine DR, Couzin ID, Crofoot MC (2015) Shared decision-making drives collective movement in wild baboons. Science. doi:10.1126/science.aaa5099.
+#' @references Crofoot MC, Kays RW, Wikelski M (2015) Data from: Shared decision-making drives collective movement in wild baboons. Movebank Data Repository. doi:10.5441/001/1.kn0816jn.
+#' @source \url{https://doi.org/10.5441/001/1.kn0816jn}
+#' @examples
+#' data("baboons")
+#' head(baboons)
+"baboons"

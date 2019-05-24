@@ -62,13 +62,13 @@ makePlanar<-function(x = NULL, x.lon = NULL, x.lat = NULL, origin.lon = NULL, or
     }
     
     if(length(origin.lon) == 0){ #if origin.lon == NULL (i.e., users did not specify a origin.lon coordinate), the origin.lon value will default to the mean x$lon value
-      cntr.lon <- mean(originTab$makePlanarFunction__lon)
+      cntr.lon <- mean(originTab$makePlanarFunction__lon, na.rm = TRUE)
     }else{ #if origin.lon != NULL
       cntr.lon <- origin.lon 
     }
     
     if(length(origin.lat) == 0){ #if origin.lat == NULL (i.e., users did not specify a origin.lat coordinate), the origin.lat value will default to the mean x$lat value
-      cntr.lat <- mean(originTab$makePlanarFunction__lat)
+      cntr.lat <- mean(originTab$makePlanarFunction__lat, na.rm = TRUE)
     }else{ #if origin.lat != NULL
       cntr.lat <- origin.lat
     }

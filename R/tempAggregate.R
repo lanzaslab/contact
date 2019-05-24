@@ -30,7 +30,7 @@
 #' 
 #' More examples will be added imminently
 
-tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
+tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "full", parallel = TRUE, na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
 
   Agg.generator<-function(x, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type){
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
@@ -99,7 +99,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
       resolutionLevel = "reduced"
     }
 
-    Processing_and_Aggregation_Procedures<-function(brk.point, originTab, extrapolate.left = leftExtrap, extrapolate.right = rightExtrap, resolutionLevel, smooth.type){
+    Processing_and_Aggregation_Procedures<-function(brk.point, originTab, extrapolate.left = leftExtrap, extrapolate.right = rightExtrap, resolutionLevel, smooth.type, secondAgg){
 
       Nseconds.aggregate=function(coord, secondAgg) {
         m=secondAgg
@@ -179,12 +179,20 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
           tmp=as.numeric(data.one[length(data.one[,xcol]), c(xcol,ycol)])
           coord.tmp[(n+1):nrow(coord.tmp),1]=tmp[1]
           coord.tmp[(n+1):nrow(coord.tmp),2]=tmp[2]
+          
+          #Added 05/21/2019. For some reason, there was a bug that prevented the last row of coord.tmp from taking new values using the code above.... I'm not quite sure why that is, but to fix it, I've added the code below -tsf.
+          coord.tmp[nrow(coord.tmp),1] <- tmp[1]
+          coord.tmp[nrow(coord.tmp),2] <- tmp[2]
 
         }else{ #if extrapolate.right == FALSE
 
           coord.tmp[(n+1):nrow(coord.tmp),1]=NA #This reports NAs following the last instance of observed movement
           coord.tmp[(n+1):nrow(coord.tmp),2]=NA
 
+          #Added 05/21/2019. For some reason, there was a bug that prevented the last row of coord.tmp from taking new values using the code above.... I'm not quite sure why that is, but to fix it, I've added the code below -tsf.
+          coord.tmp[nrow(coord.tmp),1] <- NA
+          coord.tmp[nrow(coord.tmp),2] <- NA
+          
         }
       }
 
@@ -211,9 +219,9 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
 
     if (parallel == TRUE){
       cl<-parallel::makeCluster(parallel::detectCores())
-      locmatrix<-parallel::parApply(cl, brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type) ##Note, this procedure produces a table that in which the first half is the x axis, and the second is the y axis. You have to merge (see code below)
+      locmatrix<-parallel::parApply(cl, brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type, secondAgg) ##Note, this procedure produces a table that in which the first half is the x axis, and the second is the y axis. You have to merge (see code below)
       parallel::stopCluster(cl)
-    }else{locmatrix<-apply(brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type)}
+    }else{locmatrix<-apply(brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type, secondAgg)}
 
     #The code below breaks the table into the x and y coordinates that we'd expect here.
     for (m in 1:length(indivSeq)){
