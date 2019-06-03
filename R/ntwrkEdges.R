@@ -162,15 +162,15 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE){
     indivSum.full$block <- unname(unlist(x[1]))
     
     #added 02/05/2019 - to maintain this new information created in the newest version of the contactDur functions.
-    indivSum.full$block.start <- unique(blockDurFrame$block.start)
-    indivSum.full$block.end <- unique(blockDurFrame$block.end)
+    indivSum.full$block.start <- unique(lubridate::as_datetime(blockDurFrame$block.start)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+    indivSum.full$block.end <- unique(lubridate::as_datetime(blockDurFrame$block.end)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
     indivSum.full$numBlocks <- unique(blockDurFrame$numBlocks)
     return(indivSum.full)
   }
   summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs
     sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
-    blockStart<- unique(sumTable$block.start) #added 02/05/2019 - had to keep track of this new information
-    blockEnd<- unique(sumTable$block.end) #added 02/05/2019 - had to keep track of this new information
+    blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+    blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
     blockNum<- unique(sumTable$numBlocks) #added 02/05/2019 - had to keep track of this new information
     sumTable.redac<-sumTable[,-c(match("id", names(sumTable)),match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
     contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
@@ -265,8 +265,19 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE){
 }
   edgeGenerator.noBlock<-function(x, removeDuplicates = dupAction){
     confirm_edges.noBlock<-function(x,y){ #x = potential edges, y = contactSummary; essentially presents contact summary results in long form
-      out.frame<-data.frame(from = unname(unlist(x[1])), to = unname(unlist(x[2]))) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
-      duration <- unname(unlist(y[which(y$id == unname(unlist(x[1]))), grep(unname(unlist(x[2])), names(y))]))
+      if(length(levels(unname(unlist(x[1])))) > 1){ #This has to be here to avoid an error when trying to coerce output into the out.frame
+        x1.id <- droplevels(unname(unlist(x[1])))
+      }else{ #if the number of levels <= 1
+        x1.id <-unname(unlist(x[1]))
+      }
+      if(length(levels(unname(unlist(x[2])))) > 1){ #This has to be here to avoid an error when trying to coerce output into the out.frame
+        x2.id <- droplevels(unname(unlist(x[2])))
+      }else{ #if the number of levels <= 1
+        x2.id <-unname(unlist(x[2]))
+      }
+      out.frame<-data.frame(from = x1.id, to = x2.id) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
+      y.ContactNames<-c(NA,NA,NA,substring((names(y[grep("contactDuration_", names(y))])),22)) #The three NAs represent the first 3 columns in y, which are irrelevent for our needs.
+      duration <- unname(unlist(y[which(y$id == x1.id), which(y.ContactNames == x2.id)]))
       duration.corrected<-ifelse(duration > 0, duration, NA) 
       out.frame$durations<-duration.corrected #this is the total number of durations individuals were observed in contact with others
       return(out.frame)
@@ -297,8 +308,19 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE){
   }
   edgeGenerator.Block<-function(x, removeDuplicates = dupAction){
     confirm_edges.Block<-function(x,y){ #x = potential edges, y = contactSummary; essentially presents contact summary results in long form
-      out.frame<-data.frame(from = unname(unlist(x[2])), to = unname(unlist(x[3]))) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
-      duration <- unname(unlist(y[which(y$block == unname(unlist(x[1])) & y$id == unname(unlist(x[2]))), grep(unname(unlist(x[3])), names(y))])) #pulls the duration of contacts between individuals x[2:3] in block x[1]
+      if(length(levels(unname(unlist(x[2])))) > 1){ #This has to be here to avoid an error when trying to coerce output into the out.frame
+        x2.id <- droplevels(unname(unlist(x[2])))
+      }else{ #if the number of levels <= 1
+        x2.id <-unname(unlist(x[2]))
+      }
+      if(length(levels(unname(unlist(x[3])))) > 1){ #This has to be here to avoid an error when trying to coerce output into the out.frame
+        x3.id <- droplevels(unname(unlist(x[3])))
+      }else{ #if the number of levels <= 1
+        x3.id <-unname(unlist(x[3]))
+      }
+      out.frame<-data.frame(from = x2.id, to = x3.id) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
+      y.ContactNames<-c(NA,NA,NA,substring((names(y[grep("contactDuration_", names(y))])),22)) #The three NAs represent the first 3 columns in y, which are irrelevent for our needs.
+      duration <- unname(unlist(y[which(y$id == x2.id), which(y.ContactNames == x3.id)]))
       duration.corrected<-ifelse(duration > 0, duration, NA) 
       out.frame$durations<-duration.corrected #this is the total number of durations individuals were observed in contact with others
       out.frame$block <- unname(unlist(x[1])) #add block information

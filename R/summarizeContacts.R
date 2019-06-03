@@ -158,15 +158,15 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE){
     indivSum.full$block <- unname(unlist(x[1]))
     
     #added 02/05/2019 - to maintain this new information created in the newest version of the contactDur functions.
-    indivSum.full$block.start <- unique(blockDurFrame$block.start)
-    indivSum.full$block.end <- unique(blockDurFrame$block.end)
+    indivSum.full$block.start <- unique(lubridate::as_datetime(blockDurFrame$block.start)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+    indivSum.full$block.end <- unique(lubridate::as_datetime(blockDurFrame$block.end)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
     indivSum.full$numBlocks <- unique(blockDurFrame$numBlocks)
     return(indivSum.full)
   }
-  summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs
+  summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs (i.e., only applicable if avg == TRUE)
     sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
-    blockStart<- unique(sumTable$block.start) #added 02/05/2019 - had to keep track of this new information
-    blockEnd<- unique(sumTable$block.end) #added 02/05/2019 - had to keep track of this new information
+    blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+    blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
     blockNum<- unique(sumTable$numBlocks) #added 02/05/2019 - had to keep track of this new information
     sumTable.redac<-sumTable[,-c(match("id", names(sumTable)),match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
     contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)

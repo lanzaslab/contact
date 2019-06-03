@@ -5,12 +5,13 @@
 #' This is a sub-function that can be found in the contactDur functions.
 #' @param x Data frame containing dateTime information, and to which block information will be appended. if NULL, dateTime input relies solely on the dateTime argument.
 #' @param dateTime Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
-#' @param blockUnit Numerical. Describes the number blockUnits within each temporal block. Defaults to 1.
-#' @param blockLength Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Defaults to "hours."
+#' @param blockUnit Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Defaults to "hours."
+#' @param blockLength Numerical. Describes the number blockUnits within each temporal block. Defaults to 10.
 #' @keywords data-processing sub-function
 #' @export
 #' @examples
 #' Examples imminent
+
 
 timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 10, blockUnit = "mins"){
   datetime.append1 = function(x){
