@@ -105,7 +105,8 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, 
     areaIDVec<- distColumns[grep("dist.to", distColumns)]
     distmat = data.matrix(spec.dist[,c(match(areaIDVec, names(spec.dist)))])
     distmat.noNA <-ifelse(is.na(distmat) == TRUE,1000000000,distmat)
-    distthreshold<-ifelse(distmat.noNA<=as.numeric(unlist(unname(x[2]))),1,0) 
+    distthreshold<-ifelse(distmat.noNA<=as.numeric(unlist(unname(x[2]))),1,0)
+    colnames(distthreshold)<-areaIDVec #relate the distance threshold columns to each area id
     idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))))  
     timeVec <- unname(spec.dist[,match("dateTime", colnames(spec.dist))])
     dateTimeFrame <- data.frame(timeVec)
