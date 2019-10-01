@@ -19,16 +19,27 @@
 data(calves)
 }
 \description{
-A dataset containing planar real-time point locations for 70 calves between 00:00:00 and 12:00:00 UTC on May 2nd, 2016.
-Calves were approximately 1.5-year-old beef cattle kept in a 30 X 35 m2 pen at the Kansas State University Beef Cattle Research Center in Manhattan, KS.
-Data collection was supported by U.S. National Institute of Health (NIH) grant R01GM117618 as part of the joint National Science Foundation-NIH-United States Department of Agriculture Ecology and Evolution of Infectious Disease program.
+A dataset containing planar real-time point locations for 70 calves between
+   00:00:00 and 12:00:00 UTC on May 2nd, 2016.
+}
+\details{
+Calves were approximately 
+   1.5-year-old beef cattle kept in a 30 X 35 m2 pen at the Kansas State 
+   University Beef Cattle Research Center in Manhattan, KS.
+
+Data collection was supported by U.S. National Institute of Health (NIH) 
+   grant R01GM117618 as part of the joint National Science 
+   Foundation-NIH-United States Department of Agriculture Ecology and 
+   Evolution of Infectious Disease program.
 }
 \examples{
-data("calves")
+data("calves") #alternatively, you may use the command: contact::calves
 head(calves)
 }
 \references{
-Dawson, D.E., Farthing, T.S., Sanderson, M.W., and Lanzas, C. 2019. Transmission on empirical dynamic contact networks is influenced by data processing decisions. Epidemics 26:32-42.
+Dawson, D.E., Farthing, T.S., Sanderson, M.W., and Lanzas, 
+   C. 2019. Transmission on empirical dynamic contact networks is 
+   influenced by data processing decisions. Epidemics 26:32-42.
 }
 \keyword{calves}
 \keyword{datasets}

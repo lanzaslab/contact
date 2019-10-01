@@ -28,7 +28,7 @@
 #'
 #' #delineate the water trough polygon (showing where the water trough in the calves' feedlot pen is)
 #' water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x coordinates
-#' water_trough.y<- c(62.44815 62.73341 61.93864 61.67411) #water y coordintates
+#' water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y coordintates
 #' water_poly<-data.frame(point1.x = water_trough.x[1], point1.y = water_trough.y[1], point2.x = water_trough.x[2], point2.y = water_trough.y[2], point3.x = water_trough.x[3], point3.y = water_trough.y[3], point4.x = water_trough.x[4], point4.y = water_trough.y[4])
 #' 
 #' #generate empirical time-ordered network edges.

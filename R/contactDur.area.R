@@ -1,16 +1,45 @@
 #' Identify Environmental Contacts
 #'
-#' This function uses the output from distToArea to determine when tracked individuals are in "contact" with fixed locations. Individuals are said to be in a "contact" event (h) if they are observed within a given distance (<= dist.threshold) at a given timestep(i). Sec.threshold dictates the maximum amount of time a single, potential "contact" event should exist. For example, if sec.threshold=10, only "contacts" occurring within 10secs of one another will be regarded as a single "contact" event of duration sum(h). If in this case, a time difference between contacts was 11 seconds, the function will report two separate contact events.
-#' The output of this function is a data frame containing a time-ordered contact edge set detailing animal-environment contacts.
-#' @param x Output from the distToArea function (either df or sf variant). Can be either a data frame or non-data-frame list.
-#' @param dist.threshold Numeric. Radial distance (in meters) within which "contact" can be said to occur. Defaults to 1. Note: If you are defining conttacts as occurring when polygons intersect, set dist.threshold to 0.
-#' @param sec.threshold Numeric. Dictates the maximum amount of time between concurrent observations during which potential "contact" events remain unbroken. Defaults to 10. 
-#' @param blocking Logical. If TRUE, contacts will be evaluated for temporal blocks spanning blockLength blockUnit (e.g., 6 hours) within the data set. Defaults to FALSE.
-#' @param blockUnit Numerical. Describes the number blockUnits within each temporal block. Defaults to 1.
-#' @param blockLength Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Describes the temporal unit associated with each block. Defaults to "hours."
-#' @param equidistant.time Logical. If TRUE, location fixes in individuals' movement paths are temporally equidistant (e.g., all fix intervals are 30seconds). Defaults to FALSE. Note: This is a time-saving argument. A sub-function here calculates the time difference (dt) between each location fix. If all fix intervals are identical, it saves a lot of time.
-#' @param parallel Logical. If TRUE, sub-functions within the contactDur.all wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
-#' @param reportParameters Logical. If TRUE, function argument values will be appended to output data frame(s). Defaults to TRUE.
+#' This function uses the output from distToArea to determine when tracked 
+#'    individuals are in "contact" with fixed locations. Individuals are said 
+#'    to be in a "contact" event (h) if they are observed within a given 
+#'    distance (<= dist.threshold) at a given timestep(i). Sec.threshold 
+#'    dictates the maximum amount of time a single, potential "contact" event 
+#'    should exist. For example, if sec.threshold=10, only "contacts" occurring
+#'    within 10secs of one another will be regarded as a single "contact" event
+#'    of duration sum(h). If in this case, a time difference between contacts 
+#'    was 11 seconds, the function will report two separate contact events.
+#'    
+#' The output of this function is a data frame containing a time-ordered 
+#'    contact edge set detailing animal-environment contacts.
+#' @param x Output from the distToArea function (either df or sf variant). Can 
+#'    be either a data frame or non-data-frame list.
+#' @param dist.threshold Numeric. Radial distance (in meters) within which 
+#'    "contact" can be said to occur. Defaults to 1. Note: If you are defining 
+#'    conttacts as occurring when polygons intersect, set dist.threshold to 0.
+#' @param sec.threshold Numeric. Dictates the maximum amount of time between 
+#'    concurrent observations during which potential "contact" events remain 
+#'    unbroken. Defaults to 10. 
+#' @param blocking Logical. If TRUE, contacts will be evaluated for temporal 
+#'    blocks spanning blockLength blockUnit (e.g., 6 hours) within the data 
+#'    set. Defaults to FALSE.
+#' @param blockUnit Numerical. Describes the number blockUnits within each 
+#'    temporal block. Defaults to 1.
+#' @param blockLength Character string taking the values, "secs," "mins," 
+#'    "hours," "days," or "weeks." Describes the temporal unit associated with 
+#'    each block. Defaults to "hours."
+#' @param equidistant.time Logical. If TRUE, location fixes in individuals' 
+#'    movement paths are temporally equidistant (e.g., all fix intervals are 30
+#'    seconds). Defaults to FALSE. Note: This is a time-saving argument. A 
+#'    sub-function here calculates the time difference (dt) between each 
+#'    location fix. If all fix intervals are identical, it saves a lot of time.
+#' @param parallel Logical. If TRUE, sub-functions within the contactDur.all 
+#'    wrapper will be parallelized. Note that this can significantly speed up 
+#'    processing of relatively small data sets, but may cause R to crash due to
+#'    lack of available memory when attempting to process large datasets. 
+#'    Defaults to TRUE.
+#' @param reportParameters Logical. If TRUE, function argument values will be 
+#'    appended to output data frame(s). Defaults to TRUE.
 #' @keywords data-processing contact
 #' @export
 #' @examples
@@ -18,21 +47,47 @@
 #' data(calves)
 #' 
 #' #pre-process the data
-#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
-#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+#' calves.dateTime<-datetime.append(calves, date = calves$date, 
+#'    time = calves$time) #create a dataframe with dateTime identifiers for 
+#'    #location fixes.
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+#'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
+#'    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, 
+#'    na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
+#'    #intervals. Note that na.rm was set to "FALSE" because randomizing this 
+#'    #data set according to Spiegel et al.'s method (see below) requires 
+#'    #equidistant time points.
 #'
-#' #delineate the water trough polygon (showing where the water trough in the calves' feedlot pen is)
-#' water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x coordinates
-#' water_trough.y<- c(62.44815 62.73341 61.93864 61.67411) #water y coordintates
-#' water_poly<-data.frame(point1.x = water_trough.x[1], point1.y = water_trough.y[1], point2.x = water_trough.x[2], point2.y = water_trough.y[2], point3.x = water_trough.x[3], point3.y = water_trough.y[3], point4.x = water_trough.x[4], point4.y = water_trough.y[4])
+#' #delineate the water trough polygon (showing where the water trough in the 
+#'    #calves' feedlot pen is)
+#' water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x 
+#'    coordinates
+#' water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y 
+#'    coordintates
+#' water_poly<-data.frame(point1.x = water_trough.x[1], 
+#'    point1.y = water_trough.y[1], point2.x = water_trough.x[2], 
+#'    point2.y = water_trough.y[2], point3.x = water_trough.x[3], 
+#'    point3.y = water_trough.y[3], point4.x = water_trough.x[4], 
+#'    point4.y = water_trough.y[4])
 #' 
 #' #generate empirical time-ordered network edges.
-#' water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = TRUE, x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals and the water polygon at each timepoint.
-#' water_contacts <- contactDur.area(water.dist, dist.threshold=1,sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE)
+#' water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = TRUE, 
+#'    x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, 
+#'    point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", 
+#'    lonlat = FALSE) #calculate distance between all individuals and the water
+#'    #polygon at each timepoint.
+#' water_contacts <- contactDur.area(water.dist, dist.threshold=1,
+#'    sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10,
+#'    equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE)
 #' 
-#' More examples coming later
+#' #More examples coming later
 
-contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, blockUnit = "mins", blockLength = 10, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE){ 
+contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
+                          blockUnit = "mins", blockLength = 10, 
+                          equidistant.time = FALSE, parallel = TRUE, 
+                          reportParameters = TRUE){ 
+  
   timeDifference = function(x){
     t1 = unlist(unname(x[1]))
     t2 = unlist(unname(x[2]))

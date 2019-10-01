@@ -17,8 +17,7 @@
 #' @param minute Logical. If TRUE, output will contain a "minute" column with relevant information derived from dateTime information. Defaults to FALSE.
 #' @param second Logical. If TRUE, output will contain a "second" column with relevant information derived from dateTime information. Defaults to FALSE.
 #' @param daySecond Logical. If TRUE, output will contain a "daySecond" column with information detailing what the second of a given day the associated dateTime value corresponds to. Defaults to FALSE.
-#' @param startID Description imminent
-#' @param totalSecond Description imminent
+#' @param totalSecond Logical. If TRUE, output will contain a "totalSecond" column with information detailing what the second of the entire data set the associated dateTime value corresponds to. Defaults to FALSE.
 #' @keywords date time date-time
 #' @export
 #' @examples

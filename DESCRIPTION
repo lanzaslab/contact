@@ -2,29 +2,42 @@ Package: contact
 Title: Creating Contact and Social Networks
 Version: 0.0.0.9000
 Authors@R: 
-    c(person(given = "Trevor", family = "Farthing", role = c("aut", "cre"), email = "tsfarthi@ncsu.edu"),
-    person(given = "Daniel", family = "Dawson", role = "aut", email = "dedawson@ncsu.edu"),
-    person(given = "Cristina", family = "Lanzas", role = "ctb", email = "clanzas@ncsu.edu"))
-Description: Process spatiotemporal data into contact and social networks, and facilitating network analysis 
-    by randomizing individuals' movement paths and/or related categorical variables. To use this package, 
-    users need only have a dataset containing spatial data (i.e., latitude/longitude, or planar xy coordinates), 
-    individual IDs relating spatial data to specific individuals, and date/time information relating spatial 
-    locations to temporal locations. The functionality of this package ranges from data "cleaning" via multiple 
-    filtration functions, to spatial and temporal data interpolation, to network creation and summarization. 
-    Functions within this package are not limited to describing interpersonal contacts. Package functions can 
-    also identify and quantify "contacts" between individuals and fixed areas (e.g., home ranges, waterbodies, 
-    buildings, etc.). As such, this package is an incredibly useful resource for facilitating epidemiological, 
-    ecological, ethological and sociological research.
+    c(person(given = "Trevor", family = "Farthing", role = c("aut", "cre"),
+    email = "tsfarthi@ncsu.edu"), person(given = "Daniel", family = "Dawson",
+    role = "aut", email = "dedawson@ncsu.edu"), person(given = "Cristina", 
+    family = "Lanzas", role = "ctb", email = "clanzas@ncsu.edu"))
+Description: Process spatiotemporal data into contact and social networks, and
+    facilitate network analysis by randomizing individuals' movement paths 
+    and/or related categorical variables. To use this package, users need only 
+    have a dataset containing spatial data (i.e., latitude/longitude, or planar
+    xy coordinates), individual IDs relating spatial data to specific 
+    individuals, and date/time information relating spatial locations to 
+    temporal locations. The functionality of this package ranges from data
+    "cleaning" via multiple filtration functions, to spatial and temporal data
+    interpolation, and network creation and summarization. Functions within 
+    this package are not limited to describing interpersonal contacts. Package 
+    functions can also identify and quantify "contacts" between individuals 
+    and fixed areas (e.g., home ranges, waterbodies, buildings, etc.). As such,
+    this package is an incredibly useful resource for facilitating 
+    epidemiological, ecological, ethological and sociological research.
+Depends: R (>= 2.10)
 Imports:
-    data.table,
-    lubridate,
-    parallel,
-    raster,
-    rgdal,
-    rgeos,
-    sp,
-    sf
+    ape (>= 5.3),
+    data.table (>= 1.12.2),
+    geosphere (>= 1.5-10),
+    igraph (>= 1.2.4.1),
+    lubridate (>= 1.7.4),
+    parallel (>= 3.6.0),
+    raster (>= 2.9-5),
+    rgdal (>= 1.4-4),
+    rgeos (>= 0.4-3),
+    sf (>= 0.7-4),
+    sp (>= 1.3-1)
 License: NA
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
+BugReports: https://github.com/lanzaslab/contact/issues
+Citation: Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
+    C. in Review. Accounting for space and uncertainty in real-time-location-
+    system-derived contact networks. Ecology and Evolution.

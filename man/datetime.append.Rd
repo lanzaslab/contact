@@ -43,9 +43,7 @@ datetime.append(x, date = NULL, time = NULL, dateTime = NULL,
 
 \item{daySecond}{Logical. If TRUE, output will contain a "daySecond" column with information detailing what the second of a given day the associated dateTime value corresponds to. Defaults to FALSE.}
 
-\item{totalSecond}{Description imminent}
-
-\item{startID}{Description imminent}
+\item{totalSecond}{Logical. If TRUE, output will contain a "totalSecond" column with information detailing what the second of the entire data set the associated dateTime value corresponds to. Defaults to FALSE.}
 }
 \description{
 This function appends date-time information to a dataset in POSIXct date_time format. It also uses functions from the lubridate package and minor calculations to parse out month, day, hour, minute, second, daySecond (the sequentially ordered second of a day), and totalSecond (sequentially ordered second over the course of the study period) of observations in a given dataset with date (format: "mdy" =  month/day/year, "ymd" =  year/month/day, "dmy" =  day/month/year, or "ydm" =  year/day/month (note: no preceding zeroes should be included before numbers <10)) and time (format: hour:minute:second (note:preceding zeroes must be included before numbers < 10, ex. 00:00:01)) information, appends this metadata to the dataset,and can assign each day a unique ID.

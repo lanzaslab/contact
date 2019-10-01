@@ -1,71 +1,250 @@
-#' Determine if Observed Contacts are More or Less Frequent than in a Random Distribution
+#' Determine if Observed Contacts are More or Less Frequent than in a Random
+#'    Distribution
 #'
-#' This function is used to determine if tracked individuals in an empirical dataset had more or fewer contacts with other tracked individuals/specified locations than would be expected at random. The function works by comparing an empirically-based contactDur.all or contactDur.area function output (emp.input) to the contactDur.all or contactDur.area output generated from randomized data (rand.input).
+#' This function is used to determine if tracked individuals in an empirical 
+#'    dataset had more or fewer contacts with other tracked 
+#'    individuals/specified locations than would be expected at random. The 
+#'    function works by comparing an empirically-based contactDur.all or 
+#'    contactDur.area function output (emp.input) to the contactDur.all or 
+#'    contactDur.area output generated from randomized data (rand.input).
+#'
+#' Note: The current functionality is limited to comparisons using the 
+#'    X-squared test of independence or Mantel test for evaluating correlations
+#'    between two matrices. Please note that the output of this function 
+#'    changes based on what test is run. The assumptions and intricacies 
+#'    associated with running these tests here are described below in brief. 
+#'    
+#'    X-Squared (chisq.test): In this function, chisq.test is used to compare 
+#'    the number of TSWs (temporal sampling windows; see the tempAggregate 
+#'    function)  in a given dataset/block between individuals/fixed 
+#'    locations and the number of TSWs during which individuals were observed, 
+#'    but were not in contact with specific individuals/places, for empirical 
+#'    (x) and randomized (y) datasets. This test requires equidistant TSWs. The
+#'    dist (z ; from dist.all or dist2Area output) input is used here to 
+#'    determine how frequently each individual was observed in the empirical 
+#'    dataset/block of interest, allowing us to calculate the number of TSWs 
+#'    each individual was present but not involved in contacts. Note here that 
+#'    if X-squared expected values will be very small, approximations of p may 
+#'    not be right (and in fact, all estimates will be poor). It may be best to
+#'    weight these tests differently. To address this, I've added the "warning"
+#'    column to the output which notifies users when the chi-sq function 
+#'    reported that results may be inaccurate. Output is a list contataining 
+#'    two data frames. The first data frame contains pairwise analyses of node 
+#'    degree and total edge weight (i.e., the sum of all observed contacts 
+#'    involving each individual). The second data frame contains results of 
+#'    pairwise analyses specific dyadic relationships (e.g., contacts between 
+#'    individuals 1 and 2). Each data frame contains the following columns: 
+#'    
+#'    id1 - the id of the first individual involved in the contact.
+#'    
+#'    id2 - designation of what is being compared (e.g., totalDegree, 
+#'          totalContactDurations, individual 2, etc.). Content will 
+#'          change depending on which data frame is being observed.
+#'          
+#'    method - statistical test used to determine significance.
+#'    
+#'    statistic - test statistic associated with the specific method.
+#'    
+#'    p.value - p.values associated with each comparison.
+#'    
+#'    df - degrees of freedom associated with the statistical test.
+#'    
+#'    block (if applicable) - denotes the relevant time block for each 
+#'          analysis.
+#'          
+#'    warning - denotes if any specific warning occurred during analysis.
+#'    
+#'    empiricalContactDurations - Describes the number of observed events in 
+#'          emp.input.
+#'          
+#'    randContactDurations.mean - Describes the average number of observed 
+#'          events in rand.input.
+#'          
+#'    empiricalNoContactDurations - Describes the number of events that were 
+#'          not observed given the total number of potential events in 
+#'          emp.input.
+#'          
+#'    randNoContactDurations.mean - Describes the average number of events that
+#'          were not observed given the total number of potential events in 
+#'          rand.input.
+#'          
+#'    difference - The value given by subtracting randContactDurations.mean 
+#'          from empiricalContactDurations.
+#'    
+#'    Mantel test (abe::mantel.test): tests for similarity of the emp.input to 
+#'    rand.input. Please note that abe::mantel.test does not allow for missing
+#'    values in matrices, so all NAs will be treated as 0. Output is a single
+#'    data frame describing the test results. Data frames contain the following
+#'    columns:
+#'    
+#'    method - statistical test used to determine significance.
+#'    
+#'    z.val - z statistic associated with the specific method.
+#'    
+#'    p.value - p.values associated with each comparison.
+#'    
+#'    emp.mean - mean contacts in the emp.input overall or by block (if 
+#'           applicable).
+#'           
+#'    rand.mean - mean contacts in the rand.input overall or by block (if 
+#'           applicable).  
+#'           
+#'    alternative.hyp - the nature of the alternative hypothesis being tested. 
+#'            
+#'    nperm - number of permutations used to generate p value.
+#'    
+#'    warning - denotes if any specific warning occurred during analysis.
 #' 
-#' The output of this function is a list contataining two data frames. The first data frame contains pairwise analyses of node degree and total edge weight (i.e., the sum of all observed contacts involving each individual). The second data frame contains results of pairwise analyses specific dyadic relationships (e.g., contacts between individuals 1 and 2). Each data frame contains the following columns: 
-#' id1 - the id of the first individual involved in the contact.
-#' id2 - designation of what is being compared (e.g., totalDegree, totalContactDurations, individual 2, etc.). Content will change depending on which data frame is being observed.
-#' method - statistical test used to determine significance.
-#' statistic - test statistic associated with the specific method.
-#' p.value - p.values associated with each comparison.
-#' df - degrees of freedom associated with the statistical test.
-#' block (if applicable) - denotes the relevant time block for each analysis.
-#' warning - denotes if any specific warning occurred during analysis.
-#' Additional columns may exist depending on the statistical method employed. For example, if method == "chisq," additional columns include: 
-#' empiricalContactDurations - Describes the number of observed events in emp.input.
-#' randContactDurations.mean - Describes the average number of observed events in rand.input.
-#' empiricalNoContactDurations - Describes the number of events that were not observed given the total number of potential events in emp.input.
-#' randNoContactDurations.mean - Describes the average number of events that were not observed given the total number of potential events in rand.input.
-#' difference - The value given by subtracting randContactDurations.mean from empiricalContactDurations.
+#' This function was inspired by the methods described by Spiegel et al. 2016. 
+#'    Who determined individuals to be expressing social behavior when nodes 
+#'    had greater degree values than would be expected at random, with 
+#'    randomized contact networks derived from movement paths randomized 
+#'    according to their novel methodology (i.e., shuffle.type == 2). Here, 
+#'    however, by specifying a p-value threshold, users can also identify when 
+#'    more or fewer (demonstrated by the sign of values in the "difference" 
+#'    column) contacts with specific individuals than would be expected at 
+#'    random. Such relationships suggest social affinities or aversions, 
+#'    respectively, may exist between specific individuals.
 #' 
-#' This function was inspired by the methods described by Spiegel et al. 2016. Who determined individuals to be expressing social behavior when nodes had greater degree values than would be expected at random, with randomized contact networks derived from movement paths randomized according to their novel methodology (i.e., shuffle.type == 2). Here, however, by specifying a p-value threshold, users can also identify when more or fewer (demonstrated by the sign of values in the "difference" column) contacts with specific individuals than would be expected at random. Such relationships suggest social affinities or aversions, respectively, may exist between specific individuals.
+#' Note:The default tested column (i.e., categorical data column from which 
+#'    data is drawn to be compared to randomized sets herein) is "id." This 
+#'    means that contacts involving each individual (defined by a unique "id") 
+#'    will be compared to randomized sets. Users may not use any data column 
+#'    for analysis other than "id." If users want to use another categorical 
+#'    data column in analyses rather than "id," we recommend re-processing 
+#'    data (starting from the dist.all/distToArea functions), while specifying 
+#'    this new data as an "id." For example, users may annotate an illness 
+#'    status column to the empirical input, wherein they describe if the 
+#'    tracked individual displayed gastrointestinal ("gastr"), respiratory 
+#'    ("respr"), both ("both"), illness symptoms, or were consistently healthy 
+#'    ("hel") over the course of the tracking period. Users could set this 
+#'    information as the "id," and carry it forward as such through the 
+#'    data-processing pipeline. Ultimately, they could determine if each of 
+#'    these disease states affected contact rates, relative to what would be 
+#'    expected at random.
 #' 
-#' Note:The default tested column (i.e., categorical data column from which data is drawn to be compared to randomized sets herein) is "id." This means that contacts involving each individual (defined by a unique "id") will be compared to randomized sets. Users may not use any data column for analysis other than "id." If users want to use another categorical data column in analyses rather than "id," we recommend re-processing data (starting from the dist.all/distToArea functions), while specifying this new data as an "id." For example, users may annotate an illness status column to the empirical input, wherein they describe if the tracked individual displayed gastrointestinal ("gastr"), respiratory ("respr"), both ("both"), illness symptoms, or were consistently healthy ("hel") over the course of the tracking period. Users could set this information as the "id," and carry it forward as such through the data-processing pipeline. Ultimately, they could determine if each of these disease states affected contact rates, relative to what would be expected at random.
+#' Note: if importBlocks == TRUE, a "block" column MUST exist in emp.input. 
+#'    However, if a "block" column need not exist in rand.contact. If no 
+#'    "block" column exists in rand.input, empirical values in all emp.input 
+#'    blocks will be compared to the overall average values in rand.input.
+#'    Block columns will also be appended to function outputs. 
 #' 
-#' Note: Currently, this function requires defined TSWs (temporal sampling windows; see the tempAggregate function) (i.e., contact durations must represent time periods that are equidistant).
-#' 
-#' Note: The current functionality is limited to comparisons using the X-squared test of independence. This works by comparing the number of TSWs in a given dataset/block between individuals/fixed locations and the number of TSWs during which individuals were observed, but were not in contact with specific individuals/places, for empirical (x) and randomized (y) datasets. The dist (z ; from dist.all or distToArea output) input is used here to determine how frequently each individual was observed in the empirical dataset/block of interest, allowing us to calculate the number of TSWs each individual was present but not involved in contacts. Note here that if X-squared expected values will be very small, approximations of p may not be right (and in fact, all estimates will be poor). It may be best to weight these tests differently. To address this, I've added the "warning" column to the output which notifies users when the chi-sq function reported that results may be inaccurate.
-#' 
-#' Note: if importBlocks == TRUE, a "block" column MUST exist in emp.input. However, if a "block" column need not exist in rand.contact. If no "block" column exists in rand.input, empirical values in all emp.input blocks will be compared to the overall average values in rand.input. 
-#' 
-#' @param emp.input List or data frame containing contactDur.all or contactDur.area output refering to the empirical data.
-#' @param rand.input List or data frame containing contactDur.all or contactDur.area output refering to the randomized-path data.
-#' @param dist.input List or data frame containing dist.all-/distToArea-function output refering to the empirical data.
-#' @param test Character string. Describes the statistical test used to evaluate differences. Currently only takes the value "chisq," more tests will be added in later versions.
-#' @param importBlocks Logical. If true, each block in emp.input will be analyzed separately. Defaults to FALSE. Note that the "block" column must exist in emp.input.
-#' @param shuffle.type Numerical. describing which shuffle.type was used to randomize the rand.input data set(s). Takes the values "0," "1," or "2."
+#' @param emp.input List or data frame containing contactDur.all or 
+#'    contactDur.area output refering to the empirical data.
+#' @param rand.input List or data frame containing contactDur.all or 
+#'    contactDur.area output refering to the randomized-path data.
+#' @param dist.input List or data frame containing dist.all/distToArea function
+#'    output refering to the empirical data.
+#' @param test Character string. Describes the statistical test used to 
+#'    evaluate differences. Currently only takes the values "chisq," or 
+#'    "mantel." Defaults to "chisq." More tests will be added in later 
+#'    versions.
+#' @param numPermutations Integer. Number of times to permute the data given
+#'    test == "mantel."
+#' @param alternative.hyp Character string. Describes the nature of the 
+#'    alternative hypothesis being tested when test == "mantel." Takes the 
+#'    values "two.sided," "less," or "greater." Defaults to "two.sided."
+#' @param importBlocks Logical. If true, each block in emp.input will be 
+#'    analyzed separately. Defaults to FALSE. Note that the "block" column must
+#'    exist in emp.input.
+#' @param shuffle.type Numerical. describing which shuffle.type was used to 
+#'    randomize the rand.input data set(s). Takes the values "0," "1," or "2."
 #' @keywords network-analysis social-network
-#' @references Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially interacting or indifferent neighbors? Randomization of movement paths to tease apart social preference and spatial constraints. Methods in Ecology and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
+#' @references Mantel, N. 1967. The detection of disease clustering and a 
+#'    generalized regression approach. Cancer Research, 27:209–220.
+#' 
+#'    Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
+#'    interacting or indifferent neighbors? Randomization of movement paths to 
+#'    tease apart social preference and spatial constraints. Methods in Ecology
+#'    and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
+#'    
 #' @export
 #' @examples
 #' #load the calves data set
 #' data(calves)
 #' 
 #' #pre-process the data
-#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
-#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+#' calves.dateTime<-datetime.append(calves, date = calves$date, 
+#'    time = calves$time) #create a dataframe with dateTime identifiers for 
+#'    #location fixes.
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+#'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
+#'    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, 
+#'    na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
+#'    #intervals. Note that na.rm was set to "FALSE" because randomizing this 
+#'    #data set according to Spiegel et al.'s method (see below) requires 
+#'    #equidistant time points.
 #'
 #' #generate empirical time-ordered network edges.
-#' calves.dist<-dist2All_df(x = calves.agg, parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint.
-#' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
+#' calves.dist<-dist2All_df(x = calves.agg, parallel = TRUE, 
+#'    dataType = "Point", lonlat = FALSE) #calculate distance between all 
+#'    #individuals at each timepoint.
+#' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
+#'    sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
+#'    equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
+#'    #compile inter-calf contacts with 1-hr blocking. Contacts are defined 
+#'    #here as occurring when calves were within 1 m of one another.
 #' 
 #' #generate randomized time-ordered network edges. (2 examples)
-#' calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 2, shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled around. This randomization process was first described by Spiegel et al. 2016.
-#' calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA, indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the calves.agg data set with calves' xy coordinates within 10-minute blocks pseudo-randomized.
+#' calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", 
+#'    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
+#'    parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+#'    blockUnit = "mins", blockLength = 10, shuffle.type = 2, 
+#'    shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 
+#'    #1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled 
+#'    #around. This randomization process was first described by Spiegel et al.
+#'    #2016.
+#' calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", 
+#'    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
+#'    parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+#'    blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
+#'    indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
+#'    #calves.agg data set with calves' xy coordinates within 10-minute blocks 
+#'    #pseudo-randomized.
 #' 
-#' calves.dist.rand1<-dist2All(x = calves.agg.rand1, point.x = "x.rand", point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint in calves.rand1. Note that point.x and point.y must be specified as "x.rand" and "y.rand," respectively.
-#' calves.dist.rand2<-dist2All(x = calves.agg.rand2, point.x = "x.rand", point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint in calves.rand2. Note that point.x and point.y must be specified as "x.rand" and "y.rand," respectively.
-#' calves.contact.rand1<-contactDur.all(x = calves.dist.rand1, dist.threshold=1, sec.threshold=10, blocking = FALSE, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #Because the data sets contained in calves.dist.rand1 cover timepoints within a single hour, this is equivalent to randomized contacts within a one-hour block. Contacts are defined here as occurring when calves were within 1 m of one another.
-#' calves.contact.rand2<-contactDur.all(x = calves.dist.rand2, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile randomized inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
+#' calves.dist.rand1<-dist2All(x = calves.agg.rand1, point.x = "x.rand", 
+#'    point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) 
+#'    #calculate distance between all individuals at each timepoint in 
+#'    #calves.rand1. Note that point.x and point.y must be specified as 
+#'    #"x.rand" and "y.rand," respectively.
+#' calves.dist.rand2<-dist2All(x = calves.agg.rand2, point.x = "x.rand", 
+#'    point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) 
+#'    #calculate distance between all individuals at each timepoint in 
+#'    #calves.rand2. Note that point.x and point.y must be specified as 
+#'    #"x.rand" and "y.rand," respectively.
+#' calves.contact.rand1<-contactDur.all(x = calves.dist.rand1, 
+#'    dist.threshold=1, sec.threshold=10, blocking = FALSE, 
+#'    equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
+#'    #Because the data sets contained in calves.dist.rand1 cover timepoints 
+#'    #within a single hour, this is equivalent to randomized contacts within a
+#'    #one-hour block. Contacts are defined here as occurring when calves were 
+#'    #within 1 m of one another.
+#' calves.contact.rand2<-contactDur.all(x = calves.dist.rand2, 
+#'    dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours",
+#'    blockLength = 1, equidistant.time = FALSE, parallel = TRUE, 
+#'    reportParameters = TRUE) #compile randomized inter-calf contacts with 
+#'    #1-hr blocking. Contacts are defined here as occurring when calves were 
+#'    #within 1 m of one another.
 #' 
 #' #No block
-#' contactTest1<- contactTest(emp.input = calves.contact.block, rand.input = calves.contact.rand2, dist.input = calves.dist, importBlocks = FALSE, shuffle.type = 0)
+#' contactTest1<- contactTest(emp.input = calves.contact.block, 
+#'    rand.input = calves.contact.rand2, dist.input = calves.dist, 
+#'    importBlocks = FALSE, shuffle.type = 0)
 #' #Block
-#' ##Both of these examples show the comparisons at each hour in the dataset, however, they have different associated assumptions because rand.input was calculated differently
-#' contactTest2<- contactTest(emp.input = calves.contact.block, rand.input = calves.contact.rand1, dist.input = calves.dist, importBlocks = TRUE, shuffle.type = 2)
-#' contactTest3<- contactTest(emp.input = calves.contact.block, rand.input = calves.contact.rand2, dist.input = calves.dist, importBlocks = TRUE, shuffle.type = 0)
+#' ##Both of these examples show the comparisons at each hour in the dataset, 
+#'    #however, they have different associated assumptions because rand.input 
+#'    #was calculated differently
+#' contactTest2<- contactTest(emp.input = calves.contact.block, 
+#'    rand.input = calves.contact.rand1, dist.input = calves.dist, 
+#'    importBlocks = TRUE, shuffle.type = 2)
+#' contactTest3<- contactTest(emp.input = calves.contact.block, 
+#'    rand.input = calves.contact.rand2, dist.input = calves.dist, 
+#'    importBlocks = TRUE, shuffle.type = 0)
 
-contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", importBlocks = FALSE, shuffle.type = 0){
+contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", 
+                      numPermutations = 5000, alternative.hyp = "two.sided",
+                      importBlocks = FALSE, shuffle.type = 0){
   
   summarizeContacts<- function(x, importBlocks, avg){
     
@@ -301,7 +480,6 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", importB
     return(summary.output)
   }
   
-  
   timeBlock.append<-function(x, dateTime = NULL, blockLength, blockUnit){
     datetime.append1 = function(x){
       
@@ -351,77 +529,7 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", importB
     x$block = block
     return(x)
   }
- # chiFunc.noBlock <- function(x, empirical, randomized, dist){
-#    
-#    empDurations<- empirical[which(empirical$id == unlist(unname(x[1]))), unlist(unname(x[2]))]
-#    
-#    if(is.na(empDurations) == FALSE){ #if is.na == TRUE, nothing will happen
-#      
-#      if(unlist(unname(x[2])) >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in dist
-#        maxDurations = length(which(dist$id == unlist(unname(x[1])) & is.na(dist[,(unlist(unname(x[2])) + 1)]) == FALSE)) #This means the the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. For example, if one of the individuals disappears because we have no recorded time points for them at a given time, we can't say that they have the potential to be in contact with others during this period.
-#      }else{ #i.e., x[2] == 2 or 3
-#        maxDurations = length(which(dist$id == unlist(unname(x[1]))))
-#      }
-#      
-#      randDurations<-randomized[which(randomized$id == unlist(unname(x[1]))), unlist(unname(x[2]))]
-#      
-#      compareFrame<- data.frame(matrix(ncol = 2, nrow = 2*maxDurations))
-#      colnames(compareFrame)<-c("contact", "data")
-#      compareFrame[,1] <- c(rep(1,empDurations), rep(0,maxDurations-empDurations),rep(1,randDurations), rep(0,maxDurations-randDurations))
-#      compareFrame[,2] <- c(rep("empirical",maxDurations), rep("randomized",maxDurations))
-#      
-#      compareTable <- table(compareFrame$data,compareFrame$contact)
-#      test<- chisq.test(compareTable)
-#      
-#      summaryFrame <- data.frame(id1 = unlist(unname(x[1])), id2 = NA, method = test[4], X.squared = test[1], df = test[2], p.val = test[3], empiricalContactDurations = empDurations, randContactDurations.mean = randDurations, empiricalNoContactDurations = (maxDurations - empDurations), randNoContactDurations.mean = (maxDurations - randDurations), difference = abs((maxDurations - empDurations) - (maxDurations - randDurations)))
-#      
-#      summaryFrame[1,2] <- ifelse(grep("contactDuration_",names(empirical)[unlist(unname(x[2]))]) != 1, names(empirical)[unlist(unname(x[2]))], substring(names(empirical)[unlist(unname(x[2]))],17)) #This identifies whom the individual noted in summaryFrame[1,1] is in contact with. Remember that the input for the contactTest function is the output of the summarizeContact function. Columns 2-3 of this input represent totalDegree and totalContactDurations. This line of code puts those names in the summaryFrame$id2 column. Otherwise the entry will be taken from the column names such as "contactDuration_Indiv.1", beginning with the 17th character, for example "Indiv.1".
-#      
-#      return(summaryFrame)
-#    }
-#  }
-#  chiFunc.Block <- function(x, empirical, randomized, dist){
-#    
-#    empDurations<- empirical[which(empirical$id == unlist(unname(x[1])) & empirical$block == unlist(unname(x[3]))), unlist(unname(x[2]))] #pull the value of a given column for a specific id in a specific block
-#    summaryFrame<-NULL
-#    
-#    if(length(empDurations) > 0 && is.na(empDurations) == FALSE){ #if there is no entry OR is.na == TRUE, nothing will happen
-#      block <- unlist(unname(x[3]))
-#      warn = ""
-#      if(unlist(unname(x[2])) >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the dist.input.
-#        maxDurations = length(which(dist$id == unlist(unname(x[1])) & is.na(dist[,(unlist(unname(x[2])) + 1)]) == FALSE & dist$block == unlist(unname(x[3])))) #This means the the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. For example, if one of the individuals disappears because we have no recorded time points for them at a given time, we can't say that they have the potential to be in contact with others during this period.
-#      }else{ #i.e., x[2] == 2 or 3
-#        maxDurations = length(which(dist$id == unlist(unname(x[1])) & dist$block == unlist(unname(x[3]))))
-#      }
-#      
-#      if(unlist(unname(x[4])) == 2){ #recall that shuffle.type 2 (from the randomizeLocations function) produces only 1 shuffle.unit's worth of data, rather than a dataset with the same length of x. As such, there may be a different number of blocks in y compared to x. Here we assume that the mean randomized durations per block, are representative of mean randomized durations per block across each shuffle unit (e.g., day)
-#        if(unlist(unname(x[3])) > max(randomized$blocks)){
-#          block = unlist(unname(x[3])) - (ceiling((unlist(unname(x[3])) - max(randomized$blocks)) /max(randomized$blocks))*max(randomized$blocks))
-#          randDurations<-randomized[which(randomized$id == unlist(unname(x[1])) & randomized$block == block), unlist(unname(x[2]))]
-#        }
-#        
-#      }else{
-#        randDurations<-randomized[which(randomized$id == unlist(unname(x[1])) & randomized$block == unlist(unname(x[3]))), unlist(unname(x[2]))]
-#      }
-#      
-#      compareFrame<- data.frame(matrix(ncol = 2, nrow = 2*maxDurations))
-#      colnames(compareFrame)<-c("contact", "data")
-#      compareFrame[,1] <- c(rep(1,empDurations), rep(0,maxDurations-empDurations),rep(1,randDurations), rep(0,maxDurations-randDurations))
-#      compareFrame[,2] <- c(rep("empirical",maxDurations), rep("randomized",maxDurations)) 
-#      
-#      compareTable <- table(compareFrame$data,compareFrame$contact) #generates a table showing the total number of contacts (1) and non-contacts (0) for the empirical and randomized sets
-#      warning() #clears the warnings
-#      test<- chisq.test(compareTable)
-#      warn<- names(warnings())[1] #used to identify when the chi-sq.test produces the "Chi-squared approximation may be incorrect" warning, indicating that that expected X-squared values are very small, and generated estimates will be poor.
-#      warning() #clears the warnings
-#      summaryFrame <- data.frame(id1 = unlist(unname(x[1])), id2 = NA, method = test[4], X.squared = test[1], df = test[2], p.val = test[3], empiricalContactDurations = empDurations, randContactDurations.mean = randDurations, empiricalNoContactDurations = (maxDurations - empDurations), randNoContactDurations.mean = (maxDurations - randDurations), difference = abs((maxDurations - empDurations) - (maxDurations - randDurations)), empBlock = unlist(unname(x[3])), randBlock = block, warning = warn)
-#      rownames(summaryFrame) <-1
-#      summaryFrame[1,2] <- ifelse(length(grep("contactDuration_",names(empirical)[unlist(unname(x[2]))])) < 1, names(empirical)[unlist(unname(x[2]))], substring(names(empirical)[unlist(unname(x[2]))],17)) #This identifies whom the individual noted in summaryFrame[1,1] is in contact with. Remember that the input for the contactTest function is the output of the summarizeContact function. Columns 2-3 of this input represent totalDegree and totalContactDurations. This line of code puts those names in the summaryFrame$id2 column. Otherwise the entry will be taken from the column names such as "contactDuration_Indiv.1", beginning with the 17th character, for example "Indiv.1".
-#    }
-#    
-#    return(summaryFrame)
-#  }
-  
+
   chisq.forLoop<-function(x, empirical = x, randomized = y, dist = dist.input, x.blocking, y.blocking){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions (above) to work.
     output<-NULL
     
@@ -558,21 +666,27 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", importB
   }
   
   x.blocking<-importBlocks
-
-  
-  if(is.data.frame(emp.input) == FALSE & is.list(emp.input) == TRUE){ #if the emp.input is a list (not a data frame), the function assumes only the first list entry is relevant to our purposes.
-    emp.input = data.frame(emp.input[1])
-  }
   
   if(is.data.frame(dist.input) == FALSE & is.list(dist.input) == TRUE){ #if the dist.input input is a list (not a data frame), the function assumes only the first list entry is relevant to our purposes.
-    dist.input = data.frame(dist.input[1]) 
+    dist.input = data.frame(dist.input[[1]]) 
+  }
+  if(is.data.frame(emp.input) == FALSE & is.list(emp.input) == TRUE){ #if the emp.input is a list (not a data frame), the function assumes only the first list entry is relevant to our purposes.
+    emp.avg<- summarizeContacts(emp.input, importBlocks, avg = TRUE) #summarize the contacts in empirical input. Note: avg == TRUE because there are multiple entries 
+    x <- data.frame(emp.avg[[1]]) #the first entry in emp.avg is the average summary report 
+    #if x represents the average summary report, all colnames will be preceded by "avg..". This code block removes that tag from all relevant columns.
+    x.colnameSubstring<- substring(names(x),1,5) 
+    alterNames.x<-which(x.colnameSubstring == "avg..")
+    if(length(alterNames.x) > 0){
+      names(x)<- substring(names(x)[alterNames.x],6,10000)
+    }
+  }
+  if(is.data.frame(emp.input) == TRUE){ #if empirical input is a data frame
+    x<- summarizeContacts(emp.input, importBlocks, avg = FALSE) #summarize the contacts in empirical input. Note: avg == FALSE because there's only one entry
   }
   
-
-  #summarize the contacts in each input
-  x<- summarizeContacts(emp.input, importBlocks, avg = FALSE)
+#now summarize the random input
   if(is.data.frame(rand.input) == FALSE & is.list(rand.input) == TRUE){ #if the rand.input is a list (not a data frame),
-    rand.frame<-data.frame(rand.input[1])#we need to know if a "block" column exists in the data frames compiled into the rand.input list.
+    rand.frame<-data.frame(rand.input[[1]])#we need to know if a "block" column exists in the data frames compiled into the rand.input list.
     
     if(x.blocking == TRUE & length(rand.frame$block) > 0){ #if blocking is true and there are blocks denoted in rand.input
       y<- summarizeContacts(rand.input, importBlocks = TRUE, avg = TRUE)
@@ -602,7 +716,7 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", importB
   }
   
   if(is.data.frame(y) == FALSE & is.list(y) == TRUE){ #if the y input is a list (not a data frame), the function assumes only the first list entry is relevant to our purposes.
-    y = data.frame(y[1]) #in the case of y (a.k.a. the randomized data set), the first list entry is likely to be the average summary report (because rand.input is likely a list of data sets, and the summarizeContacts subfunction processes y with "avg" ==  TRUE). 
+    y = data.frame(y[[1]]) #in the case of y (a.k.a. the randomized data set), the first list entry is likely to be the average summary report (because rand.input is likely a list of data sets, and the summarizeContacts subfunction processes y with "avg" ==  TRUE). 
   }
   #if y represents the average summary report, all colnames will be preceded by "avg..". This code block removes that tag from all relevant columns.
   y.colnameSubstring<- substring(names(y),1,5) 
@@ -613,15 +727,113 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", importB
   
   x$id<-as.character(x$id)
   y$id<-as.character(y$id)
-  dist.input$id<-as.character(dist.input$id)
+  if(is.null(dist.input == F)){ #if there is a dist.input object (i.e., it does not = NULL), then we will convert the id column to character data as we did with x and y inputs
+    dist.input$id<-as.character(dist.input$id)
+  }
+  
+  if(test == "mantel" || test == "MANTEL" || test == "Mantel" || test == "mant" || test == "MANT" || test == "Mant"){
+    
+    if(x.blocking == F){ #if there is no blocking
+    
+      #make them matrices for x & y summaries with equal dimensions
+      emp.matrix<-as.matrix(x[,4:(3+nrow(x))]) #create the matrix detailing observed contacts. Note that this matrix excludes id, totalDegree, and totalContactDuration columns
+      rownames(emp.matrix)<-x$id #rename the rows of the matrix the ids
+      randCols<-which(colnames(emp.matrix)%in%colnames(y)) #pull the colnumbers of columns in the empirical matrix that appear in the random summary as well.
+      randRows<-which(x$id%in%y$id) #pull the ids in the empirical summary that also exist in the random summary set (Note: if the input arguments were created using contactDur.all, this should be identical to randCols)
+      rand.matrix<-matrix(ncol = ncol(emp.matrix), nrow = nrow(emp.matrix)) #create the empty random-set matrix of appropriate length.
+      rownames(rand.matrix)<-x$id #name the rows appropriately
+      colnames(rand.matrix)<-colnames(emp.matrix) #name the columns appropriately
+      for(i in 1:length(randCols)){ #loop through the randRows and randCols values to add data to the rand.matrix
+        rand.matrix[randRows,randCols[i]]<-y[,(3+i)]
+      }
+      
+      emp.mean<-mean(emp.matrix, na.rm = T) #calculate the mean number of contacts in the empirical set
+      rand.mean <- mean(rand.matrix, na.rm = T) #calculate the mean number of contacts in the random set
+      
+      #the ape::mantel.test function below DOES NOT accept NAs in the input data frames, so have to replace NAs with 0
+      emp.matrix[which(is.na(emp.matrix) == T)]<-0 
+      rand.matrix[which(is.na(rand.matrix) == T)]<-0
+      
+      warning() #clears any warnings that may exist prior to running the mantel test
+      output.test<-ape::mantel.test(emp.matrix, rand.matrix, nperm = numPermutations, alternative = alternative.hyp) #perform the mantel test
+      warn<- names(warnings())[1] #used to identify when the mantel.test producesany errors.
+      summaryFrame <- data.frame(method = test, z.val = output.test[1], alternative.hyp = output.test[3], nperm = numPermutations, p.val = output.test[2], emp.mean = emp.mean, rand.mean = rand.mean, warning = warn)
+      final_out <- summaryFrame #redefine summaryFrame as the final function output.
+    }
+    
+    if(x.blocking == T & y.blocking == F){ #if there is blocking in the empirical set, but not the random data set, all blocks will be compared to the overall random summary (i.e., not block-specific summaries)
+      blockSeq.x <- unique(x$block) #pull the unique block ids in x
+      final_out <-NULL #create the empty final output that we will bind loop items to.
+      for(j in blockSeq.x){ #use a for-loop to subset x by each block id
+        block.x <- droplevels(subset(x, block == j)) #subset x
+        #make them matrices for x & y summaries with equal dimensions
+        emp.matrix<-as.matrix(block.x[,4:(3+nrow(block.x))]) #create the matrix detailing observed contacts. Note that this matrix excludes id, totalDegree, and totalContactDuration columns
+        rownames(emp.matrix)<-block.x$id #rename the rows of the matrix the ids
+        randCols<-which(colnames(emp.matrix)%in%colnames(y)) #pull the colnumbers of columns in the empirical matrix that appear in the random summary as well.
+        randRows<-which(block.x$id%in%y$id) #pull the ids in the empirical summary that also exist in the random summary set (Note: if the input arguments were created using contactDur.all, this should be identical to randCols)
+        rand.matrix<-matrix(ncol = ncol(emp.matrix), nrow = nrow(emp.matrix)) #create the empty random-set matrix of appropriate length.
+        rownames(rand.matrix)<-block.x$id #name the rows appropriately
+        colnames(rand.matrix)<-colnames(emp.matrix) #name the columns appropriately
+        for(i in 1:length(randCols)){ #loop through the randRows and randCols values to add data to the rand.matrix
+          rand.matrix[randRows,randCols[i]]<-y[,(3+i)]
+        }
+        
+        emp.mean<-mean(emp.matrix, na.rm = T) #calculate the mean number of contacts in the empirical set
+        rand.mean <- mean(rand.matrix, na.rm = T) #calculate the mean number of contacts in the random set
+        
+        #the ape::mantel.test function below DOES NOT accept NAs in the input data frames, so have to replace NAs with 0
+        emp.matrix[which(is.na(emp.matrix) == T)]<-0 
+        rand.matrix[which(is.na(rand.matrix) == T)]<-0
+        
+        warning() #clears any warnings that may exist prior to running the mantel test
+        output.test<-ape::mantel.test(emp.matrix, rand.matrix, nperm = numPermutations, alternative = alternative.hyp) #perform the mantel test
+        warn<- names(warnings())[1] #used to identify when the mantel.test producesany errors.
+        summaryFrame <- data.frame(method = test, z.val = output.test[1], alternative.hyp = output.test[3], nperm = numPermutations, p.val = output.test[2], emp.mean = emp.mean, rand.mean = rand.mean, warning = warn)
+        bindlist<-list(final_out, summaryFrame) #create the list describing what should be bound together
+        final_out <- data.frame(data.table::rbindlist(bindlist)) #rbind summaryFrame to final function output.
+      }
+    }
+    
+    if(x.blocking == T & y.blocking == T){ #if there is blocking in the empirical set AND the random data set, all empirical blocks will be compared to the paired random-summary block.
+      blockSeq.x <- unique(x$block) #pull the unique block ids in x
+      final_out <-NULL #create the empty final output that we will bind loop items to.
+      for(j in blockSeq.x){ #use a for-loop to subset x by each block id
+        block.x <- droplevels(subset(x, block == j)) #subset x
+        block.y <- droplevels(subset(y, block == j)) #subset y. Note that blocks in x and y must be identical. 
+        #make them matrices for x & y summaries with equal dimensions
+        emp.matrix<-as.matrix(block.x[,4:(3+nrow(block.x))]) #create the matrix detailing observed contacts. Note that this matrix excludes id, totalDegree, and totalContactDuration columns
+        rownames(emp.matrix)<-block.x$id #rename the rows of the matrix the ids
+        randCols<-which(colnames(emp.matrix)%in%colnames(block.y)) #pull the colnumbers of columns in the empirical matrix that appear in the random summary as well.
+        randRows<-which(block.x$id%in%block.y$id) #pull the ids in the empirical summary that also exist in the random summary set (Note: if the input arguments were created using contactDur.all, this should be identical to randCols)
+        rand.matrix<-matrix(ncol = ncol(emp.matrix), nrow = nrow(emp.matrix)) #create the empty random-set matrix of appropriate length.
+        rownames(rand.matrix)<-block.x$id #name the rows appropriately
+        colnames(rand.matrix)<-colnames(emp.matrix) #name the columns appropriately
+        for(i in 1:length(randCols)){ #loop through the randRows and randCols values to add data to the rand.matrix
+          rand.matrix[randRows,randCols[i]]<-block.y[,(3+i)]
+        }
+        
+        emp.mean<-mean(emp.matrix, na.rm = T) #calculate the mean number of contacts in the empirical set
+        rand.mean <- mean(rand.matrix, na.rm = T) #calculate the mean number of contacts in the random set
+        
+        #the ape::mantel.test function below DOES NOT accept NAs in the input data frames, so have to replace NAs with 0
+        emp.matrix[which(is.na(emp.matrix) == T)]<-0 
+        rand.matrix[which(is.na(rand.matrix) == T)]<-0
+        
+        warning() #clears any warnings that may exist prior to running the mantel test
+        output.test<-ape::mantel.test(emp.matrix, rand.matrix, nperm = numPermutations, alternative = alternative.hyp) #perform the mantel test
+        warn<- names(warnings())[1] #used to identify when the mantel.test producesany errors.
+        summaryFrame <- data.frame(method = test, z.val = output.test[1], alternative.hyp = output.test[3], nperm = numPermutations, p.val = output.test[2], emp.mean = emp.mean, rand.mean = rand.mean, warning = warn)
+        bindlist<-list(final_out, summaryFrame) #create the list describing what should be bound together
+        final_out <- data.frame(data.table::rbindlist(bindlist)) #rbind summaryFrame to final function output.
+      }
+    }
+  }
   
   if(test == "chisq" || test == "CHISQ" || test == "Chisq" || test == "chisquare" || test == "CHISQUARE" || test == "Chisquare" || test == "chi-square" || test == "CHI-SQUARE" || test == "Chi-square"){
     
     idSeq <- unique(x$id) #pulls the unique ids for each individual
-    #empColSeq <- 2:max(grep("contactDuration_", names(x))) #pulls the column number for columns of interest for our analysis. (i.e., total degree, total durations, and durations in contact with each specific object)
     empColnames<- c("totalDegree", "totalContactDurations", substring(names(x[,4:max(grep("contactDuration_", names(x)))]), 22, 1000000)) #identifies which object each column relates to
-    #randColnames<- c("totalDegree", "totalContactDurations", substring(names(x[,4:max(grep("contactDuration_", names(y)))]), 22, 1000000)) #identifies which object each column relates to
-    
+
     if(x.blocking == TRUE){
       
       #Because we need to know the maximum number of potential blocks, we pull this information from the empirical numBlocks column
@@ -641,45 +853,13 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", importB
         }
         testFrame1$shuffle.type <-shuffle.type
         
-        ###for some reason the apply functions below would only ever return NULL values (despite having removed all factor information from input data), so I had to switch to a for-loop. If we can get the applies to work, this would be much more efficient
-        
-       # if (parallel == TRUE){
-      #    cl<-parallel::makeCluster(parallel::detectCores())
-      #    chiSqTests.indiv<-parallel::parApply(cl,testFrame, 1, chiFunc.Block, empirical = x, randomized = y, dist = dist.input)
-      #    parallel::stopCluster(cl)
-      #  }else{ #if parallel == FALSE
-      #    chiSqTests.indiv<- apply(testFrame, 1, chiFunc.Block, empirical = x, randomized = y, dist = dist.input)
-      #  }
-        
-      #  if(is.data.frame(chiSqTests.indiv) == FALSE){
-      #    testResultsFrame.indiv <- data.frame(data.table::rbindlist(chiSqTests.indiv))
-      #  }else{ #if there's only one comparison, there may not be multiple entries in chiSqTests. In this case, chiSqTests will be a single dataFrame.
-      #    testResultsFrame.indiv <- chiSqTests.indiv	
-      #  }
-      #
       testResultsFrame.indiv<- chisq.forLoop(testFrame1, empirical = x, randomized = y, dist = dist.input, x.blocking, y.blocking)
-  
-  #  }else{ #if blocking != TRUE
-  #      testFrame <- expand.grid(idSeq, ColSeq)
-  #      if (parallel == TRUE){
-  #        cl<-parallel::makeCluster(parallel::detectCores())
-  #        #chiSqTests<-parallel::parApply(cl,testFrame, 1, chiFunc.noBlock, x.Agg, y.Agg, durations.max)
-  #        chiSqTests.indiv<-parallel::parApply(cl,testFrame, 1, chiFunc.noBlock, x.Agg, y.Agg, dist.all)
-  #        parallel::stopCluster(cl)
-  #      }else{ #if parallel == FALSE
-  #        #chiSqTests<- apply(testFrame, 1, chiFunc.noBlock, x.Agg, y.Agg, durations.max)
-  #        chiSqTests.indiv<- apply(testFrame, 1, chiFunc.noBlock, x.Agg, y.Agg, dist.all)
-  #      }
-  #      if(is.list(chiSqTests.indiv) == TRUE){
-  #        testResultsFrame.indiv <- data.frame(data.table::rbindlist(chiSqTests.indiv))
-  #      }else{ #if there's only one comparison, there may not be multiple entries in chiSqTests. In this case, chiSqTests will be a single dataFrame.
-   #       testResultsFrame.indiv <- chiSqTests.indiv	
-  #      }
- #   }
     
-  }
-  totalDegree_Durations<-subset(testResultsFrame.indiv, id2 == "totalDegree" | id2 == "totalContactDurations")
-  specific_contacts <- subset(testResultsFrame.indiv, id2 != "totalDegree" & id2 != "totalContactDurations")
+  #}
+  totalDegree_Durations<-droplevels(subset(testResultsFrame.indiv, id2 == "totalDegree" | id2 == "totalContactDurations"))
+  specific_contacts <- droplevels(subset(testResultsFrame.indiv, id2 != "totalDegree" & id2 != "totalContactDurations"))
   final_out<-list(totalDegree_Durations, specific_contacts)
+  }
+  
   return(final_out)
 }

@@ -2,84 +2,263 @@
 % Please edit documentation in R/contactTest.R
 \name{contactTest}
 \alias{contactTest}
-\title{Determine if Observed Contacts are More or Less Frequent than in a Random Distribution}
+\title{Determine if Observed Contacts are More or Less Frequent than in a Random
+   Distribution}
 \usage{
 contactTest(emp.input, rand.input, dist.input, test = "chisq",
+  numPermutations = 5000, alternative.hyp = "two.sided",
   importBlocks = FALSE, shuffle.type = 0)
 }
 \arguments{
-\item{emp.input}{List or data frame containing contactDur.all or contactDur.area output refering to the empirical data.}
+\item{emp.input}{List or data frame containing contactDur.all or 
+contactDur.area output refering to the empirical data.}
 
-\item{rand.input}{List or data frame containing contactDur.all or contactDur.area output refering to the randomized-path data.}
+\item{rand.input}{List or data frame containing contactDur.all or 
+contactDur.area output refering to the randomized-path data.}
 
-\item{dist.input}{List or data frame containing dist.all-/distToArea-function output refering to the empirical data.}
+\item{dist.input}{List or data frame containing dist.all/distToArea function
+output refering to the empirical data.}
 
-\item{test}{Character string. Describes the statistical test used to evaluate differences. Currently only takes the value "chisq," more tests will be added in later versions.}
+\item{test}{Character string. Describes the statistical test used to 
+evaluate differences. Currently only takes the values "chisq," or 
+"mantel." Defaults to "chisq." More tests will be added in later 
+versions.}
 
-\item{importBlocks}{Logical. If true, each block in emp.input will be analyzed separately. Defaults to FALSE. Note that the "block" column must exist in emp.input.}
+\item{numPermutations}{Integer. Number of times to permute the data given
+test == "mantel."}
 
-\item{shuffle.type}{Numerical. describing which shuffle.type was used to randomize the rand.input data set(s). Takes the values "0," "1," or "2."}
+\item{alternative.hyp}{Character string. Describes the nature of the 
+alternative hypothesis being tested when test == "mantel." Takes the 
+values "two.sided," "less," or "greater." Defaults to "two.sided."}
+
+\item{importBlocks}{Logical. If true, each block in emp.input will be 
+analyzed separately. Defaults to FALSE. Note that the "block" column must
+exist in emp.input.}
+
+\item{shuffle.type}{Numerical. describing which shuffle.type was used to 
+randomize the rand.input data set(s). Takes the values "0," "1," or "2."}
 }
 \description{
-This function is used to determine if tracked individuals in an empirical dataset had more or fewer contacts with other tracked individuals/specified locations than would be expected at random. The function works by comparing an empirically-based contactDur.all or contactDur.area function output (emp.input) to the contactDur.all or contactDur.area output generated from randomized data (rand.input).
+This function is used to determine if tracked individuals in an empirical 
+   dataset had more or fewer contacts with other tracked 
+   individuals/specified locations than would be expected at random. The 
+   function works by comparing an empirically-based contactDur.all or 
+   contactDur.area function output (emp.input) to the contactDur.all or 
+   contactDur.area output generated from randomized data (rand.input).
 }
 \details{
-The output of this function is a list contataining two data frames. The first data frame contains pairwise analyses of node degree and total edge weight (i.e., the sum of all observed contacts involving each individual). The second data frame contains results of pairwise analyses specific dyadic relationships (e.g., contacts between individuals 1 and 2). Each data frame contains the following columns: 
-id1 - the id of the first individual involved in the contact.
-id2 - designation of what is being compared (e.g., totalDegree, totalContactDurations, individual 2, etc.). Content will change depending on which data frame is being observed.
-method - statistical test used to determine significance.
-statistic - test statistic associated with the specific method.
-p.value - p.values associated with each comparison.
-df - degrees of freedom associated with the statistical test.
-block (if applicable) - denotes the relevant time block for each analysis.
-warning - denotes if any specific warning occurred during analysis.
-Additional columns may exist depending on the statistical method employed. For example, if method == "chisq," additional columns include: 
-empiricalContactDurations - Describes the number of observed events in emp.input.
-randContactDurations.mean - Describes the average number of observed events in rand.input.
-empiricalNoContactDurations - Describes the number of events that were not observed given the total number of potential events in emp.input.
-randNoContactDurations.mean - Describes the average number of events that were not observed given the total number of potential events in rand.input.
-difference - The value given by subtracting randContactDurations.mean from empiricalContactDurations.
+Note: The current functionality is limited to comparisons using the 
+   X-squared test of independence or Mantel test for evaluating correlations
+   between two matrices. Please note that the output of this function 
+   changes based on what test is run. The assumptions and intricacies 
+   associated with running these tests here are described below in brief. 
+   
+   X-Squared (chisq.test): In this function, chisq.test is used to compare 
+   the number of TSWs (temporal sampling windows; see the tempAggregate 
+   function)  in a given dataset/block between individuals/fixed 
+   locations and the number of TSWs during which individuals were observed, 
+   but were not in contact with specific individuals/places, for empirical 
+   (x) and randomized (y) datasets. This test requires equidistant TSWs. The
+   dist (z ; from dist.all or dist2Area output) input is used here to 
+   determine how frequently each individual was observed in the empirical 
+   dataset/block of interest, allowing us to calculate the number of TSWs 
+   each individual was present but not involved in contacts. Note here that 
+   if X-squared expected values will be very small, approximations of p may 
+   not be right (and in fact, all estimates will be poor). It may be best to
+   weight these tests differently. To address this, I've added the "warning"
+   column to the output which notifies users when the chi-sq function 
+   reported that results may be inaccurate. Output is a list contataining 
+   two data frames. The first data frame contains pairwise analyses of node 
+   degree and total edge weight (i.e., the sum of all observed contacts 
+   involving each individual). The second data frame contains results of 
+   pairwise analyses specific dyadic relationships (e.g., contacts between 
+   individuals 1 and 2). Each data frame contains the following columns: 
+   
+   id1 - the id of the first individual involved in the contact.
+   
+   id2 - designation of what is being compared (e.g., totalDegree, 
+         totalContactDurations, individual 2, etc.). Content will 
+         change depending on which data frame is being observed.
+         
+   method - statistical test used to determine significance.
+   
+   statistic - test statistic associated with the specific method.
+   
+   p.value - p.values associated with each comparison.
+   
+   df - degrees of freedom associated with the statistical test.
+   
+   block (if applicable) - denotes the relevant time block for each 
+         analysis.
+         
+   warning - denotes if any specific warning occurred during analysis.
+   
+   empiricalContactDurations - Describes the number of observed events in 
+         emp.input.
+         
+   randContactDurations.mean - Describes the average number of observed 
+         events in rand.input.
+         
+   empiricalNoContactDurations - Describes the number of events that were 
+         not observed given the total number of potential events in 
+         emp.input.
+         
+   randNoContactDurations.mean - Describes the average number of events that
+         were not observed given the total number of potential events in 
+         rand.input.
+         
+   difference - The value given by subtracting randContactDurations.mean 
+         from empiricalContactDurations.
+   
+   Mantel test (abe::mantel.test): tests for similarity of the emp.input to 
+   rand.input. Please note that abe::mantel.test does not allow for missing
+   values in matrices, so all NAs will be treated as 0. Output is a single
+   data frame describing the test results. Data frames contain the following
+   columns:
+   
+   method - statistical test used to determine significance.
+   
+   z.val - z statistic associated with the specific method.
+   
+   p.value - p.values associated with each comparison.
+   
+   emp.mean - mean contacts in the emp.input overall or by block (if 
+          applicable).
+          
+   rand.mean - mean contacts in the rand.input overall or by block (if 
+          applicable).  
+          
+   alternative.hyp - the nature of the alternative hypothesis being tested. 
+           
+   nperm - number of permutations used to generate p value.
+   
+   warning - denotes if any specific warning occurred during analysis.
 
-This function was inspired by the methods described by Spiegel et al. 2016. Who determined individuals to be expressing social behavior when nodes had greater degree values than would be expected at random, with randomized contact networks derived from movement paths randomized according to their novel methodology (i.e., shuffle.type == 2). Here, however, by specifying a p-value threshold, users can also identify when more or fewer (demonstrated by the sign of values in the "difference" column) contacts with specific individuals than would be expected at random. Such relationships suggest social affinities or aversions, respectively, may exist between specific individuals.
+This function was inspired by the methods described by Spiegel et al. 2016. 
+   Who determined individuals to be expressing social behavior when nodes 
+   had greater degree values than would be expected at random, with 
+   randomized contact networks derived from movement paths randomized 
+   according to their novel methodology (i.e., shuffle.type == 2). Here, 
+   however, by specifying a p-value threshold, users can also identify when 
+   more or fewer (demonstrated by the sign of values in the "difference" 
+   column) contacts with specific individuals than would be expected at 
+   random. Such relationships suggest social affinities or aversions, 
+   respectively, may exist between specific individuals.
 
-Note:The default tested column (i.e., categorical data column from which data is drawn to be compared to randomized sets herein) is "id." This means that contacts involving each individual (defined by a unique "id") will be compared to randomized sets. Users may not use any data column for analysis other than "id." If users want to use another categorical data column in analyses rather than "id," we recommend re-processing data (starting from the dist.all/distToArea functions), while specifying this new data as an "id." For example, users may annotate an illness status column to the empirical input, wherein they describe if the tracked individual displayed gastrointestinal ("gastr"), respiratory ("respr"), both ("both"), illness symptoms, or were consistently healthy ("hel") over the course of the tracking period. Users could set this information as the "id," and carry it forward as such through the data-processing pipeline. Ultimately, they could determine if each of these disease states affected contact rates, relative to what would be expected at random.
+Note:The default tested column (i.e., categorical data column from which 
+   data is drawn to be compared to randomized sets herein) is "id." This 
+   means that contacts involving each individual (defined by a unique "id") 
+   will be compared to randomized sets. Users may not use any data column 
+   for analysis other than "id." If users want to use another categorical 
+   data column in analyses rather than "id," we recommend re-processing 
+   data (starting from the dist.all/distToArea functions), while specifying 
+   this new data as an "id." For example, users may annotate an illness 
+   status column to the empirical input, wherein they describe if the 
+   tracked individual displayed gastrointestinal ("gastr"), respiratory 
+   ("respr"), both ("both"), illness symptoms, or were consistently healthy 
+   ("hel") over the course of the tracking period. Users could set this 
+   information as the "id," and carry it forward as such through the 
+   data-processing pipeline. Ultimately, they could determine if each of 
+   these disease states affected contact rates, relative to what would be 
+   expected at random.
 
-Note: Currently, this function requires defined TSWs (temporal sampling windows; see the tempAggregate function) (i.e., contact durations must represent time periods that are equidistant).
-
-Note: The current functionality is limited to comparisons using the X-squared test of independence. This works by comparing the number of TSWs in a given dataset/block between individuals/fixed locations and the number of TSWs during which individuals were observed, but were not in contact with specific individuals/places, for empirical (x) and randomized (y) datasets. The dist (z ; from dist.all or distToArea output) input is used here to determine how frequently each individual was observed in the empirical dataset/block of interest, allowing us to calculate the number of TSWs each individual was present but not involved in contacts. Note here that if X-squared expected values will be very small, approximations of p may not be right (and in fact, all estimates will be poor). It may be best to weight these tests differently. To address this, I've added the "warning" column to the output which notifies users when the chi-sq function reported that results may be inaccurate.
-
-Note: if importBlocks == TRUE, a "block" column MUST exist in emp.input. However, if a "block" column need not exist in rand.contact. If no "block" column exists in rand.input, empirical values in all emp.input blocks will be compared to the overall average values in rand.input.
+Note: if importBlocks == TRUE, a "block" column MUST exist in emp.input. 
+   However, if a "block" column need not exist in rand.contact. If no 
+   "block" column exists in rand.input, empirical values in all emp.input 
+   blocks will be compared to the overall average values in rand.input.
+   Block columns will also be appended to function outputs.
 }
 \examples{
 #load the calves data set
 data(calves)
 
 #pre-process the data
-calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
-calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+calves.dateTime<-datetime.append(calves, date = calves$date, 
+   time = calves$time) #create a dataframe with dateTime identifiers for 
+   #location fixes.
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+   point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
+   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, 
+   na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
+   #intervals. Note that na.rm was set to "FALSE" because randomizing this 
+   #data set according to Spiegel et al.'s method (see below) requires 
+   #equidistant time points.
 
 #generate empirical time-ordered network edges.
-calves.dist<-dist2All_df(x = calves.agg, parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint.
-calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
+calves.dist<-dist2All_df(x = calves.agg, parallel = TRUE, 
+   dataType = "Point", lonlat = FALSE) #calculate distance between all 
+   #individuals at each timepoint.
+calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
+   sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
+   equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
+   #compile inter-calf contacts with 1-hr blocking. Contacts are defined 
+   #here as occurring when calves were within 1 m of one another.
 
 #generate randomized time-ordered network edges. (2 examples)
-calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 2, shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled around. This randomization process was first described by Spiegel et al. 2016.
-calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA, indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the calves.agg data set with calves' xy coordinates within 10-minute blocks pseudo-randomized.
+calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", 
+   dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
+   parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+   blockUnit = "mins", blockLength = 10, shuffle.type = 2, 
+   shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 
+   #1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled 
+   #around. This randomization process was first described by Spiegel et al.
+   #2016.
+calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", 
+   dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
+   parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+   blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
+   indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
+   #calves.agg data set with calves' xy coordinates within 10-minute blocks 
+   #pseudo-randomized.
 
-calves.dist.rand1<-dist2All(x = calves.agg.rand1, point.x = "x.rand", point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint in calves.rand1. Note that point.x and point.y must be specified as "x.rand" and "y.rand," respectively.
-calves.dist.rand2<-dist2All(x = calves.agg.rand2, point.x = "x.rand", point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint in calves.rand2. Note that point.x and point.y must be specified as "x.rand" and "y.rand," respectively.
-calves.contact.rand1<-contactDur.all(x = calves.dist.rand1, dist.threshold=1, sec.threshold=10, blocking = FALSE, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #Because the data sets contained in calves.dist.rand1 cover timepoints within a single hour, this is equivalent to randomized contacts within a one-hour block. Contacts are defined here as occurring when calves were within 1 m of one another.
-calves.contact.rand2<-contactDur.all(x = calves.dist.rand2, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile randomized inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
+calves.dist.rand1<-dist2All(x = calves.agg.rand1, point.x = "x.rand", 
+   point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) 
+   #calculate distance between all individuals at each timepoint in 
+   #calves.rand1. Note that point.x and point.y must be specified as 
+   #"x.rand" and "y.rand," respectively.
+calves.dist.rand2<-dist2All(x = calves.agg.rand2, point.x = "x.rand", 
+   point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) 
+   #calculate distance between all individuals at each timepoint in 
+   #calves.rand2. Note that point.x and point.y must be specified as 
+   #"x.rand" and "y.rand," respectively.
+calves.contact.rand1<-contactDur.all(x = calves.dist.rand1, 
+   dist.threshold=1, sec.threshold=10, blocking = FALSE, 
+   equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
+   #Because the data sets contained in calves.dist.rand1 cover timepoints 
+   #within a single hour, this is equivalent to randomized contacts within a
+   #one-hour block. Contacts are defined here as occurring when calves were 
+   #within 1 m of one another.
+calves.contact.rand2<-contactDur.all(x = calves.dist.rand2, 
+   dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours",
+   blockLength = 1, equidistant.time = FALSE, parallel = TRUE, 
+   reportParameters = TRUE) #compile randomized inter-calf contacts with 
+   #1-hr blocking. Contacts are defined here as occurring when calves were 
+   #within 1 m of one another.
 
 #No block
-contactTest1<- contactTest(emp.input = calves.contact.block, rand.input = calves.contact.rand2, dist.input = calves.dist, importBlocks = FALSE, shuffle.type = 0)
+contactTest1<- contactTest(emp.input = calves.contact.block, 
+   rand.input = calves.contact.rand2, dist.input = calves.dist, 
+   importBlocks = FALSE, shuffle.type = 0)
 #Block
-##Both of these examples show the comparisons at each hour in the dataset, however, they have different associated assumptions because rand.input was calculated differently
-contactTest2<- contactTest(emp.input = calves.contact.block, rand.input = calves.contact.rand1, dist.input = calves.dist, importBlocks = TRUE, shuffle.type = 2)
-contactTest3<- contactTest(emp.input = calves.contact.block, rand.input = calves.contact.rand2, dist.input = calves.dist, importBlocks = TRUE, shuffle.type = 0)
+##Both of these examples show the comparisons at each hour in the dataset, 
+   #however, they have different associated assumptions because rand.input 
+   #was calculated differently
+contactTest2<- contactTest(emp.input = calves.contact.block, 
+   rand.input = calves.contact.rand1, dist.input = calves.dist, 
+   importBlocks = TRUE, shuffle.type = 2)
+contactTest3<- contactTest(emp.input = calves.contact.block, 
+   rand.input = calves.contact.rand2, dist.input = calves.dist, 
+   importBlocks = TRUE, shuffle.type = 0)
 }
 \references{
-Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially interacting or indifferent neighbors? Randomization of movement paths to tease apart social preference and spatial constraints. Methods in Ecology and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
+Mantel, N. 1967. The detection of disease clustering and a 
+   generalized regression approach. Cancer Research, 27:209–220.
+
+   Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
+   interacting or indifferent neighbors? Randomization of movement paths to 
+   tease apart social preference and spatial constraints. Methods in Ecology
+   and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
 }
 \keyword{network-analysis}
 \keyword{social-network}
