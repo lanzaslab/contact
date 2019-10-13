@@ -1,21 +1,48 @@
 #' Calculate Distances Between Individuals and Fixed Points/Polygons
 #'
-#' Calculate distances between each individual, reported in x, and a fixed point(s)/polygon(s), reported in y, at each timestep. In this case, we suggest removing duplicate entries with the dup function and converting the input to a SpatialPointsDataFrame prior to running the function.
+#' Calculate distances between each individual, reported in x, and a fixed 
+#'    point(s)/polygon(s), reported in y, at each timestep. 
 #'
-#' This variant of dist2Area requires that x and y inputs must be spatial objects of class sf (i.e., shapefile), SpatialPointsDataFrame, or SpatialPolygonsDataFrame.
-#' If inputs are SpatialMultiPointsDataFrame, which have one-to-many cardinality, you will receive this error: "Error in .pointsToMatrix(p) : points should be vectors of length 2, matrices with 2 columns, or inheriting from a SpatialPoints* object." 
+#' This variant of dist2Area requires that x and y inputs must be spatial 
+#'    objects of class sf (i.e., shapefile), SpatialPointsDataFrame, or 
+#'    SpatialPolygonsDataFrame.
+#'    
+#' If inputs are SpatialMultiPointsDataFrame, which have one-to-many 
+#'    cardinality, you will receive this error: "Error in .pointsToMatrix(p) : 
+#'    points should be vectors of length 2, matrices with 2 columns, or 
+#'    inheriting from a SpatialPoints* object." In this case, we suggest 
+#'    removing duplicate entries with the dup function and converting the input
+#'    to a SpatialPointsDataFrame prior to running the function.
 #' @param x Spatial object containing real-time-location data for individuals. 
-#' @param y Spatial object containing fixed-area polygons/points for which we will calculate distances relative to tracked individuals at all time steps.
-#' @param x.id Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.
-#' @param y.id Vector of length nrow(y) or singular character data, detailing the relevant colname in y, that denotes what unique ids for fixed-area polygons/points will be used. If argument == NULL, the function assumes a column with the colname "id" exists in y. Defaults to NULL.
-#' @param dateTime Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
-#' @param parallel Logical. If TRUE, sub-functions within the dist2Area_sf wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
+#' @param y Spatial object containing fixed-area polygons/points for which we 
+#'    will calculate distances relative to tracked individuals at all time 
+#'    steps.
+#' @param x.id Vector of length nrow(x) or singular character data, detailing 
+#'    the relevant colname in x, that denotes what unique ids for tracked 
+#'    individuals will be used. If argument == NULL, the function assumes a 
+#'    column with the colname "id" exists in x. Defaults to NULL.
+#' @param y.id Vector of length nrow(y) or singular character data, detailing 
+#'    the relevant colname in y, that denotes what unique ids for fixed-area 
+#'    polygons/points will be used. If argument == NULL, the function assumes a
+#'    column with the colname "id" exists in y. Defaults to NULL.
+#' @param dateTime Vector of length nrow(data.frame(x)) or singular character 
+#'    data, detailing the relevant colname in x, that denotes what dateTime 
+#'    information will be used. If argument == NULL, the function assumes a 
+#'    column with the colname "dateTime" exists in x. Defaults to NULL.
+#' @param parallel Logical. If TRUE, sub-functions within the dist2Area_sf 
+#'    wrapper will be parallelized. Note that this can significantly speed up 
+#'    processing of relatively small data sets, but may cause R to crash due to 
+#'    lack of available memory when attempting to process large datasets. 
+#'    Defaults to FALSE.
+#' @param nCores Integer. Describes the number of cores to be dedicated to 
+#'    parallel processes. Defaults to the maximum number of cores available
+#'    (i.e., parallel::detectCores()).
 #' @keywords data-processing polygon point location spatial
 #' @export
 #' @examples
-#' Examples imminent
+#' #Examples imminent
 
-dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel = TRUE){
+dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel = FALSE, nCores = parallel::detectCores()){
   
   if(length(x.id) > 0){ 
     if(length(x.id) == 1 & is.na(match(x.id[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than id being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "id" values (i.e., if the ids in different list entries are different)
@@ -47,7 +74,7 @@ dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel
     x.spatial <- x
   }
   if(class(y)[1] != "sf"){ #if class(y) is Spatial data, rather than sf (the 2 potential types of inputs for this function), we must convert it sf so that we can break up the feature set into single features.
-    y.sf <- as(y, "sf")
+    y.sf <- methods::as(y, "sf")
   }else{ #if y is a shapefile
     y.sf <- y
   }
@@ -55,7 +82,7 @@ dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel
   breakFrame<-data.frame(key.id = seq(nrow(y.sf)), y.id = y.sf$id)# This frame will be used to call each specific feature in the distance function below.
 
   spatDistCalc<-function(x,y,z){ #here, x is breakFrame, y is y.sf, and z is x.spatial
-    #spatial_object<-as(y[unname(unlist(x[1])),],"Spatial") #grab the specific fixed polygon from y (the shapefile input) denoted by x[1] of breakFrame
+    #spatial_object<-sf::as(y[unname(unlist(x[1])),],"Spatial") #grab the specific fixed polygon from y (the shapefile input) denoted by x[1] of breakFrame
     spatial_object<-sf::as_Spatial(y[unname(unlist(x[1])),]) #grab the specific fixed polygon from y (the shapefile input) denoted by x[1] of breakFrame
     distances<-geosphere::dist2Line(z,spatial_object) #calculate the angular distance, in meters, between features in z and the fixed polygons
     output<-data.frame(distances) #output a dataframe so that 
@@ -66,7 +93,7 @@ dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel
   }
   
   if (parallel == TRUE){
-    cl<-parallel::makeCluster(parallel::detectCores())
+    cl<-parallel::makeCluster(nCores)
     if(nrow(y.sf) > 9){ #for some reason the apply function would always return " Error in from[[1]] : subscript out of bounds " when processing rows 9-10. When run individually or run with sets ≤ 9, or ≥ 10 it worked just fine.
       spat.apply1 <-parallel::parApply(cl, breakFrame[1:9,], 1, spatDistCalc, y = y.sf, z = x.spatial)
       spat.apply2 <-parallel::parApply(cl, breakFrame[10:nrow(y.sf),], 1, spatDistCalc, y = y.sf, z = x.spatial)
@@ -125,7 +152,7 @@ dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel
   indivAreaFrame <- expand.grid(indivSeq, areaSeq)
   
   if (parallel == TRUE){
-    cl<-parallel::makeCluster(parallel::detectCores())
+    cl<-parallel::makeCluster(nCores)
     distTab<-parallel::parApply(cl, timestepFrame, 1, create.distFrame, sp_merge, indivSeq, areaSeq, indivAreaFrame)
     parallel::stopCluster(cl)
   }else{ #if parallel == FALSE

@@ -1,27 +1,58 @@
 #' Identify Distance Threshold for Contact
 #'
-#' Sample from a multiveriate normal distribution to create "in-contact" point pairs (n = n1) based on real-time-location systems accuracy, and generate distribution of length n2 describing average distances between point pairs. This function outputs upper confidence intervals associated with average distances between "in-contact" points.
+#' Sample from a multivariate normal distribution to create "in-contact" point 
+#'    pairs (n = n1) based on real-time-location systems accuracy, and 
+#'    generate distribution of length n2 describing average distances between 
+#'    point pairs. This function outputs upper confidence intervals associated 
+#'    with average distances between "in-contact" points.
 #' 
-#' This function is for adjusting contact-distance thresholds (spTh) to account for positional accuracty of real-time-location systems, assuming random (non-biased) error in location-fix positions relative to true locations. Essentially this function can be used to determine an adjusted spTh value that likely includes >= 99% of true contacts defined using the initial spTh.
-#' @param n1 Numerical. Number of points used in the expected-distance distribution(s). Defaults to 1000.
-#' @param n2 Numerical. Number of expected-distance distribution iterations to be averaaged. Defaults to 1000.
+#' This function is for adjusting contact-distance thresholds (spTh) to account
+#'    for positional accuracty of real-time-location systems, assuming random 
+#'    (non-biased) error in location-fix positions relative to true locations. 
+#'    Essentially this function can be used to determine an adjusted spTh value
+#'    that likely includes >= 99-percent of true contacts defined using the 
+#'    initial spTh.
+#' @param n1 Numerical. Number of points used in the expected-distance 
+#'    distribution(s). Defaults to 1000.
+#' @param n2 Numerical. Number of expected-distance distribution iterations to 
+#'    be averaaged. Defaults to 1000.
 #' @param acc.Dist1 Numerical. Accuracy distance for point 1.
-#' @param acc.Dist2 Numerical. Accuracy distance for point 2. If == NULL, defaults to acc.Dist1 value.
-#' @param pWithin1 Numerical. Percentage of data points within acc.Dist of true locations for point 1. 
-#' @param pWithin2 Numerical. Percentage of data points within acc.Dist of true locations for point 2. If == NULL, defaults to pWithin1 value.
-#' @param spTh Numerical. Pre-determined distance representing biological threshold for contact.
+#' @param acc.Dist2 Numerical. Accuracy distance for point 2. If == NULL, 
+#'    defaults to acc.Dist1 value.
+#' @param pWithin1 Numerical. Percentage of data points within acc.Dist of true
+#'    locations for point 1. 
+#' @param pWithin2 Numerical. Percentage of data points within acc.Dist of true
+#'    locations for point 2. If == NULL, defaults to pWithin1 value.
+#' @param spTh Numerical. Pre-determined distance representing biological 
+#'    threshold for contact.
 #' @keywords contact location point
+#' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
+#'    C. in Review. Accounting for space and uncertainty in real-time-location-
+#'    system-derived contact networks. Ecology and Evolution.
 #' @export
 #' @examples
-#' #Here we use findDistThresh to identify what spatial thresholds for contact likely report 99% of contacts in the calves system, previously defined as instances where individuals were within 0.5 m, and 0 m of one another for point- and polygon-based networks, respectively. Note that the accuracy of the RTLS used to collect the calves data set, as reported by the RTLS manufacturer, was "90% of points fall within 0.5 m of true locations."
+#' #Here we use findDistThresh to identify what spatial thresholds for contact 
+#'    #likely report 99% of contacts in the calves system, previously defined as
+#'    #instances where individuals were within 0.5 m, and 0 m of one another for
+#'    #point- and polygon-based networks, respectively. Note that the accuracy 
+#'    #of the RTLS used to collect the calves data set, as reported by the RTLS 
+#'    #manufacturer, was "90% of points fall within 0.5 m of true locations."
 #'
-#' #Point-based contacts
-#' findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the initially-defined spatial threshold for contact
+#' #Point-based distance-threshold contacts
+#' findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
+#'    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the 
+#'    #initially-defined spatial threshold for contact
 #' 
-#' #Polygon-based contacts
-#' findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0)
+#' #Polygon-intersection-based contacts
+#' findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
+#'    pWithin1 = 90, pWithin2 = NULL, spTh = 0)
 #' 
-#' #Note that because these confidence intervals are obtained from distributions generated from random samples, everytime this function is run, results will be slightly different. When we ran the function, the outputs indicated that adjusted spatial thresholds of 0.74 m and 0.56 m likely capture ≥ 99% of contacts, as previously defined for point- and polygon-based networks, respectively.
+#' #Note that because these confidence intervals are obtained from 
+#'    #distributions generated from random samples, everytime this function is 
+#'    #run, results will be slightly different. When we ran the function, the 
+#'    #outputs indicated that adjusted spatial thresholds of 0.74 m and 0.56 m 
+#'    #likely capture at least 99% of contacts, as previously defined for point- and 
+#'    #polygon-based networks, respectively.
 
 findDistThresh<-function(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.666){
   
@@ -36,22 +67,22 @@ findDistThresh<-function(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL
     
     conf1.1 <- (1 - unname(unlist(x[4]))/100)/2 #calculate alpha/2 for the accuracy distribution
     conf1.2<-unlist(ifelse(conf1.1 >0, conf1.1,0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)) #if conf = 0, it is replaced with this value which is extremely close to 0, so that qnorm doesn't return an inf value
-    zscore1<-abs(qnorm(conf1.2)) #calculate z-score
+    zscore1<-abs(stats::qnorm(conf1.2)) #calculate z-score
   
     conf2.1<- (1 - unname(unlist(x[5]))/100)/2 
     conf2.2<-unlist(ifelse(conf2.1 >0, conf2.1,0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)) #if conf = 0, it is replaced with this value which is extremely close to 0, so that qnorm doesn't return an inf value
-    zscore2<-abs(qnorm(conf2.2)) #calculate z-score
+    zscore2<-abs(stats::qnorm(conf2.2)) #calculate z-score
   
-    x1<-data.frame(p1.x = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p1.y = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p2.x = rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[3]))/zscore2),p2.y = rnorm(unname(unlist(x[1])), mean = 1+unname(unlist(x[6])), sd = unname(unlist(x[3]))/zscore2)) #note that one of the points is spTh-m away from the other
+    x1<-data.frame(p1.x = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p1.y = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p2.x = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[3]))/zscore2),p2.y = stats::rnorm(unname(unlist(x[1])), mean = 1+unname(unlist(x[6])), sd = unname(unlist(x[3]))/zscore2)) #note that one of the points is spTh-m away from the other
     dist.distr<-apply(x1,1,euc)
     dist.mean<-mean(dist.distr)
-    dist.sd<-sd(dist.distr)
+    dist.sd<-stats::sd(dist.distr)
     CIseq<-seq(5,95,5)
     CIseq<-c(CIseq, 99)
     CIvec<-NULL #create a vector to hold the upper 5-95% & 99% CI limits 
     for(i in CIseq){
       alphaOver2<-(1 - i/100)/2
-      marginOfError<-abs(qnorm(alphaOver2))*(dist.sd/sqrt(unname(unlist(x[1])))) #calculate the margin of error. note that n = number of points used in the expected-distance distribution (i.e., n1).
+      marginOfError<-abs(stats::qnorm(alphaOver2))*(dist.sd/sqrt(unname(unlist(x[1])))) #calculate the margin of error. note that n = number of points used in the expected-distance distribution (i.e., n1).
       CIvec<-c(CIvec, dist.mean + marginOfError) # Note that we're only interested in taking the upper limit, as this gaurentees that the true mean is covered.
     }
     CIvec<-c(dist.mean, CIvec,max(dist.distr)) #add the 0% (i.e., just the mean) and upper 100% (i.e., the max) CI limit

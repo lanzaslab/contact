@@ -6,7 +6,8 @@
 \usage{
 contactDur.all(x, dist.threshold = 1, sec.threshold = 10,
   blocking = FALSE, blockUnit = "hours", blockLength = 1,
-  equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE)
+  equidistant.time = FALSE, parallel = FALSE,
+  nCores = parallel::detectCores(), reportParameters = TRUE)
 }
 \arguments{
 \item{x}{Output from the dist.all function. Can be either a data frame or 
@@ -43,7 +44,11 @@ identical, it saves a lot of time.}
 wrapper will be parallelized. Note that this can significantly speed up 
 processing of relatively small data sets, but may cause R to crash due 
 to lack of available memory when attempting to process large datasets. 
-Defaults to TRUE.}
+Defaults to FALSE.}
+
+\item{nCores}{Integer. Describes the number of cores to be dedicated to 
+parallel processes. Defaults to the maximum number of cores available
+(i.e., parallel::detectCores()).}
 
 \item{reportParameters}{Logical. If TRUE, function argument values will be 
 appended to output data frame(s). Defaults to TRUE.}
@@ -66,38 +71,33 @@ The output of this function is a data frame containing a time-ordered
     contact edge set detailing inter-animal contacts.
 }
 \examples{
-#load the calves data set
+
 data(calves)
 
 #pre-process the data
-calves.dateTime<-datetime.append(calves, date = calves$date, time = 
-    calves$time) #create a dataframe with dateTime identifiers for location 
+calves.dateTime<-datetime.append(calves, date = calves$date, time =
+    calves$time) #create a dataframe with dateTime identifiers for location
     #fixes.
-calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
-    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, 
-    na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
-    #intervals. Note that na.rm was set to "FALSE" because randomizing this 
-    #data set according to the Spiegel et al. method (see below) requires 
-    #equidistant time points.
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
+    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x,
+    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE,
+    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE,
+    na.rm = TRUE, smooth.type = 1) #smooth locations to 10-second fix intervals.
 
 #generate empirical time-ordered network edges.
-calves.dist<-dist2All(x = calves.agg, parallel = TRUE, dataType = "Point", 
-    lonlat = FALSE) #calculate distance between all individuals at each 
+calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
+    lonlat = FALSE) #calculate distance between all individuals at each
     #timepoint.
-calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
+calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1,
     sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1,
-    equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
-    #compile inter-calf contacts with 1-hr blocking. Contacts are defined 
+    equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
+    #compile inter-calf contacts with 1-hr blocking. Contacts are defined
     #here as occurring when calves were within 1 m of one another.
-calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1, 
+calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1,
     sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1,
-    equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
-    #Contacts are defined here as occurring when calves were within 1 m of 
+    equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
+    #Contacts are defined here as occurring when calves were within 1 m of
     #one another.
-
-#More examples will be added later.
 }
 \keyword{contact}
 \keyword{data-processing}

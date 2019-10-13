@@ -38,35 +38,16 @@ containing only points within confinement polygons. If FALSE, no
 observations are removed and a "confinement_status" column is appended to
 x, detailing the relationship of each point to the confinement polygon. 
 Defaults to TRUE.}
-
-\item{id}{Vector of length nrow(data.frame(x)) or singular character data,
-detailing the relevant colname in x, that denotes what unique ids for 
-tracked individuals will be used. If argument == NULL, the function 
-assumes a column with the colname "id" exists in x. Defaults to NULL.}
 }
 \description{
-dup (a.k.a. Multiple instance filter) identifies and removes timepoints when
-   tracked individuals were observed in >1 place concurrently. If avg == TRUE,
-   duplicates are replaced by a single row describing an individuals' average
-   location (e.g., planar xy coordinates) during the duplicated time point.
-   If avg == FALSE, all duplicated timepoints will be removed, as there is
-   no way for the function to determine which instance among the 
-   duplicates should stay. If users are not actually interested in filtering 
-   datasets, but rather, determining what observations should be filtered, 
-   they may set filterOutput == FALSE. By doing so, this function will 
-   append a "duplicated" column to the dataset, which reports values that 
-   describe if any timepoints in a given individual's path are duplicated. 
-   Values are: 0: timepoint is not duplicated, 1: timepoint is duplicated.
-}
-\details{
 Identifies and removes timepoints when tracked individuals were observed 
    outside of a defined polygon (note: the polygon should be described by 
    the vectors confinementCoord.x (x coordinates) and confinementCoord.y 
-   (y coordinates) (note: these vectors must be the same length and the 
+   (y coordinates). These vectors must be the same length and the 
    coordinates should be listed in the clockwise or counter-clockwise 
-   order that they are observed on the confining polygon), which identify
-   where polygon vertices exist).
-
+   order that they are observed on the confining polygon.
+}
+\details{
 If users are not actually interested in filtering datasets, but rather, 
    determining what observations should be filtered, they may set 
    filterOutput == FALSE. By doing so, this function will append a 

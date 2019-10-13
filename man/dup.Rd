@@ -5,33 +5,82 @@
 \title{Identify and Remove Duplicated Data Points}
 \usage{
 dup(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL,
-  avg = TRUE, parallel = TRUE, filterOutput = TRUE)
+  avg = TRUE, parallel = FALSE, nCores = parallel::detectCores(),
+  filterOutput = TRUE)
 }
 \arguments{
 \item{x}{Data frame containing real-time-location data that will be filtered.}
 
-\item{id}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.}
+\item{id}{Vector of length nrow(data.frame(x)) or singular character data, 
+detailing the relevant colname in x, that denotes what unique ids for 
+tracked individuals will be used. If argument == NULL, the function 
+assumes a column with the colname "id" exists in x. Defaults to NULL.}
 
-\item{point.x}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.}
+\item{point.x}{Vector of length nrow(data.frame(x)) or singular character 
+data, detailing the relevant colname in x, that denotes what planar-x or 
+longitude coordinate information will be used. If argument == NULL, the 
+function assumes a column with the colname "x" exists in x. Defaults to 
+NULL.}
 
-\item{point.y}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.}
+\item{point.y}{Vector of length nrow(data.frame(x)) or singular character 
+data, detailing the relevant colname in x, that denotes what planar-y or 
+lattitude coordinate information will be used. If argument == NULL, the 
+function assumes a column with the colname "y" exists in x. Defaults to 
+NULL.}
 
-\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.}
+\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character 
+data, detailing the relevant colname in x, that denotes what dateTime 
+information will be used. If argument == NULL, the function assumes a 
+column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{avg}{Logical. If TRUE, point.x and point.y values for duplicated time steps will be averaged, producing a singular point for all time steps in individuals' movement paths. If FALSE, all duplicated time steps are removed from the data set.}
+\item{avg}{Logical. If TRUE, point.x and point.y values for duplicated 
+time steps will be averaged, producing a singular point for all time 
+steps in individuals' movement paths. If FALSE, all duplicated time 
+steps are removed from the data set.}
 
-\item{parallel}{Logical. If TRUE, sub-functions within the dup wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.}
+\item{parallel}{Logical. If TRUE, sub-functions within the dup wrapper will 
+be parallelized. Note that this can significantly speed up processing of 
+relatively small data sets, but may cause R to crash due to lack of 
+available memory when attempting to process large datasets. Defaults to 
+FALSE.}
 
-\item{filterOutput}{Logical. If TRUE, output will be a data frame containing only movement paths with non-duplicated timesteps. If FALSE, no observartions are removed and a "duplicated" column is appended to x, detailing if time steps are duplicated (column value == 1), or not (column value == 0). Defaults to TRUE.}
+\item{nCores}{Integer. Describes the number of cores to be dedicated to 
+parallel processes. Defaults to the maximum number of cores available
+(i.e., parallel::detectCores()).}
+
+\item{filterOutput}{Logical. If TRUE, output will be a data frame 
+containing only movement paths with non-duplicated timesteps. If FALSE, 
+no observartions are removed and a "duplicated" column is appended to x, 
+detailing if time steps are duplicated (column value == 1), or not 
+(column value == 0). Defaults to TRUE.}
 }
 \description{
-dup (a.k.a. Multiple instance filter) identifies and removes timepoints when tracked individuals were observed in >1 place concurrently. If avg == TRUE, duplicates are replaced by a single row describing an individuals' average location (e.g., planar xy coordinates) during the duplicated time point. If avg == FALSE, all duplicated timepoints will be removed, as there is no way for the function to determine which instance among the duplicates should stay. If users are not actually interested in filtering datasets, but rather, determining what observations should be filtered, they may set filterOutput == FALSE. By doing so, this function will append a "duplicated" column to the dataset, which reports values that describe if any timepoints in a given individual's path are duplicated. Values are: 0: timepoint is not duplicated, 1: timepoint is duplicated.
+dup (a.k.a. Multiple instance filter) identifies and removes timepoints when
+   tracked individuals were observed in >1 place concurrently. If avg == 
+   TRUE, duplicates are replaced by a single row describing an individuals' 
+   average location (e.g., planar xy coordinates) during the duplicated time
+   point. If avg == FALSE, all duplicated timepoints will be removed, as 
+   there is no way for the function to determine which instance among the 
+   duplicates should stay. If users are not actually interested in filtering
+   datasets, but rather, determining what observations should be filtered, 
+   they may set filterOutput == FALSE. By doing so, this function will 
+   append a "duplicated" column to the dataset, which reports values that 
+   describe if any timepoints in a given individual's path are duplicated. 
+   Values are: 0: timepoint is not duplicated, 1: timepoint is duplicated.
 }
 \details{
-If users want to remove specific duplicated observations, we suggest setting filterOutput == FALSE, reviewing what duplicated timepoints exist in individuals' paths, and manually removing observations of interest.
+If users want to remove specific duplicated observations, we suggest setting
+   filterOutput == FALSE, reviewing what duplicated timepoints exist in 
+   individuals' paths, and manually removing observations of interest.
 }
 \examples{
-Examples imminent
+
+data(calves2018) #load the data set
+system.time(calves_dup<- contact::dup(calves2018, id = calves2018$calftag, 
+   point.x = calves2018$x, point.y = calves2018$y, 
+   dateTime = calves2018$dateTime, avg = FALSE, parallel = FALSE, 
+   filterOutput = TRUE)) #there were no duplicates to remove in the first place.
+head(calves_dup)
 }
 \keyword{duplicates}
 \keyword{filter}

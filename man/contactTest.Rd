@@ -11,13 +11,19 @@ contactTest(emp.input, rand.input, dist.input, test = "chisq",
 }
 \arguments{
 \item{emp.input}{List or data frame containing contactDur.all or 
-contactDur.area output refering to the empirical data.}
+contactDur.area output refering to the empirical data. Note that if 
+emp.input is a list of data frames, contacts used in analyses will be 
+determined by averaging contacts reported in each list entry.}
 
 \item{rand.input}{List or data frame containing contactDur.all or 
-contactDur.area output refering to the randomized-path data.}
+contactDur.area output refering to the randomized-path data. Note that if
+rand.input is a list of data frames, contacts used in analyses will be 
+determined by averaging contacts reported in each list entry.}
 
 \item{dist.input}{List or data frame containing dist.all/distToArea function
-output refering to the empirical data.}
+output refering to the empirical data. Note that if test == "chisq," a 
+dist.input argument is required. If test == "mantel," however,
+dist.input can be set to NULL.}
 
 \item{test}{Character string. Describes the statistical test used to 
 evaluate differences. Currently only takes the values "chisq," or 
@@ -35,8 +41,10 @@ values "two.sided," "less," or "greater." Defaults to "two.sided."}
 analyzed separately. Defaults to FALSE. Note that the "block" column must
 exist in emp.input.}
 
-\item{shuffle.type}{Numerical. describing which shuffle.type was used to 
-randomize the rand.input data set(s). Takes the values "0," "1," or "2."}
+\item{shuffle.type}{Integer. Describes which shuffle.type (from the 
+randomizePaths function) was used to randomize the rand.input data 
+set(s). Takes the values "0," "1," or "2." For tests other than 
+"chisq" this value is irrelevant.}
 }
 \description{
 This function is used to determine if tracked individuals in an empirical 
@@ -179,26 +187,26 @@ calves.dateTime<-datetime.append(calves, date = calves$date,
 calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, 
+   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
    na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
    #intervals. Note that na.rm was set to "FALSE" because randomizing this 
    #data set according to Spiegel et al.'s method (see below) requires 
    #equidistant time points.
 
 #generate empirical time-ordered network edges.
-calves.dist<-dist2All_df(x = calves.agg, parallel = TRUE, 
+calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, 
    dataType = "Point", lonlat = FALSE) #calculate distance between all 
    #individuals at each timepoint.
 calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
    sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
-   equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
+   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE) 
    #compile inter-calf contacts with 1-hr blocking. Contacts are defined 
    #here as occurring when calves were within 1 m of one another.
 
 #generate randomized time-ordered network edges. (2 examples)
 calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", 
    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
-   parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+   parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
    blockUnit = "mins", blockLength = 10, shuffle.type = 2, 
    shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 
    #1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled 
@@ -206,32 +214,32 @@ calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id",
    #2016.
 calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", 
    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
-   parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+   parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
    blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
    indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
    #calves.agg data set with calves' xy coordinates within 10-minute blocks 
    #pseudo-randomized.
 
 calves.dist.rand1<-dist2All(x = calves.agg.rand1, point.x = "x.rand", 
-   point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) 
+   point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
    #calculate distance between all individuals at each timepoint in 
    #calves.rand1. Note that point.x and point.y must be specified as 
    #"x.rand" and "y.rand," respectively.
 calves.dist.rand2<-dist2All(x = calves.agg.rand2, point.x = "x.rand", 
-   point.y = "y.rand", parallel = TRUE, dataType = "Point", lonlat = FALSE) 
+   point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
    #calculate distance between all individuals at each timepoint in 
    #calves.rand2. Note that point.x and point.y must be specified as 
    #"x.rand" and "y.rand," respectively.
 calves.contact.rand1<-contactDur.all(x = calves.dist.rand1, 
    dist.threshold=1, sec.threshold=10, blocking = FALSE, 
-   equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) 
+   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE) 
    #Because the data sets contained in calves.dist.rand1 cover timepoints 
    #within a single hour, this is equivalent to randomized contacts within a
    #one-hour block. Contacts are defined here as occurring when calves were 
    #within 1 m of one another.
 calves.contact.rand2<-contactDur.all(x = calves.dist.rand2, 
    dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours",
-   blockLength = 1, equidistant.time = FALSE, parallel = TRUE, 
+   blockLength = 1, equidistant.time = FALSE, parallel = FALSE, 
    reportParameters = TRUE) #compile randomized inter-calf contacts with 
    #1-hr blocking. Contacts are defined here as occurring when calves were 
    #within 1 m of one another.
@@ -252,13 +260,17 @@ contactTest3<- contactTest(emp.input = calves.contact.block,
    importBlocks = TRUE, shuffle.type = 0)
 }
 \references{
-Mantel, N. 1967. The detection of disease clustering and a 
-   generalized regression approach. Cancer Research, 27:209–220.
-
+Farine, D.R., 2017. A guide to null models for animal social 
+   network analysis. Methods in Ecology and Evolution 8:1309-1320.
+   https://doi.org/10.1111/2041-210X.12772.
+   
    Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
    interacting or indifferent neighbors? Randomization of movement paths to 
    tease apart social preference and spatial constraints. Methods in Ecology
    and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
+   
+   Mantel, N. 1967. The detection of disease clustering and a 
+   generalized regression approach. Cancer Research, 27:209–220.
 }
 \keyword{network-analysis}
 \keyword{social-network}

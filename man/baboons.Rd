@@ -31,8 +31,9 @@ data(baboons)
 }
 \description{
 A dataset containing geographic real-time point locations for 26 baboons 
-    observed between August 1st and August 2nd 2012.
-    This data set was first published on the movebank data repository. 
+    observed on August 1st 2012.
+    
+This data set was first published on the movebank data repository. 
     When using this data set, cite both references listed here. The 
     following item descriptions appear in the README text provided for the 
     repository entry verbatim.

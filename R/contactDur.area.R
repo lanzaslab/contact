@@ -37,7 +37,10 @@
 #'    wrapper will be parallelized. Note that this can significantly speed up 
 #'    processing of relatively small data sets, but may cause R to crash due to
 #'    lack of available memory when attempting to process large datasets. 
-#'    Defaults to TRUE.
+#'    Defaults to FALSE.
+#' @param nCores Integer. Describes the number of cores to be dedicated to 
+#'    parallel processes. Defaults to the maximum number of cores available
+#'    (i.e., parallel::detectCores()).
 #' @param reportParameters Logical. If TRUE, function argument values will be 
 #'    appended to output data frame(s). Defaults to TRUE.
 #' @keywords data-processing contact
@@ -48,45 +51,40 @@
 #' 
 #' #pre-process the data
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
-#'    time = calves$time) #create a dataframe with dateTime identifiers for 
-#'    #location fixes.
-#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
-#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-#'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-#'    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, 
-#'    na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
-#'    #intervals. Note that na.rm was set to "FALSE" because randomizing this 
-#'    #data set according to Spiegel et al.'s method (see below) requires 
-#'    #equidistant time points.
+#'   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #'
-#' #delineate the water trough polygon (showing where the water trough in the 
-#'    #calves' feedlot pen is)
-#' water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x 
-#'    coordinates
-#' water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y 
-#'    coordintates
-#' water_poly<-data.frame(point1.x = water_trough.x[1], 
-#'    point1.y = water_trough.y[1], point2.x = water_trough.x[2], 
-#'    point2.y = water_trough.y[2], point3.x = water_trough.x[3], 
-#'    point3.y = water_trough.y[3], point4.x = water_trough.x[4], 
-#'    point4.y = water_trough.y[4])
-#' 
+#' #delineate the water trough polygon (showing where the water trough in the calves' 
+#'   #feedlot pen is)
+#' water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622),
+#'                   y = c(62.44815, 62.73341, 61.93864, 61.67411)) 
+#'
+#' #As noted in the dist2Area_df help documention, polygon-vertex coordinates 
+#'   #must be arranged in a particular way. Here we arrange them accordingly.
+#'
+#' water_poly<-data.frame(matrix(ncol = 8, nrow = 1)) #(ncol = number of vertices)*2
+#' colnum = 0
+#' for(h in 1:nrow(water)){
+#'  water_poly[1,colnum + h] <- water$x[h] #pull the x location for each vertex
+#'  water_poly[1, (colnum + 1 + h)] <- water$y[h] #pull the y location for each vertex
+#'  colnum <- colnum + 1
+#' }
+#'
 #' #generate empirical time-ordered network edges.
-#' water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = TRUE, 
-#'    x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, 
-#'    point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", 
-#'    lonlat = FALSE) #calculate distance between all individuals and the water
-#'    #polygon at each timepoint.
-#' water_contacts <- contactDur.area(water.dist, dist.threshold=1,
-#'    sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10,
-#'    equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE)
-#' 
+#' water_dist<-contact::dist2Area_df(x = calves.dateTime, y = water_poly, 
+#'   x.id = "calftag", y.id = "water", dateTime = "dateTime", point.x = calves.dateTime$x, 
+#'   point.y = calves.dateTime$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
+#'   lonlat = FALSE, numVertices = NULL) #note that the poly.xy and numVertices arguments 
+#'   
+#' #refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," 
+#' #these arguments are irrelevant here.
+#'
+#'water_contacts <- contactDur.area(water_dist, dist.threshold=1,
+#'   sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10,
+#'   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
+#'   
 #' #More examples coming later
 
-contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
-                          blockUnit = "mins", blockLength = 10, 
-                          equidistant.time = FALSE, parallel = TRUE, 
-                          reportParameters = TRUE){ 
+contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, blockUnit = "mins", blockLength = 10, equidistant.time = FALSE, parallel = FALSE, nCores = parallel::detectCores(), reportParameters = TRUE){ 
   
   timeDifference = function(x){
     t1 = unlist(unname(x[1]))
@@ -168,7 +166,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
     idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)))
     return(idDurations)
   }
-  durFinder.noblock<-function(x,parallel, dist.threshold, sec.threshold, equidistant.time){
+  durFinder.noblock<-function(x,parallel, dist.threshold, sec.threshold, equidistant.time, nCores){
     dist.all<-x[order(x$id, x$dateTime),]
     idVec1 = unique(dist.all$id)
     if(equidistant.time == TRUE){ #added 02/04/2019 to make the dt calculations a toggleable parameter that users may turn off if all data points in their data set are temporally equidistant. This saves a large amount of time (approx. 3.5 mins/day)
@@ -180,7 +178,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
         timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)])
         
         if (parallel == TRUE){
-          cl<-parallel::makeCluster(parallel::detectCores())
+          cl<-parallel::makeCluster(nCores)
           timedif<-parallel::parApply(cl, timesFrame, 1, timeDifference); dist.all$dt = c(0, timedif) #timedif represents the time it takes to move from location i-1 to location i	
           parallel::stopCluster(cl)
         }else{
@@ -192,7 +190,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
     comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold)
     
     if (parallel == TRUE){
-      cl<-parallel::makeCluster(parallel::detectCores())
+      cl<-parallel::makeCluster(nCores)
       duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all)
       parallel::stopCluster(cl)
     }else{
@@ -224,13 +222,13 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
     durationTable$numBlocks<- unique(dist.all$numBlocks)
     return(durationTable)
   }	
-  list.breaker5 <-function(x,y,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters){
+  list.breaker5 <-function(x,y,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores){
     
     input<- data.frame(y[unname(unlist(x[1]))])
-    durationTable<-duration.generator2(input,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters)
+    durationTable<-duration.generator2(input,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores)
     return(durationTable)     
   }
-  duration.generator2 <-function(x,dist.threshold, sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters){
+  duration.generator2 <-function(x,dist.threshold, sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores){
     
     if(blocking == TRUE){
       
@@ -268,9 +266,9 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
         minBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the minimum timepoint in each block.
         maxBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the maximum timepoint in each block.
         for(f in 1:length(blockVec)){
-          minBlockTime<-dateTimeVec2[min(which(block == blockVec[f]))]
+          minBlockTime<-as.character(dateTimeVec2[min(which(block == blockVec[f]))])
           minBlockTimeSeq[which(block == blockVec[f])] <- minBlockTime
-          maxBlockTime<-dateTimeVec2[max(which(block == blockVec[f]))]
+          maxBlockTime<-as.character(dateTimeVec2[max(which(block == blockVec[f]))])
           maxBlockTimeSeq[which(block == blockVec[f])] <- maxBlockTime
         }
         x$block <- block
@@ -300,7 +298,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
       durationTable[,match("numBlocks", names(durationTable))]<- as.factor(durationTable[,match("numBlocks", names(durationTable))])
       
     }else{ #If blocking == FALSE
-      durationTable <- durFinder.noblock(x,parallel, dist.threshold, sec.threshold, equidistant.time)
+      durationTable <- durFinder.noblock(x,parallel, dist.threshold, sec.threshold, equidistant.time, nCores)
     }
     
     #Here we change the rest of the components of the durationTable to the appropriate data type.
@@ -326,10 +324,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE,
   
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
     breakFrame<- data.frame(seq(1,length(x),1))
-    list.dur <- apply(breakFrame, 1, list.breaker5,y = x,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
+    list.dur <- apply(breakFrame, 1, list.breaker5,y = x,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
     return(list.dur)
   }else{ #if(is.list(x) == FALSE)
-    frame.dur<-duration.generator2(x,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters)
+    frame.dur<-duration.generator2(x,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores)
     return(frame.dur)
   } 
 } 

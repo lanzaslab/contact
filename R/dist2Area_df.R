@@ -1,21 +1,70 @@
 #' Calculate Distances Between Individuals and Fixed Points/Polygons
 #'
-#' Calculate distances (either planar or great circle - see dist.all) between each individual, reported in x, and a fixed point(s)/polygon(s), reported in y, at each timestep.
+#' Calculate distances (either planar or great circle - see dist.all) between 
+#'    each individual, reported in x, and a fixed point(s)/polygon(s), reported
+#'    in y, at each timestep.
 #'
-#' Polygon coordinates (in both x and y inputs) must be arranged in the format of those in referencePointToPolygon outputs (i.e., col1 = point1.x, col2 = point1.y, col3 =point2.x, col4 = point2.y, etc., with points listed in a clockwise (or counter-clockwise) order).
-#' This variant of dist2Area requires x and y inputs to be non-spatial data.
-#' @param x Data frame or list of data frames containing real-time-location data for individuals. 
-#' @param y Data frame or list of data frames describing fixed-area polygons/points for which we will calculate distances relative to tracked individuals at all time steps. Polygons contained within the same data frame must have the same number of vertices.
-#' @param x.id Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.
-#' @param y.id Vector of length sum(nrow(data.frame(y[1:length(y)]))) or singular character data, detailing the relevant colname in y, that denotes what unique ids for fixed-area polygons/points will be used. If argument == NULL, the function assumes a column with the colname "id" may exist in y. If such a column does exist, fixed-area polygons will be assigned unique ids based on values in this column. If no such column exists, fixed-area polygons/points will be assigned sequential numbers as unique identifiers. Defaults to NULL.
-#' @param point.x Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.
-#' @param point.y Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.
-#' @param dateTime Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.
-#' @param poly.xy Columns within x denoting polygon xy-coordinates. Polygon coordinates must be arranged in the format of those in referencePointToPolygon output. Defaults to NULL.
-#' @param parallel Logical. If TRUE, sub-functions within the dist2Area_df wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.
-#' @param dataType Character string refering to the type of real-time-location data presented in x, taking values of "Point" or "Polygon." If argument == "Point," individuals' locations are drawn from point.x and point.y. If argument == "Polygon," individuals' locations are drawn from poly.xy. Defaults to "Point."
-#' @param lonlat Logical. If TRUE, point.x and point.y contain geographic coordinates (i.e., longitude and lattitude). If FALSE, point.x and point.y contain planar coordinates. Defaults to FALSE.
-#' @param numVertices Numerical. If dataType == "Polygon," users must specify the number of vertices contained in each polygon described in x. Defaults to 4. Note: all polygons must contain the same number of vertices.
+#' Polygon coordinates (in both x and y inputs) must be arranged in the format 
+#'    of those in referencePointToPolygon outputs (i.e., col1 = point1.x, 
+#'    col2 = point1.y, col3 =point2.x, col4 = point2.y, etc., with points 
+#'    listed in a clockwise (or counter-clockwise) order).
+#'    
+#' This variant of dist2Area requires x and y inputs to be non-shapefile data.
+#' @param x Data frame or list of data frames containing real-time-location 
+#'    data for individuals. 
+#' @param y Data frame or list of data frames describing fixed-area 
+#'    polygons/points for which we will calculate distances relative to tracked
+#'    individuals at all time steps. Polygons contained within the same data 
+#'    frame must have the same number of vertices.
+#' @param x.id Vector of length nrow(data.frame(x)) or singular character data,
+#'    detailing the relevant colname in x, that denotes what unique ids for 
+#'    tracked individuals will be used. If argument == NULL, the function 
+#'    assumes a column with the colname "id" exists in x. Defaults to NULL.
+#' @param y.id Vector of length sum(nrow(data.frame(y[1:length(y)]))) or 
+#'    singular character data, detailing the relevant colname in y, that 
+#'    denotes what unique ids for fixed-area polygons/points will be used. If 
+#'    argument == NULL, the function assumes a column with the colname "id" may
+#'    exist in y. If such a column does exist, fixed-area polygons will be 
+#'    assigned unique ids based on values in this column. If no such column 
+#'    exists, fixed-area polygons/points will be assigned sequential numbers as
+#'    unique identifiers. Defaults to NULL.
+#' @param point.x Vector of length nrow(data.frame(x)) or singular character 
+#'    data, detailing the relevant colname in x, that denotes what planar-x or 
+#'    longitude coordinate information will be used. If argument == NULL, the 
+#'    function assumes a column with the colname "x" exists in x. Defaults to 
+#'    NULL.
+#' @param point.y Vector of length nrow(data.frame(x)) or singular character 
+#'    data, detailing the relevant colname in x, that denotes what planar-y 
+#'    or lattitude coordinate information will be used. If argument == NULL, 
+#'    the function assumes a column with the colname "y" exists in x. 
+#'    Defaults to NULL.
+#' @param dateTime Vector of length nrow(data.frame(x)) or singular character 
+#'    data, detailing the relevant colname in x, that denotes what dateTime 
+#'    information will be used. If argument == NULL, the function assumes a 
+#'    column with the colname "dateTime" exists in x. Defaults to NULL.
+#' @param poly.xy Columns within x denoting polygon xy-coordinates. Polygon 
+#'    coordinates must be arranged in the format of those in 
+#'    referencePointToPolygon output. Defaults to NULL.
+#' @param parallel Logical. If TRUE, sub-functions within the dist2Area_df 
+#'    wrapper will be parallelized. Note that this can significantly speed up 
+#'    processing of relatively small data sets, but may cause R to crash due to
+#'    lack of available memory when attempting to process large datasets. 
+#'    Defaults to FALSE.
+#' @param nCores Integer. Describes the number of cores to be dedicated to 
+#'    parallel processes. Defaults to the maximum number of cores available
+#'    (i.e., parallel::detectCores()).
+#' @param dataType Character string refering to the type of real-time-location 
+#'    data presented in x, taking values of "Point" or "Polygon." If 
+#'    argument == "Point," individuals' locations are drawn from point.x and 
+#'    point.y. If argument == "Polygon," individuals' locations are drawn from 
+#'    poly.xy. Defaults to "Point."
+#' @param lonlat Logical. If TRUE, point.x and point.y contain geographic 
+#'    coordinates (i.e., longitude and lattitude). If FALSE, point.x and 
+#'    point.y contain planar coordinates. Defaults to FALSE.
+#' @param numVertices Numerical. If dataType == "Polygon," users must specify 
+#'    the number of vertices contained in each polygon described in x. 
+#'    Defaults to 4. Note: all polygons must contain the same number of 
+#'    vertices.
 #' @keywords data-processing polygon point location planar GRC
 #' @export
 #' @examples
@@ -23,20 +72,37 @@
 #' data(calves)
 #' 
 #' #pre-process the data
-#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
-#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
+#' calves.dateTime<-datetime.append(calves, date = calves$date, 
+#'    time = calves$time) #create a dataframe with dateTime identifiers for 
+#'    #location fixes.
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+#'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
+#'    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
+#'    na.rm = FALSE, smooth.type = 1) 
 #'
-#' #delineate the water trough polygon (showing where the water trough in the calves' feedlot pen is)
-#' water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x coordinates
-#' water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y coordintates
-#' water_poly<-data.frame(point1.x = water_trough.x[1], point1.y = water_trough.y[1], point2.x = water_trough.x[2], point2.y = water_trough.y[2], point3.x = water_trough.x[3], point3.y = water_trough.y[3], point4.x = water_trough.x[4], point4.y = water_trough.y[4])
+#' #delineate the water trough polygon (showing where the water trough in the 
+#'    #calves' feedlot pen is)
+#' water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x 
+#'    #coordinates
+#' water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y 
+#'    #coordintates
+#' water_poly<-data.frame(point1.x = water_trough.x[1], 
+#'    point1.y = water_trough.y[1], point2.x = water_trough.x[2], 
+#'    point2.y = water_trough.y[2], point3.x = water_trough.x[3], 
+#'    point3.y = water_trough.y[3], point4.x = water_trough.x[4], 
+#'    point4.y = water_trough.y[4])
 #' 
 #' #generate empirical time-ordered network edges.
-#' water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = TRUE, x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals and the water polygon at each timepoint.
+#' water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = FALSE, 
+#'    x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, 
+#'    point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", 
+#'    lonlat = FALSE) #calculate distance between all individuals and the water
+#'    #polygon at each timepoint.
 #' 
-#' More examples coming later
+#' #More examples coming later
 
-dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = TRUE, dataType = "Point", lonlat = FALSE, numVertices = 4){
+dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", lonlat = FALSE, numVertices = 4){
   
   create.distFrame<- function(x,distMat, indivSeq, timestepIndivSeq,time, origin.y){
     dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1))
@@ -52,12 +118,14 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
     return(dist)
   }
   
-  list.breaker4<-function(x, z, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices){
+  list.breaker4<-function(x, z, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores){
     input<- data.frame(z[unname(unlist(x[1]))])
-    dist.all<- dist.generator2(input, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices)
+    dist.all<- dist.generator2(input, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores)
     return(dist.all)
   }
-  dist.generator2<-function(x, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices){
+  dist.generator2<-function(x, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores){
+    id<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
+    
     idVec1=NULL #added in the case that idVec1 isn't created when x isn't specified
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
       if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
@@ -247,7 +315,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       }
       
       if (parallel == TRUE){
-        cl<-parallel::makeCluster(parallel::detectCores())
+        cl<-parallel::makeCluster(nCores)
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.point, originTab, indivSeq, dist.measurement, origin.y, numVertices.y)
         parallel::stopCluster(cl)
       }else{
@@ -298,8 +366,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         }
         distMat = data.frame(distMat)
         timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1))
-        #    distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, timestepIndivSeq,time, origin.y)))#For some this apply function keeps returning "Error in `[.data.frame`(distMat, , unname(unlist(x[2]))) : undefined columns selected," but it works just fine as a for loop. This is something that needs to be addressed before the contact package goes public. Here though, this step utilizes a for loop
-        
+
         distTab <- data.frame(NULL)
         
         for(i in 1:nrow(timestepIndivSeqFrame)){ #This for-loop is pretty much just the create.distFrame function (see note immediately above).
@@ -321,7 +388,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       }
       
       if (parallel == TRUE){
-        cl<-parallel::makeCluster(parallel::detectCores())
+        cl<-parallel::makeCluster(nCores)
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.poly, originTab, indivSeq, origin.y, numVertices, numVertices.y)
         parallel::stopCluster(cl)
       }else{
@@ -334,10 +401,10 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
   
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
     breakFrame<- data.frame(seq(1,length(x),1))
-    list.dist <- apply(breakFrame, 1, list.breaker4,z = x,y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
+    list.dist <- apply(breakFrame, 1, list.breaker4,z = x,y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
     return(list.dist)
   }else{ #if(is.list(x) == FALSE)
-    frame.dist<- dist.generator2(x, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices)
+    frame.dist<- dist.generator2(x, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores)
     return(frame.dist)
   }
 }

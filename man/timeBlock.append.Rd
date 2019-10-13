@@ -8,22 +8,39 @@ timeBlock.append(x = NULL, dateTime = NULL, blockLength = 10,
   blockUnit = "mins")
 }
 \arguments{
-\item{x}{Data frame containing dateTime information, and to which block information will be appended. if NULL, dateTime input relies solely on the dateTime argument.}
+\item{x}{Data frame containing dateTime information, and to which block 
+information will be appended. if NULL, dateTime input relies solely on 
+the dateTime argument.}
 
-\item{dateTime}{Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.}
+\item{dateTime}{Vector of length nrow(x) or singular character data, 
+detailing the relevant colname in x, that denotes what dateTime 
+information will be used. If argument == NULL, the function assumes a 
+column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{blockLength}{Numerical. Describes the number blockUnits within each temporal block. Defaults to 10.}
+\item{blockLength}{Numerical. Describes the number blockUnits within each 
+temporal block. Defaults to 10.}
 
-\item{blockUnit}{Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Defaults to "hours."}
+\item{blockUnit}{Character string taking the values, "secs," "mins," 
+"hours," "days," or "weeks." Defaults to "hours."}
 }
 \description{
-Appends "block," "block.start," "block.end," and "numBlocks" columns to an input data frame (x) with a dateTime (see dateTime.append) column. This allows users to "block" data into blockLength-blockUnit-long (e.g., 10-min-long) temporal blocks. If x == NULL, the function output will be a data frame with "dateTime" and block-related columns.
+Appends "block," "block.start," "block.end," and "numBlocks" columns to an 
+   input data frame (x) with a dateTime (see dateTime.append) column. This 
+   allows users to "block" data into blockLength-blockUnit-long 
+   (e.g., 10-min-long) temporal blocks. If x == NULL, the function output 
+   will be a data frame with "dateTime" and block-related columns.
 }
 \details{
 This is a sub-function that can be found in the contactDur functions.
 }
 \examples{
-Examples imminent
+data("calves")
+calves.dateTime<-contact::datetime.append(calves, date = calves$date, 
+   time = calves$time) #add dateTime identifiers for location fixes.
+calves.block<-contact::timeBlock.append(x = calves.dateTime, 
+    dateTime = calves.dateTime$dateTime, blockLength = 10, 
+    blockUnit = "mins")
+head(calves.block) #see that block information has been appended.
 }
 \keyword{data-processing}
 \keyword{sub-function}

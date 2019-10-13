@@ -5,58 +5,168 @@
 \title{Move Data Point a Specified Distance}
 \usage{
 repositionReferencePoint(x = NULL, id = NULL, dateTime = NULL,
-  point.x = NULL, point.y = NULL, RepositionDir = "Up",
-  UpDownRepositionLen = 1, LeftRightRepositionLen = 1,
-  immobThreshold = 0, parallel = TRUE)
+  point.x = NULL, point.y = NULL, direction = NULL,
+  repositionAngle = 0, repositionDist = 1, immobThreshold = 0,
+  parallel = FALSE, nCores = parallel::detectCores(),
+  modelOrientation = 90)
 }
 \arguments{
-\item{x}{Data frame or list of data frames containing real-time-location point data.}
+\item{x}{Data frame or list of data frames containing real-time-location 
+point data.}
 
-\item{id}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.}
+\item{id}{Vector of length nrow(data.frame(x)) or singular character data, 
+detailing the relevant colname in x, that denotes what unique ids for 
+tracked individuals will be used. If argument == NULL, the function 
+assumes a column with the colname "id" exists in x. Defaults to NULL.}
 
-\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.}
+\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character 
+data, detailing the relevant colname in x, that denotes what dateTime 
+information will be used. If argument == NULL, the function assumes a 
+column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{point.x}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.}
+\item{point.x}{Vector of length nrow(data.frame(x)) or singular character 
+data, detailing the relevant colname in x, that denotes what planar-x or 
+longitude coordinate information will be used. If argument == NULL, the 
+function assumes a column with the colname "x" exists in x. Defaults to 
+NULL.}
 
-\item{point.y}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.}
+\item{point.y}{Vector of length nrow(data.frame(x)) or singular character 
+data, detailing the relevant colname in x, that denotes what planar-y or 
+lattitude coordinate information will be used. If argument == NULL, the 
+function assumes a column with the colname "y" exists in x. Defaults to 
+NULL.}
 
-\item{RepositionDir}{Character string taking the values "UP," "DOWN," "LEFT," "RIGHT," "UP&RIGHT," "UP&LEFT," "DOWN&RIGHT," or "DOWN&LEFT." Describes the direction(s) that points will be moved.}
+\item{direction}{Numerical vector of length nrow(data.frame(x)) or singular 
+character data detailing the relevant colname in x, that denotes what 
+movement-direction information will be used. Observations in this vector
+represent the direction (in degrees) that tracked individuals moved to 
+reach their position at each time point, NOT the direction that they will
+move to reach their subsequent position (i.e., values represent known
+orientations at each time point). Note that for the purposes of this 
+function, observations of 0, 90, 180, and 270 degrees indicates that an 
+individual moved straight Eastward, Northward, Westward, and Southward,
+respectively. If NULL, direction will be calculated using observed 
+point-locations. Defaults to NULL.}
 
-\item{UpDownRepositionLen}{Numerical. Describes the height, in planar units (e.g., meters) of the output polygon. Planar units are inherent in the real-time-location input. Defaults to 1.}
+\item{repositionAngle}{Numerical. Describes the angle (in degrees) 
+between empirical point-locations and the desired vertex location as 
+represented in a planar model (see vignette or Farthing et al. in Review 
+(note: when this manuscript is officially published, we will update this 
+citation/reference information)). Essentially, this is the direction you
+want new points to be from orginal points. Note that for the purposes of 
+this function, observations of 0, 90, 180, and 270 degrees indicates that
+an individual moved straight Eastward, Northward, Westward, and 
+Southward, respectively. Defaults to 0.}
 
-\item{LeftRightRepositionLen}{Numerical. Describes the width, in planar units (e.g., meters) of the output polygon. Planar units are inherent in the real-time-location input. Defaults to 1.}
+\item{repositionDist}{Numerical. Describes the distance from the empirical 
+point-locations to desired vertex locations in planar units (e.g., 
+meters) inherent to the real-time-location input. Defaults to 1.}
 
-\item{immobThreshold}{Numerical. Describes what we call, the immobility threshold, which is a movement distance (in planar units) within which we assume individuals’ physical locations and orientations remain unchanged. This immobility threshold allows us to discount observed movements so miniscule that the majority of animals’ physical-space usage is likely unaffected (e.g., head shaking). Defaults to 0.}
+\item{immobThreshold}{Numerical. Describes what we call, the immobility 
+threshold, which is a movement distance (in planar units) within which we
+assume individuals’ physical locations and orientations remain unchanged.
+This immobility threshold allows us to discount observed movements so 
+miniscule that the majority of animals’ physical-space usage is likely 
+unaffected (e.g., head shaking). Defaults to 0.}
 
-\item{parallel}{Logical. If TRUE, sub-functions within the repositionReferencePoint wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.}
+\item{parallel}{Logical. If TRUE, sub-functions within the 
+repositionReferencePoint wrapper will be parallelized. Note that this can
+significantly speed up processing of relatively small data sets, but may 
+cause R to crash due to lack of available memory when attempting to 
+process large datasets. Defaults to FALSE.}
+
+\item{nCores}{Integer. Describes the number of cores to be dedicated to 
+parallel processes. Defaults to the maximum number of cores available
+(i.e., parallel::detectCores()).}
+
+\item{modelOrientation}{Numerical. Describes the relative orientation (in 
+degrees) of a planar model (see vignette or Farthing et al. in Review 
+(note: when this manuscript is officially published, we will update this 
+citation/reference information)) describing vertex locations relative to
+tracking-device point-locations. Defaults to 90.}
 }
 \description{
-Translates locations of a single rfid tag/gps transmitter to a different location on the equipped animal (i.e., move the coordinate up, down, left, right, or a combination thereof (i.e., up & right, up & left, down & right, down & left)) . For example, calves in our study (the test dataset) were equiped with RFID tags on their left ear. With this code, we can move this reference point somewhere else on the body of each individual. This might be done for a number of reasons, but is very useful for use in the referencePointToPolygon function later on (for delineating polygons representing entire individuals). Currently, this function only supports input data with coordinates representing planar ('Euclidean') space (e.g. units of meters).
+Translates locations of a single rfid tag/gps transmitter to a different 
+   location a fixed distance away, given a known angular offset (in 
+   degrees), while maintaining orientations associated with observed
+   movements (see vignette or Farthing et al. in Review (note: when this 
+   manuscript is officially published, we will update this 
+   citation/reference information)) For example, calves in our study (see 
+   calves2018) were equiped with RFID tags on their left ear. With this 
+   function, we can move this reference point somewhere else on the body of 
+   each individual. This might be done for a number of reasons, but is very 
+   useful for use in the referencePoint2Polygon function later on (for 
+   delineating polygons representing entire individuals). Currently, this 
+   function only supports input data with coordinates representing planar 
+   ('Euclidean') space (e.g. units of meters).
 }
 \details{
-In this function, if the distance individuals moved was less than/equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
+In this function, if the distance individuals moved was less than/equal to 
+   the noted immobThreshold, individuals are said to be immobile ("immob"),
+   and their position will not change relative to their previous one. (i.e.,
+   you assume that any observed movement less than immobThreshold was due to
+   errors or miniscule bodily movements (e.g., head shaking) that are not 
+   indicative of actual movement.)
 
-Because this function needs information (dist, dx, dy) from 2 points on an individual's path to work, at least the first point in each individual's path will be removed (the function will report NAs for adjusted locations). Also note that if the distance between an individual's first point in their path and the second one is 0, the function will also report NAs for the second point's adjusted coordinates. The first non-NA values will only be reported for the instance where dist > 0.
+Because this function needs information (dist, dx, dy) from 2 points on an 
+   individual's path to work, at least the first point in each individual's 
+   path will be removed (the function will report NAs for adjusted 
+   locations). Also note that if the distance between an individual's first 
+   point in their path and the second one is 0, the function will also 
+   report NAs for the second point's adjusted coordinates. The first non-NA 
+   values will only be reported for the instance where dist > 0.
 
-In the output, if input was previously processed using tempAggregate with resolutionLevel == "reduced," dt > secondAgg indicates that tracked individuals were missing in the original dataset for a period of time. In this case, the assumption that individuals are facing a given direction because they moved from the previous timepoint may not be accurate. Consider removing these rows (rows following one with dt > secondAgg; remember that dt indicates the time between recording xy coordinates in row i to row i + 1) from your dataset.
+Note that populating the direction argument with gyroscopic accelerometer 
+   data (or data collected using similar devices) collected concurrently 
+   with point-locations allows us to overcome a couple of assumptions 
+   associated with using point-locations alone.
+   
+   First, unless the direction argument is specifically given (i.e., 
+   direction != NULL), new point-locations in output are subject to the 
+   assumption that dt values are sufficiently small to capture individuals'
+   orientations (i.e., individuals do not face unknown directions 
+   inbetween observed relocations). If input was previously processed using 
+   tempAggregate with resolutionLevel == "reduced," dt > secondAgg indicates
+   that tracked individuals were missing in the original dataset for a 
+   period of time. In this case, the assumption that individuals are facing 
+   a given direction because they moved from the previous timepoint may not 
+   be accurate. Consider removing these rows (rows following one with 
+   dt > secondAgg; remember that dt indicates the time between recording xy 
+   coordinates in row i to row i + 1) from your data set.
+
+Second, unless the direction argument is specifically given (i.e., 
+   direction != NULL), this function assumes tracked individuals are always 
+   forward-facing. This is because by observing only a single point on each 
+   individual, we cannot ascertain the true positioning of individuals' 
+   bodies. For example, even if we know a point-location moved x distance in
+   a 90-degree direction, from this information alone we cannot determine 
+   what direction said individual was facing at the time (e.g., this could
+   be an example of forward, bawckward, or sideward movement). However, 
+   gyroscopic data (or data collected using similar devices) can tell us 
+   absolute movement directions, as opposed to relative ones.
 }
 \examples{
 #read in the calves data set
 data("calves")
-calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+calves.dateTime<-datetime.append(calves, date = calves$date, 
+   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 
-#create our data set that shows calves average position every 10 seconds
-system.time(calves.10secSmoothed <- tempAggregate(x = calves, id = calves$calftag, point.x = calves$x, point.y = calves$y, dateTime = calves$dateTime, secondAgg = 10, extrapolate.left = TRUE, resolutionLevel = "Full", extrapolate.right = FALSE, na.rm = TRUE, smooth.type = 2))
-
-##Create 0.333 m X 0.333 m calf head polygons.
-#Note that this is done using the original reference points which denote the locations of RFID tags on individuals' left ears.
-system.time(calf_heads <- referencePointToPolygon(x = calves.10secSmoothed, id = calves.10secSmoothed$id, dateTime = calves.10secSmoothed$dateTime, point.x = calves.10secSmoothed$x, point.y = calves.10secSmoothed$y, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold  = 0.1, parallel = TRUE))
-
-#Because the head is not the same width of the body and is assumed to be centered at the front of the body, before creating body polygons, we must move reference points (on the left ear) to the left by 0.3335 m to reposition them at the upper-left corner of calves bodies. Note that we are assuming ears are parallel to shoulder-tips. 
-system.time(leftShoulder.point<-repositionReferencePoint(x = calves.10secSmoothed, id = calves.10secSmoothed$id, dateTime = calves.10secSmoothed$dateTime, point.x = calves.10secSmoothed$x, point.y = calves.10secSmoothed$y, RepositionDir = "L", UpDownRepositionLen = 0, LeftRightRepositionLen = 0.3335, immobThreshold  = 0, parallel = TRUE)) #Note that we do not specify a standing threshold here. Rather, we will do so when we create the polygon.
-
-#Now we can create generate the vertices for anterior- and posterior-body polygons. Rather than running the referencePointToPolygon function twice, we instead set MidPoints = TRUE, which will effectively identify vertices for the bottom of anterior bodies/top of posterior ones. 
-system.time(calf_bods <- referencePointToPolygon(x = leftShoulder.point, id = leftShoulder.point$id, dateTime = leftShoulder.point$dateTime, point.x = leftShoulder.point$x.adjusted, point.y = leftShoulder.point$y.adjusted, StartLocation = "UL", UpDownRepositionLen = 2, LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold  = 0.1, parallel = TRUE))
+#Because the head is not the same width of the body and is assumed to be centered at the 
+   #front of the body, before creating body polygons, we must move reference points (on the 
+   #left ear) to the left by 0.3335 m to reposition them at the upper-left corner of calves 
+   #bodies. Note that we are assuming left ears (where the tracking devices are located) are 
+   #parallel to shoulder-tips. 
+system.time(leftShoulder.point<-contact::repositionReferencePoint(x = calves.dateTime, 
+   id = calves.dateTime$id, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+   point.y = calves.dateTime$y, direction = NULL, repositionAngle = 180, 
+   repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, modelOrientation = 90)) 
+   #Note that we do not specify a standing threshold here. Rather, we will do so when we create 
+   #the polygon later on. See the package vignette.
+}
+\references{
+Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
+   C. in Review. Accounting for space and uncertainty in real-time-location-
+   system-derived contact networks. Ecology and Evolution.
 }
 \keyword{data-processing}
 \keyword{location}

@@ -6,7 +6,8 @@
 \usage{
 contactDur.area(x, dist.threshold = 1, sec.threshold = 10,
   blocking = TRUE, blockUnit = "mins", blockLength = 10,
-  equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE)
+  equidistant.time = FALSE, parallel = FALSE,
+  nCores = parallel::detectCores(), reportParameters = TRUE)
 }
 \arguments{
 \item{x}{Output from the distToArea function (either df or sf variant). Can 
@@ -41,7 +42,11 @@ location fix. If all fix intervals are identical, it saves a lot of time.}
 wrapper will be parallelized. Note that this can significantly speed up 
 processing of relatively small data sets, but may cause R to crash due to
 lack of available memory when attempting to process large datasets. 
-Defaults to TRUE.}
+Defaults to FALSE.}
+
+\item{nCores}{Integer. Describes the number of cores to be dedicated to 
+parallel processes. Defaults to the maximum number of cores available
+(i.e., parallel::detectCores()).}
 
 \item{reportParameters}{Logical. If TRUE, function argument values will be 
 appended to output data frame(s). Defaults to TRUE.}
@@ -71,7 +76,7 @@ calves.dateTime<-datetime.append(calves, date = calves$date,
 calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, 
+   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
    na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
    #intervals. Note that na.rm was set to "FALSE" because randomizing this 
    #data set according to Spiegel et al.'s method (see below) requires 
@@ -79,10 +84,10 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
 
 #delineate the water trough polygon (showing where the water trough in the 
    #calves' feedlot pen is)
-water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x 
-   coordinates
-water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y 
-   coordintates
+   
+water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x coordinates
+water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y coordintates
+
 water_poly<-data.frame(point1.x = water_trough.x[1], 
    point1.y = water_trough.y[1], point2.x = water_trough.x[2], 
    point2.y = water_trough.y[2], point3.x = water_trough.x[3], 
@@ -90,14 +95,14 @@ water_poly<-data.frame(point1.x = water_trough.x[1],
    point4.y = water_trough.y[4])
 
 #generate empirical time-ordered network edges.
-water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = TRUE, 
+water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = FALSE, 
    x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, 
    point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", 
    lonlat = FALSE) #calculate distance between all individuals and the water
    #polygon at each timepoint.
 water_contacts <- contactDur.area(water.dist, dist.threshold=1,
    sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10,
-   equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE)
+   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
 
 #More examples coming later
 }

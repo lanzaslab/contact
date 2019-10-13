@@ -27,13 +27,15 @@ Imports:
     geosphere (>= 1.5-10),
     igraph (>= 1.2.4.1),
     lubridate (>= 1.7.4),
+    methods (>= 3.6.0),
     parallel (>= 3.6.0),
     raster (>= 2.9-5),
     rgdal (>= 1.4-4),
     rgeos (>= 0.4-3),
     sf (>= 0.7-4),
-    sp (>= 1.3-1)
-License: NA
+    sp (>= 1.3-1),
+    stats (>= 3.6.0)
+License: CC0
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
@@ -41,3 +43,7 @@ BugReports: https://github.com/lanzaslab/contact/issues
 Citation: Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
     C. in Review. Accounting for space and uncertainty in real-time-location-
     system-derived contact networks. Ecology and Evolution.
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

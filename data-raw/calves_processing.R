@@ -1,6 +1,6 @@
 load("calves_raw.RData")
-#we're only interested in keeping the first 12 hours-worth of data
-data2<-subset(data1, Hour <12)
+#we're only interested in keeping the first 3 hours-worth of data
+data2<-droplevels(subset(data1, Hour <3))
 
 date <- rep("05-02-2016", nrow(data2)) #create a vector of length nrow(data2) detailing the date data were collected
 m <- floor(((data2$Day_Second - 1)/60) - (data2$Hour*60)) #create a vector of length nrow(data2) detailing the minute of each hour fixes were reported. We assumed time started at 00:00:00.

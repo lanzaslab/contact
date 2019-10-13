@@ -10,7 +10,7 @@ load("baboons_raw.RData")
 #so, we first need to quantify days in the data set.
 baboon.dateTime<-contact::datetime.append(baboons, dateTime = lubridate::ymd_hms(baboons$timestamp), dateFormat = "ymd", day = TRUE)
 #now subset the data set
-baboons<-subset(baboon.dateTime, day <= 2)
+baboons<-subset(baboon.dateTime, day < 2)
 baboons<-droplevels(baboons)
 #now remove the "day" column
 baboons<-baboons[,-match("day", names(baboons))]

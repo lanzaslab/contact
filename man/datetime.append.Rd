@@ -13,48 +13,101 @@ datetime.append(x, date = NULL, time = NULL, dateTime = NULL,
 \arguments{
 \item{x}{List or data frame to which new information will be appended.}
 
-\item{date}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what date information will be used. If argument == NULL, datetime.append assumes a column with the colname "date" exists in x, or that the dateTime argument != NULL. Defaults to NULL.}
+\item{date}{Vector of length nrow(data.frame(x)) or singular character data,
+detailing the relevant colname in x, that denotes what date information 
+will be used. If argument == NULL, datetime.append assumes a column with 
+the colname "date" exists in x, or that the dateTime argument != NULL. 
+Defaults to NULL.}
 
-\item{time}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what time information will be used. If argument == NULL, datetime.append assumes a column with the colname "time" exists in x, or that the dateTime argument != NULL. Defaults to NULL.}
+\item{time}{Vector of length nrow(data.frame(x)) or singular character data,
+detailing the relevant colname in x, that denotes what time information 
+will be used. If argument == NULL, datetime.append assumes a column with 
+the colname "time" exists in x, or that the dateTime argument != NULL. 
+Defaults to NULL.}
 
-\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, date and time arguments must be appropriately defined, OR "date and "time" columns must exist in x. Defaults to NULL.}
+\item{dateTime}{Vector of length nrow(data.frame(x)) or singular character 
+data, detailing the relevant colname in x, that denotes what dateTime 
+information will be used. If argument == NULL, date and time arguments 
+must be appropriately defined, OR "date and "time" columns must exist in 
+x. Defaults to NULL.}
 
-\item{dateFormat}{Character string. Defines how date information is presented. Takes values "mdy" (i.e., month/day/year), "ymd" (i.e., year/month/day), "dmy" (i.e., day/month/year), or "ydm" (i.e., year/day/month). Defaults to "mdy."}
+\item{dateFormat}{Character string. Defines how date information is 
+presented. Takes values "mdy" (i.e., month/day/year), 
+"ymd" (i.e., year/month/day), "dmy" (i.e., day/month/year), or 
+"ydm" (i.e., year/day/month). Defaults to "mdy."}
 
-\item{dateFake}{Logical. If TRUE, the function will assign fake date information, beginning 01/01/startYear, to each of the timestamps. Defaults to FALSE.}
+\item{dateFake}{Logical. If TRUE, the function will assign fake date 
+information, beginning 01/01/startYear, to each of the timestamps. 
+Defaults to FALSE.}
 
-\item{startYear}{Numerical. Denotes what year fake date information will begin if dateFake == TRUE. Defaults to 2000.}
+\item{startYear}{Numerical. Denotes what year fake date information will 
+begin if dateFake == TRUE. Defaults to 2000.}
 
-\item{tz.in}{Character. Identifies the timezone associated with the time/dateTime argument input. Defaults to "UTC." Timezone names often take the form "Country/City." See the listing of timezones at: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones.}
+\item{tz.in}{Character. Identifies the timezone associated with the 
+time/dateTime argument input. Defaults to "UTC." Timezone names often 
+take the form "Country/City." See the listing of timezones at: 
+http://en.wikipedia.org/wiki/List_of_tz_database_time_zones.}
 
-\item{tz.out}{Character. Identifies the timezone that the output dateTime information will be converted to. If NULL, tz.out will be identical to tz.in. Defaults to NULL. Timezone names often take the form "Country/City." See the listing of timezones at: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones.}
+\item{tz.out}{Character. Identifies the timezone that the output dateTime 
+information will be converted to. If NULL, tz.out will be identical to 
+tz.in. Defaults to NULL. Timezone names often take the form 
+"Country/City." See the listing of timezones at: 
+http://en.wikipedia.org/wiki/List_of_tz_database_time_zones.}
 
-\item{month}{Logical. If TRUE, output will contain a "month" column with relevant information derived from dateTime information. Defaults to FALSE.}
+\item{month}{Logical. If TRUE, output will contain a "month" column with 
+relevant information derived from dateTime information. Defaults to 
+FALSE.}
 
-\item{day}{Logical. If TRUE, output will contain a "day" column with relevant information  derived from dateTime information. Defaults to FALSE.}
+\item{day}{Logical. If TRUE, output will contain a "day" column with 
+relevant information  derived from dateTime information. Defaults to 
+FALSE.}
 
-\item{year}{Logical. If TRUE, output will contain a "year" column with relevant information derived from dateTime information. Defaults to FALSE.}
+\item{year}{Logical. If TRUE, output will contain a "year" column with 
+relevant information derived from dateTime information. Defaults to 
+FALSE.}
 
-\item{hour}{Logical. If TRUE, output will contain a "hour" column with relevant information derived from dateTime information. Defaults to FALSE.}
+\item{hour}{Logical. If TRUE, output will contain a "hour" column with 
+relevant information derived from dateTime information. Defaults to 
+FALSE.}
 
-\item{minute}{Logical. If TRUE, output will contain a "minute" column with relevant information derived from dateTime information. Defaults to FALSE.}
+\item{minute}{Logical. If TRUE, output will contain a "minute" column with 
+relevant information derived from dateTime information. Defaults to 
+FALSE.}
 
-\item{second}{Logical. If TRUE, output will contain a "second" column with relevant information derived from dateTime information. Defaults to FALSE.}
+\item{second}{Logical. If TRUE, output will contain a "second" column with 
+relevant information derived from dateTime information. Defaults to 
+FALSE.}
 
-\item{daySecond}{Logical. If TRUE, output will contain a "daySecond" column with information detailing what the second of a given day the associated dateTime value corresponds to. Defaults to FALSE.}
+\item{daySecond}{Logical. If TRUE, output will contain a "daySecond" column 
+with information detailing what the second of a given day the associated 
+dateTime value corresponds to. Defaults to FALSE.}
 
-\item{totalSecond}{Logical. If TRUE, output will contain a "totalSecond" column with information detailing what the second of the entire data set the associated dateTime value corresponds to. Defaults to FALSE.}
+\item{totalSecond}{Logical. If TRUE, output will contain a "totalSecond" 
+column with information detailing what the second of the entire data set 
+the associated dateTime value corresponds to. Defaults to FALSE.}
 }
 \description{
-This function appends date-time information to a dataset in POSIXct date_time format. It also uses functions from the lubridate package and minor calculations to parse out month, day, hour, minute, second, daySecond (the sequentially ordered second of a day), and totalSecond (sequentially ordered second over the course of the study period) of observations in a given dataset with date (format: "mdy" =  month/day/year, "ymd" =  year/month/day, "dmy" =  day/month/year, or "ydm" =  year/day/month (note: no preceding zeroes should be included before numbers <10)) and time (format: hour:minute:second (note:preceding zeroes must be included before numbers < 10, ex. 00:00:01)) information, appends this metadata to the dataset,and can assign each day a unique ID.
+This function appends date-time information to a dataset in POSIXct 
+   date_time format. It also uses functions from the lubridate package and 
+   minor calculations to parse out month, day, hour, minute, second, 
+   daySecond (the sequentially ordered second of a day), and totalSecond 
+   (sequentially ordered second over the course of the study period) of 
+   observations in a given dataset with date 
+   (format: "mdy" =  month/day/year, "ymd" =  year/month/day, 
+   "dmy" =  day/month/year, or "ydm" =  year/day/month (note: no preceding 
+   zeroes should be included before numbers <10)) and time 
+   (format: hour:minute:second (note:preceding zeroes must be included 
+   before numbers < 10, ex. 00:00:01)) information, appends this metadata to
+   the dataset,and can assign each day a unique ID.
 }
 \examples{
 data("calves")
-head(calves) #observe that the date and time columns are separate. Later processing functions require each relocation event to be associated with a unique dateTime object. 
-calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+head(calves) #observe that the date and time columns are separate. Later 
+   #processing functions require each relocation event to be associated with
+   #a unique dateTime object. 
+calves.dateTime<-contact::datetime.append(calves, date = calves$date, 
+   time = calves$time) #add dateTime identifiers for location fixes.
 head(calves.dateTime) #see now that a dateTime column exists.
-
-More examples will be added imminently
 }
 \keyword{date}
 \keyword{date-time}

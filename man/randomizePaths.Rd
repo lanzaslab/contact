@@ -5,75 +5,185 @@
 \title{Randomize or Pseudorandomize Individuals' Relocation Events}
 \usage{
 randomizePaths(x = NULL, id = NULL, dateTime = NULL,
-  point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = TRUE,
-  dataType = "Point", numVertices = 4, blocking = TRUE,
-  blockUnit = "hours", blockLength = 1, shuffle.type = 0,
-  shuffleUnit = "days", indivPaths = TRUE, numRandomizations = 1)
+  point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE,
+  nCores = parallel::detectCores(), dataType = "Point",
+  numVertices = 4, blocking = TRUE, blockUnit = "hours",
+  blockLength = 1, shuffle.type = 0, shuffleUnit = "days",
+  indivPaths = TRUE, numRandomizations = 1)
 }
 \arguments{
 \item{x}{Data frame containing real-time-location data.}
 
-\item{id}{Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what unique ids for tracked individuals will be used. If argument == NULL, the function assumes a column with the colname "id" exists in x. Defaults to NULL.}
+\item{id}{Vector of length nrow(x) or singular character data, detailing the
+relevant colname in x, that denotes what unique ids for tracked 
+individuals will be used. If argument == NULL, the function assumes a 
+column with the colname "id" exists in x. Defaults to NULL.}
 
-\item{dateTime}{Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what dateTime information will be used. If argument == NULL, the function assumes a column with the colname "dateTime" exists in x. Defaults to NULL.}
+\item{dateTime}{Vector of length nrow(x) or singular character data, 
+detailing the relevant colname in x, that denotes what dateTime 
+information will be used. If argument == NULL, the function assumes a 
+column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{point.x}{Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what planar-x or longitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "x" exists in x. Defaults to NULL.}
+\item{point.x}{Vector of length nrow(x) or singular character data, 
+detailing the relevant colname in x, that denotes what planar-x or 
+longitude coordinate information will be used. If argument == NULL, the 
+function assumes a column with the colname "x" exists in x. Defaults to 
+NULL.}
 
-\item{point.y}{Vector of length nrow(x) or singular character data, detailing the relevant colname in x, that denotes what planar-y or lattitude coordinate information will be used. If argument == NULL, the function assumes a column with the colname "y" exists in x. Defaults to NULL.}
+\item{point.y}{Vector of length nrow(x) or singular character data, 
+detailing the relevant colname in x, that denotes what planar-y or 
+lattitude coordinate information will be used. If argument == NULL, the 
+function assumes a column with the colname "y" exists in x. Defaults to 
+NULL.}
 
-\item{poly.xy}{Columns within x denoting polygon xy-coordinates. Polygon coordinates must be arranged in the format of those in referencePointToPolygon output. Defaults to NULL.}
+\item{poly.xy}{Columns within x denoting polygon xy-coordinates. Polygon 
+coordinates must be arranged in the format of those in 
+referencePointToPolygon output. Defaults to NULL.}
 
-\item{parallel}{Logical. If TRUE, sub-functions within the randomizePaths wrapper will be parallelized. Note that this can significantly speed up processing of relatively small data sets, but may cause R to crash due to lack of available memory when attempting to process large datasets. Defaults to TRUE.}
+\item{parallel}{Logical. If TRUE, sub-functions within the randomizePaths 
+wrapper will be parallelized. Note that this can significantly speed up 
+processing of relatively small data sets, but may cause R to crash due 
+to lack of available memory when attempting to process large datasets. 
+Defaults to FALSE.}
 
-\item{dataType}{Character string refering to the type of real-time-location data presented in x, taking values of "Point" or "Polygon." If argument == "Point," individuals' locations are drawn from point.x and point.y. If argument == "Polygon," individuals' locations are drawn from poly.xy. Defaults to "Point."}
+\item{nCores}{Integer. Describes the number of cores to be dedicated to 
+parallel processes. Defaults to the maximum number of cores available
+(i.e., parallel::detectCores()).}
 
-\item{numVertices}{Numerical. If dataType == "Polygon," users must specify the number of vertices contained in each polygon. Defaults to 4. Note: all polygons must contain the same number of vertices.}
+\item{dataType}{Character string refering to the type of real-time-location 
+data presented in x, taking values of "Point" or "Polygon." If 
+dataType == "Point," individuals' locations are drawn from point.x and 
+point.y. If argument == "Polygon," individuals' locations are drawn from 
+poly.xy. Defaults to "Point."}
 
-\item{blocking}{Logical. If TRUE, prior to randomization, timepoints will be categorized into a series of temporal blocks of blockLength-blockUnit length (e.g., 10 mins). After generating blocks, the spatial-location randomization methodology will follow shuffle.type. If FALSE, paths will be randomized by sampling from observed timepoints. No timepoints will be represented more than once in the randomized set. Defaults to TRUE.}
+\item{numVertices}{Numerical. If dataType == "Polygon," users must specify 
+the number of vertices contained in each polygon. Defaults to 4. Note: 
+all polygons must contain the same number of vertices.}
 
-\item{blockUnit}{Numerical. Describes the number blockUnits within each temporal block. Defaults to 1.}
+\item{blocking}{Logical. If TRUE, prior to randomization, timepoints will be
+categorized into a series of temporal blocks of blockLength-blockUnit 
+length (e.g., 10 mins). After generating blocks, the spatial-location 
+randomization methodology will follow shuffle.type. If FALSE, paths will 
+be randomized by sampling from observed timepoints. No timepoints will be
+represented more than once in the randomized set. Defaults to TRUE.}
 
-\item{blockLength}{Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Describes the temporal unit associated with each block. Defaults to "hours."}
+\item{blockUnit}{Numerical. Describes the number blockUnits within each 
+temporal block. Defaults to 1.}
 
-\item{shuffle.type}{Numerical. Describes which shuffle.type is used to randomize the rand.input data set(s), given that blocking == TRUE (Note: this value is irrelevant if blocking == FALSE). Takes the values "0," "1," or "2," and defaults to 0. Descriptions of each shuffle.type value can be found under Details.}
+\item{blockLength}{Character string taking the values, "secs," "mins," 
+"hours," "days," or "weeks." Describes the temporal unit associated with 
+each block. Defaults to "hours."}
 
-\item{shuffleUnit}{Character string taking the values, "secs," "mins," "hours," "days," or "weeks." Defaults to "days." Describes what temporal unit blocks will be shuffled across given shuffle.type == 2. Blocklength-units may never exceed 1 shuffleUnit (e.g., 25-hour blocks cannot be shuffled using shuffleUnit == "Days," but 1:24-hour blocks work just fine).}
+\item{shuffle.type}{Numerical. Describes which shuffle.type is used to 
+randomize the rand.input data set(s), given that blocking == TRUE 
+(Note: this value is irrelevant if blocking == FALSE). Takes the values 
+"0," "1," or "2," and defaults to 0. Descriptions of each shuffle.type 
+value can be found under Details.}
 
-\item{indivPaths}{Logical. If TRUE, paths will be randomized with no location switching between ids (e.g., randomized xy locations for individual 1 will be generated by sampling only from individual 1's location distribution). If FALSE, paths will be randomized with potential location switching between ids (e.g., randomized xy locations for individual 1 will be generated by sampling from the entire dataset's location distribution). Defaults to TRUE.}
+\item{shuffleUnit}{Character string taking the values, "secs," "mins," 
+"hours," "days," or "weeks." Defaults to "days." Describes what temporal 
+unit blocks will be shuffled across given shuffle.type == 2. 
+Blocklength-units may never exceed 1 shuffleUnit 
+(e.g., 25-hour blocks cannot be shuffled using shuffleUnit == "Days," but
+1:24-hour blocks work just fine).}
 
-\item{numRandomizations}{Numerical. The number of replicate data frames produced in output. Defaults to 1.}
+\item{indivPaths}{Logical. If TRUE, paths will be randomized with no 
+location switching between ids (e.g., randomized xy locations for 
+individual 1 will be generated by sampling only from individual 1's 
+location distribution). If FALSE, paths will be randomized with potential
+location switching between ids (e.g., randomized xy locations for 
+individual 1 will be generated by sampling from the entire dataset's 
+location distribution). Defaults to TRUE.}
+
+\item{numRandomizations}{Numerical. The number of replicate data frames 
+produced in output. Defaults to 1.}
 }
 \description{
-Randomizes or pseudorandomizes individuals' spatial locations. Randomized datasets can later be compared to empirical ones to determine if individuals' space use differ from what would be expected at random (using the contactTest function).
+Randomizes or pseudorandomizes individuals' spatial locations. Randomized 
+   datasets can later be compared to empirical ones to determine if 
+   individuals' space use differ from what would be expected at random 
+   (using the contactTest function).
 }
 \details{
-Paths can be randomized, or pseudorandomized differently according to what logical arguments are set to TRUE.
+Paths can be randomized, or pseudorandomized differently according to what 
+   logical arguments are set to TRUE.
 
 Detailed shuffle.type description:
-If shuffle.type == 0, within-block timepoints will be randomized by sampling from observed timepoints only within the relevant block (e.g., points in block 1 may be redistributed). Block order in the dataset does not change, and no timepoints will be represented more than once in the randomized set. If shuffle.type == 1, blocks are shuffled around, but points within blocks are not redistributed (e.g., block 1 <- block 5, block 3 <- block 2, block 5 <- block 4). If shuffle.type == 2, blocks are shuffled, but their relative temporal location in the shuffleUnit is maintained. For example, there are 144 10-min blocks in a 24-hour day. Say our datset contains 3 days worth of data (i.e., 432 blocks). During the randomization, because blocks maintain their relative locations in shuffleUnits (e.g., Days), block 1 in the random set will be determined by sampling from a distribution of blocks 1,145,and 289, which each representing the first block of a given shuffleUnit (e.g., Day 1, Day 2, Day 3). All blocks in the randomized set are decided in this fashion (e.g., block 2 of the randomized set is identified by sampling from a distribution of blocks 2, 146, and 290). Therefore, blocklength-units may never exceed 1 shuffleUnit (e.g., 25-hour blocks cannot be shuffled using shuffleUnit == "Days," but 1:24-hour blocks work just fine). Points within blocks are not redistributed.This particular shuffle.type (i.e., 2) is based off of the methodology described by Spiegel et al. 2016 (https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12553).
+   If shuffle.type == 0, within-block timepoints will be randomized by 
+   sampling from observed timepoints only within the relevant block 
+   (e.g., points in block 1 may be redistributed). Block order in the 
+   data set does not change, and no timepoints will be represented more than
+   once in the randomized set. If shuffle.type == 1, blocks are shuffled 
+   around, but points within blocks are not redistributed 
+   (e.g., block 1 <- block 5, block 3 <- block 2, block 5 <- block 4). If 
+   shuffle.type == 2, blocks are shuffled, but their relative temporal 
+   location in the shuffleUnit is maintained. For example, there are 144 
+   10-min blocks in a 24-hour day. Say our data set contains 3 days worth of
+   data (i.e., 432 blocks). During the randomization, because blocks 
+   maintain their relative locations in shuffleUnits (e.g., Days), block 1 
+   in the random set will be determined by sampling from a distribution of 
+   blocks 1,145,and 289, which each representing the first block of a given 
+   shuffleUnit (e.g., Day 1, Day 2, Day 3). All blocks in the randomized set
+   are decided in this fashion (e.g., block 2 of the randomized set is 
+   identified by sampling from a distribution of blocks 2, 146, and 290). 
+   Therefore, blocklength-units may never exceed 1 shuffleUnit 
+   (e.g., 25-hour blocks cannot be shuffled using shuffleUnit == "Days," 
+   but 1:24-hour blocks work just fine). Points within blocks are not 
+   redistributed. This particular shuffle.type (i.e., 2) is based off of 
+   the methodology described by Spiegel et al. 2016.
 
-Note that, if shuffle.type == 2, all dateTime values in individuals movement paths described in x must be equidistant (e.g., relocations for individual i occur every 10 seconds), or erroneous dateTimes will be reported. If raw dateTime values are not equidistant, we recommend using our tempAggregate function, with na.rm == FALSE, to make it so.
+Note that, if shuffle.type == 2, all dateTime values in individuals movement
+   paths described in x must be equidistant (e.g., relocations for 
+   individual i occur every 10 seconds), or erroneous dateTimes will be 
+   reported. If raw dateTime values are not equidistant, we recommend using 
+   our tempAggregate function, with na.rm == FALSE, to make it so.
 }
 \examples{
 #load the calves data set
 data(calves)
 
 #pre-process the data
-calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
-calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix intervals. Note that na.rm was set to "FALSE" because randomizing this data set according to Spiegel et al.'s method (see below) requires equidistant time points.
-
-#generate empirical time-ordered network edges.
-calves.dist<-dist2All_df(x = calves.agg, parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint.
-calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
+calves.dateTime<-datetime.append(calves, date = calves$date, 
+   time = calves$time) #create a dataframe with dateTime identifiers for 
+   #location fixes.
+   
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+   point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
+   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
+   na.rm = FALSE, smooth.type = 1) #smooth to 10-second fix intervals. 
+   #Note that na.rm was set to "FALSE" because randomizing this data set 
+   #according to Spiegel et al.'s method (see below) requires equidistant 
+   #time points.
 
 #generate randomized time-ordered network edges. (2 examples)
-calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 2, shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled around. This randomization process was first described by Spiegel et al. 2016.
-calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, parallel = TRUE, dataType = "Point", numVertices = 1, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA, indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the calves.agg data set with calves' xy coordinates within 10-minute blocks pseudo-randomized.
+calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", 
+   dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
+   parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+   blockUnit = "mins", blockLength = 10, shuffle.type = 2, 
+   shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 
+   #1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled 
+   #around. This randomization process was first described by Spiegel et al.
+   #2016.
+calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", 
+   dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
+   parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
+   blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
+   indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
+   #calves.agg data set with calves' xy coordinates within 10-minute blocks 
+   #pseudo-randomized.
 
-More examples will be added later.
+#More examples will be added later.
 }
 \references{
-Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially interacting or indifferent neighbors? Randomization of movement paths to tease apart social preference and spatial constraints. Methods in Ecology and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
+Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
+   interacting or indifferent neighbors? Randomization of movement paths to 
+   tease apart social preference and spatial constraints. Methods in 
+   Ecology and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
+   
+   Farine, D.R., 2017. A guide to null models for animal social network 
+   analysis. Methods in Ecology and Evolution 8:1309-1320.
+   https://doi.org/10.1111/2041-210X.12772.
 }
 \keyword{contact}
 \keyword{data-processing}

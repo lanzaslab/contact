@@ -7,19 +7,36 @@
 dateFake(timestamp, dateFormat = "mdy", startYear = 2000)
 }
 \arguments{
-\item{timestamp}{Vector of time information with format "hour:minute:second."}
+\item{timestamp}{Vector of time information with format 
+"hour:minute:second."}
 
-\item{dateFormat}{Character string. Defines how date information will be presented in output. Takes values "mdy" (i.e., month/day/year), "ymd" (i.e., year/month/day), "dmy" (i.e., day/month/year), or "ydm" (i.e., year/day/month). Defaults to "mdy."}
+\item{dateFormat}{Character string. Defines how date information will be 
+presented in output. Takes values "mdy" (i.e., month/day/year), "ymd" 
+(i.e., year/month/day), "dmy" (i.e., day/month/year), or "ydm" 
+(i.e., year/day/month). Defaults to "mdy."}
 
-\item{startYear}{Numerical. Denotes what year fake date information will begin if dateFake == TRUE. Defaults to 2000.}
+\item{startYear}{Numerical. Denotes what year fake date information will 
+begin if dateFake == TRUE. Defaults to 2000.}
 }
 \description{
-This function assigns fake date information, beginning 01/01/startYear, to each of the timestamps. Users can control what format the output vector is in by changing the dateFormat argument (format: "mdy" =  month-day-year, "ymd" =  year-month-day, "dmy" =  day-month-year, or "ydm" =  year-day-month).
+This function assigns fake date information, beginning 01/01/startYear, to 
+   each of the timestamps. Users can control what format the output vector 
+   is in by changing the dateFormat argument 
+   (format: "mdy" =  month-day-year, "ymd" =  year-month-day, 
+   "dmy" =  day-month-year, or "ydm" =  year-day-month).
+   
 This is a sub-function that can be found within datetime.append.
-Note that the timestamp argument should be a vector of all relevant timepoints. Additionally, timepoints should by in hms ("hour, minute, second") format.
+}
+\details{
+Note that the timestamp argument should be a vector of all relevant 
+   timepoints. Additionally, timepoints should by in hms ("hour, minute, 
+   second") format.
 }
 \examples{
-Examples imminent
+
+data("calves")
+contact::dateFake(calves$time, dateFormat = "mdy", startYear = 2000) #note 
+   #that all of these timepoints happen on the same day.
 }
 \keyword{data-processing}
 \keyword{sub-function}

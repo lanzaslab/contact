@@ -7,34 +7,84 @@
 ntwrkEdges(x, importBlocks = FALSE, removeDuplicates = TRUE)
 }
 \arguments{
-\item{x}{Output from the contactDur.all or contactDur.area functions. Can be either a data frame or list.}
+\item{x}{Output from the contactDur.all or contactDur.area functions. Can be
+either a data frame or list.}
 
-\item{importBlocks}{Logical. If true blocks will be carried over from x input, allowing for time-ordered and time-aggregated network creation. Defaults to FALSE.}
+\item{importBlocks}{Logical. If true blocks will be carried over from x 
+input, allowing for time-ordered and time-aggregated network creation. 
+Defaults to FALSE.}
 
-\item{removeDuplicates}{Logical. If x is from contactDur.all, to-from node pairs in output will be reported twice (i.e., nodes will be listed as both a to- and a from-node). If removeDuplicates == true, duplicated edges are removed. Defaults to TRUE.}
+\item{removeDuplicates}{Logical. If x is from contactDur.all, to-from node 
+pairs in output will be reported twice (i.e., nodes will be listed as 
+both a to- and a from-node). If removeDuplicates == true, duplicated 
+edges are removed. Defaults to TRUE.}
 }
 \description{
-This function takes the output from contactDur.all or contactDur.area and generates a data frame showing the list of edges in the contact network.
+This function takes the output from contactDur.all or contactDur.area and 
+   generates a data frame showing the list of edges in the contact network.
 }
 \details{
-Output dataframe will have 3 or 4 columns, depending on if importBlocks == TRUE. Columns report from-nodes, to-nodes, contact duration, and block (if applicable) associated with each edge. Output from this function can easily be used as input for igraph functions.
+Output dataframe will have 3 or 4 columns, depending on if 
+   importBlocks == TRUE. Columns report from-nodes, to-nodes, contact 
+   duration, and block (if applicable) associated with each edge. Output 
+   from this function can easily be used as input for igraph functions.
 }
 \examples{
 data("calves")
-calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
-calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "Full", parallel = TRUE, na.rm = TRUE, smooth.type = 1) #smooth locations to 10-second fix intervals.
-calves.dist<-dist2All(x = calves.agg, parallel = TRUE, dataType = "Point", lonlat = FALSE) #calculate distance between all individuals at each timepoint.
-calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = FALSE, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile inter-calf contacts without blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
-calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = TRUE, reportParameters = TRUE) #compile inter-calf contacts with 1-hr blocking. Contacts are defined here as occurring when calves were within 1 m of one another.
-calves.edges1<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE, removeDuplicates = TRUE) #creates an edgeset that can easily be utilized with network-creation functions in igraph. Note that, because importBlocks == FALSE, this network CANNOT be time-ordered/time-aggregated. In fact, if importBlocks was set as "TRUE," an error would be returned because calves.contact.NOblock contains no block information
+
+calves.dateTime<-datetime.append(calves, date = calves$date, 
+   time = calves$time) #create a dataframe with dateTime identifiers for 
+   #location fixes.
+   
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+   point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
+   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
+   na.rm = TRUE, smooth.type = 1) #smooth to 10-second fix intervals.
+   
+calves.dist<-dist2All(x = calves.agg, parallel = FALSE, dataType = "Point", 
+   lonlat = FALSE) #calculate inter-animal distances at each timepoint.
+   
+calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1, 
+   sec.threshold=10, blocking = FALSE, equidistant.time = FALSE, 
+   parallel = FALSE, reportParameters = TRUE) #compile inter-calf contacts 
+   #without blocking. Contacts are defined here as occurring when calves 
+   #were within 1 m of one another.
+   
+calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
+   sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
+   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE) 
+   #compile inter-calf contacts with 1-hr blocking. Contacts are defined 
+   #here as occurring when calves were within 1 m of one another.
+   
+calves.edges1<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE, 
+   removeDuplicates = TRUE) #creates an edgeset that can easily be utilized 
+   #with network-creation functions in igraph. Note that, because 
+   #importBlocks == FALSE, this network CANNOT be 
+   #time-ordered/time-aggregated. In fact, if importBlocks was set as 
+   #"TRUE," an error would be returned because calves.contact.NOblock 
+   #contains no block information
+   
 head(calves.edges1)
-calves.network1 <- igraph::graph_from_data_frame(d=calves.edges1, directed=F)
-igraph::V(calves.network1)$color<- "orange1" #make nodes this shade of orange
+
+calves.network1 <- igraph::graph_from_data_frame(d=calves.edges1, 
+   directed=F)
+   
+igraph::V(calves.network1)$color<- "orange1" 
 igraph::V(calves.network1)$size <-13
-igraph::E(calves.network1)$width <- calves.edges1$duration/1000 #edge width is proportional to contact frequency
+igraph::E(calves.network1)$width <- calves.edges1$duration/1000 
+   #edge width is proportional to contact frequency
 igraph::E(calves.network1)$color <- "black"
-igraph::plot.igraph(calves.network1, vertex.label.cex=0.4, layout = igraph::layout.circle, main = "Inter-Calf Contacts") #plot the network
-calves.edges2<-ntwrkEdges(x =calves.contact.block, importBlocks = TRUE, removeDuplicates = TRUE) #creates an edgeset that can easily be utilized with network-creation functions in igraph. Note that because importBlocks == TRUE, temporal information is included, and created networks can be time-ordered/time-aggregated.
+igraph::plot.igraph(calves.network1, vertex.label.cex=0.4, 
+   layout = igraph::layout.circle, main = "Inter-Calf Contacts") 
+   #plot the network
+   
+calves.edges2<-ntwrkEdges(x =calves.contact.block, importBlocks = TRUE, 
+   removeDuplicates = TRUE) #creates an edgeset that can easily be 
+   #utilized with network-creation functions in igraph. Note that because 
+   #importBlocks == TRUE, temporal information is included, and created 
+   #networks can be time-ordered/time-aggregated.
+   
 head(calves.edges2)
 }
 \keyword{contact}

@@ -8,36 +8,69 @@ findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5,
   acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.666)
 }
 \arguments{
-\item{n1}{Numerical. Number of points used in the expected-distance distribution(s). Defaults to 1000.}
+\item{n1}{Numerical. Number of points used in the expected-distance 
+distribution(s). Defaults to 1000.}
 
-\item{n2}{Numerical. Number of expected-distance distribution iterations to be averaaged. Defaults to 1000.}
+\item{n2}{Numerical. Number of expected-distance distribution iterations to 
+be averaaged. Defaults to 1000.}
 
 \item{acc.Dist1}{Numerical. Accuracy distance for point 1.}
 
-\item{acc.Dist2}{Numerical. Accuracy distance for point 2. If == NULL, defaults to acc.Dist1 value.}
+\item{acc.Dist2}{Numerical. Accuracy distance for point 2. If == NULL, 
+defaults to acc.Dist1 value.}
 
-\item{pWithin1}{Numerical. Percentage of data points within acc.Dist of true locations for point 1.}
+\item{pWithin1}{Numerical. Percentage of data points within acc.Dist of true
+locations for point 1.}
 
-\item{pWithin2}{Numerical. Percentage of data points within acc.Dist of true locations for point 2. If == NULL, defaults to pWithin1 value.}
+\item{pWithin2}{Numerical. Percentage of data points within acc.Dist of true
+locations for point 2. If == NULL, defaults to pWithin1 value.}
 
-\item{spTh}{Numerical. Pre-determined distance representing biological threshold for contact.}
+\item{spTh}{Numerical. Pre-determined distance representing biological 
+threshold for contact.}
 }
 \description{
-Sample from a multiveriate normal distribution to create "in-contact" point pairs (n = n1) based on real-time-location systems accuracy, and generate distribution of length n2 describing average distances between point pairs. This function outputs upper confidence intervals associated with average distances between "in-contact" points.
+Sample from a multivariate normal distribution to create "in-contact" point 
+   pairs (n = n1) based on real-time-location systems accuracy, and 
+   generate distribution of length n2 describing average distances between 
+   point pairs. This function outputs upper confidence intervals associated 
+   with average distances between "in-contact" points.
 }
 \details{
-This function is for adjusting contact-distance thresholds (spTh) to account for positional accuracty of real-time-location systems, assuming random (non-biased) error in location-fix positions relative to true locations. Essentially this function can be used to determine an adjusted spTh value that likely includes >= 99% of true contacts defined using the initial spTh.
+This function is for adjusting contact-distance thresholds (spTh) to account
+   for positional accuracty of real-time-location systems, assuming random 
+   (non-biased) error in location-fix positions relative to true locations. 
+   Essentially this function can be used to determine an adjusted spTh value
+   that likely includes >= 99-percent of true contacts defined using the 
+   initial spTh.
 }
 \examples{
-#Here we use findDistThresh to identify what spatial thresholds for contact likely report 99\% of contacts in the calves system, previously defined as instances where individuals were within 0.5 m, and 0 m of one another for point- and polygon-based networks, respectively. Note that the accuracy of the RTLS used to collect the calves data set, as reported by the RTLS manufacturer, was "90\% of points fall within 0.5 m of true locations."
+#Here we use findDistThresh to identify what spatial thresholds for contact 
+   #likely report 99\% of contacts in the calves system, previously defined as
+   #instances where individuals were within 0.5 m, and 0 m of one another for
+   #point- and polygon-based networks, respectively. Note that the accuracy 
+   #of the RTLS used to collect the calves data set, as reported by the RTLS 
+   #manufacturer, was "90\% of points fall within 0.5 m of true locations."
 
-#Point-based contacts
-findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the initially-defined spatial threshold for contact
+#Point-based distance-threshold contacts
+findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
+   pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the 
+   #initially-defined spatial threshold for contact
 
-#Polygon-based contacts
-findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0)
+#Polygon-intersection-based contacts
+findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
+   pWithin1 = 90, pWithin2 = NULL, spTh = 0)
 
-#Note that because these confidence intervals are obtained from distributions generated from random samples, everytime this function is run, results will be slightly different. When we ran the function, the outputs indicated that adjusted spatial thresholds of 0.74 m and 0.56 m likely capture ≥ 99\% of contacts, as previously defined for point- and polygon-based networks, respectively.
+#Note that because these confidence intervals are obtained from 
+   #distributions generated from random samples, everytime this function is 
+   #run, results will be slightly different. When we ran the function, the 
+   #outputs indicated that adjusted spatial thresholds of 0.74 m and 0.56 m 
+   #likely capture at least 99\% of contacts, as previously defined for point- and 
+   #polygon-based networks, respectively.
+}
+\references{
+Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
+   C. in Review. Accounting for space and uncertainty in real-time-location-
+   system-derived contact networks. Ecology and Evolution.
 }
 \keyword{contact}
 \keyword{location}

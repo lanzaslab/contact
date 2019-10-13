@@ -3,17 +3,14 @@
 \docType{data}
 \name{calves2018}
 \alias{calves2018}
-\title{Real-time location data for 70 calves}
+\title{Real-time location data for 70 calves in June 2018}
 \format{A data frame with 7297680 rows and 4 variables:
 \describe{
   \item{calftag}{a unique identifier for each calf}
   \item{x}{planar x coordinate}
   \item{y}{planar y coordinate}
-  \item{dateTime}{UTC time and date at which location fix was obtained}
+  \item{dateTime}{UTC date and time at which location fix was obtained}
 }}
-\source{
-\url{}
-}
 \usage{
 data(calves2018)
 }
@@ -22,9 +19,9 @@ A dataset containing planar real-time point locations for 70 calves between
    00:00:00 on June 1st, 2018 and 23:59:59 UTC on June 30, 2018.
 }
 \details{
-Calves were approximately 
-   1.5-year-old castrated male cattle (i.e., steer) kept in a 30 X 35 m2 pen
-   at the Kansas State University Beef Cattle Research Center in Manhattan, KS.
+Calves were approximately 1.5-year-old castrated male cattle (i.e., steer) 
+   kept in a 30 X 35 m2 pen at the Kansas State University Beef Cattle 
+   Research Center in Manhattan, KS.
 
 Data collection was supported by U.S. National Institute of Health (NIH) 
    grant R01GM117618 as part of the joint National Science 
