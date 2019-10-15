@@ -73,33 +73,30 @@
 #' 
 #' #pre-process the data
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
-#'    time = calves$time) #create a dataframe with dateTime identifiers for 
-#'    #location fixes.
-#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
-#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-#'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-#'    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
-#'    na.rm = FALSE, smooth.type = 1) 
+#'   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #'
-#' #delineate the water trough polygon (showing where the water trough in the 
-#'    #calves' feedlot pen is)
-#' water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water x 
-#'    #coordinates
-#' water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water y 
-#'    #coordintates
-#' water_poly<-data.frame(point1.x = water_trough.x[1], 
-#'    point1.y = water_trough.y[1], point2.x = water_trough.x[2], 
-#'    point2.y = water_trough.y[2], point3.x = water_trough.x[3], 
-#'    point3.y = water_trough.y[3], point4.x = water_trough.x[4], 
-#'    point4.y = water_trough.y[4])
-#' 
+#' #delineate the water trough polygon (showing where the water trough in the calves' 
+#'   #feedlot pen is)
+#' water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622),
+#'                   y = c(62.44815, 62.73341, 61.93864, 61.67411)) 
+#'
+#' #As noted in the dist2Area_df help documention, polygon-vertex coordinates 
+#'   #must be arranged in a particular way. Here we arrange them accordingly.
+#'
+#' water_poly<-data.frame(matrix(ncol = 8, nrow = 1)) #(ncol = number of vertices)*2
+#' colnum = 0
+#' for(h in 1:nrow(water)){
+#'  water_poly[1,colnum + h] <- water$x[h] #pull the x location for each vertex
+#'  water_poly[1, (colnum + 1 + h)] <- water$y[h] #pull the y location for each vertex
+#'  colnum <- colnum + 1
+#' }
+#'
 #' #generate empirical time-ordered network edges.
-#' water.dist<-dist2Area_df(x = calves.agg, y = water_poly, parallel = FALSE, 
-#'    x.id = calves.agg$id, y.id = "water", dateTime = calves.agg$dateTime, 
-#'    point.x = calves.agg$x, point.y = calves.agg$y, dataType = "Point", 
-#'    lonlat = FALSE) #calculate distance between all individuals and the water
-#'    #polygon at each timepoint.
-#' 
+#' water_dist<-contact::dist2Area_df(x = calves.dateTime, y = water_poly, 
+#'   x.id = "calftag", y.id = "water", dateTime = "dateTime", point.x = calves.dateTime$x, 
+#'   point.y = calves.dateTime$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
+#'   lonlat = FALSE, numVertices = NULL) #note that the poly.xy and numVertices arguments 
+#'  
 #' #More examples coming later
 
 dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", lonlat = FALSE, numVertices = 4){

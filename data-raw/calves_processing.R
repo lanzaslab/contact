@@ -16,4 +16,10 @@ time <- (paste(Hour,":",Minute,":",Second, sep = "")) #create the time vector th
 calves <- data2[,1:3] 
 calves$time<-time
 calves$date<-date
-usethis::use_data(calves)
+
+#to reduce file size we'll reduce the number of calves in the data set from 70 to 30.
+
+calves<-droplevels(calves[which(calves$calftag%in%101:120 == TRUE),])
+
+
+usethis::use_data(calves, overwrite = TRUE)

@@ -140,7 +140,11 @@
 #' @param dist.input List or data frame containing dist.all/distToArea function
 #'    output refering to the empirical data. Note that if test == "chisq," a 
 #'    dist.input argument is required. If test == "mantel," however,
-#'    dist.input can be set to NULL.
+#'    dist.input can be set to NULL. This input is used to determine the  
+#'    number of durations that each pair of individuals (or individuals and 
+#'    fixed locations/polygons if distToArea output is used) were observed 
+#'    during the same timestep (i.e., the maximum number of durations dyad 
+#'    members could potentially be in contact with one another). 
 #' @param test Character string. Describes the statistical test used to 
 #'    evaluate differences. Currently only takes the values "chisq," or 
 #'    "mantel." Defaults to "chisq." More tests will be added in later 
@@ -215,12 +219,12 @@
 #'    #calves.agg data set with calves' xy coordinates within 10-minute blocks 
 #'    #pseudo-randomized.
 #' 
-#' calves.dist.rand1<-dist2All(x = calves.agg.rand1, point.x = "x.rand", 
+#' calves.dist.rand1<-dist2All_df(x = calves.agg.rand1, point.x = "x.rand", 
 #'    point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
 #'    #calculate distance between all individuals at each timepoint in 
 #'    #calves.rand1. Note that point.x and point.y must be specified as 
 #'    #"x.rand" and "y.rand," respectively.
-#' calves.dist.rand2<-dist2All(x = calves.agg.rand2, point.x = "x.rand", 
+#' calves.dist.rand2<-dist2All_df(x = calves.agg.rand2, point.x = "x.rand", 
 #'    point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
 #'    #calculate distance between all individuals at each timepoint in 
 #'    #calves.rand2. Note that point.x and point.y must be specified as 
@@ -555,7 +559,11 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
     return(x)
   }
 
-  chisq.forLoop<-function(x, empirical = x, randomized = y, dist = dist.input, x.blocking, y.blocking, listStatus.x){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions (above) to work.
+  chisq.forLoop<-function(x, empirical = x, randomized = y, dist = dist.input, x.blocking, y.blocking, listStatus.x){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work.
+    
+    id<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
+    
+    
     output<-NULL
     
     oldw <- getOption("warn") #pull the current warn setting 
@@ -843,7 +851,7 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
   
   x$id<-as.character(x$id)
   y$id<-as.character(y$id)
-  if(is.null(dist.input == F)){ #if there is a dist.input object (i.e., it does not = NULL), then we will convert the id column to character data as we did with x and y inputs
+  if(is.null(dist.input == FALSE)){ #if there is a dist.input object (i.e., it does not = NULL), then we will convert the id column to character data as we did with x and y inputs
     dist.input$id<-as.character(dist.input$id)
   }
   
@@ -854,7 +862,7 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
     options(warn = 1) #make warnings appear as they occur, rather than be stored until the top-level function returns
     
     
-    if(x.blocking == F){ #if there is no blocking
+    if(x.blocking == FALSE){ #if there is no blocking
     
       #make them matrices for x & y summaries with equal dimensions
       emp.matrix<-as.matrix(x[,4:(3+nrow(x))]) #create the matrix detailing observed contacts. Note that this matrix excludes id, totalDegree, and totalContactDuration columns
@@ -868,12 +876,12 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
         rand.matrix[randRows,randCols[i]]<-y[,(3+i)]
       }
       
-      emp.mean<-mean(emp.matrix, na.rm = T) #calculate the mean number of contacts in the empirical set
-      rand.mean <- mean(rand.matrix, na.rm = T) #calculate the mean number of contacts in the random set
+      emp.mean<-mean(emp.matrix, na.rm = TRUE) #calculate the mean number of contacts in the empirical set
+      rand.mean <- mean(rand.matrix, na.rm = TRUE) #calculate the mean number of contacts in the random set
       
       #the ape::mantel.test function below DOES NOT accept NAs in the input data frames, so have to replace NAs with 0
-      emp.matrix[which(is.na(emp.matrix) == T)]<-0 
-      rand.matrix[which(is.na(rand.matrix) == T)]<-0
+      emp.matrix[which(is.na(emp.matrix) == TRUE)]<-0 
+      rand.matrix[which(is.na(rand.matrix) == TRUE)]<-0
       
       #warning() #clears any warnings that may exist prior to running the mantel test
       #output.test<-ape::mantel.test(emp.matrix, rand.matrix, nperm = numPermutations, alternative = alternative.hyp) #perform the mantel test
@@ -890,7 +898,7 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
       final_out <- summaryFrame #redefine summaryFrame as the final function output.
     }
     
-    if(x.blocking == T & y.blocking == F){ #if there is blocking in the empirical set, but not the random data set, all blocks will be compared to the overall random summary (i.e., not block-specific summaries)
+    if(x.blocking == TRUE & y.blocking == FALSE){ #if there is blocking in the empirical set, but not the random data set, all blocks will be compared to the overall random summary (i.e., not block-specific summaries)
       blockSeq.x <- unique(x$block) #pull the unique block ids in x
       final_out <-NULL #create the empty final output that we will bind loop items to.
       for(j in blockSeq.x){ #use a for-loop to subset x by each block id
@@ -907,12 +915,12 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
           rand.matrix[randRows,randCols[i]]<-y[,(3+i)]
         }
         
-        emp.mean<-mean(emp.matrix, na.rm = T) #calculate the mean number of contacts in the empirical set
-        rand.mean <- mean(rand.matrix, na.rm = T) #calculate the mean number of contacts in the random set
+        emp.mean<-mean(emp.matrix, na.rm = TRUE) #calculate the mean number of contacts in the empirical set
+        rand.mean <- mean(rand.matrix, na.rm = TRUE) #calculate the mean number of contacts in the random set
         
         #the ape::mantel.test function below DOES NOT accept NAs in the input data frames, so have to replace NAs with 0
-        emp.matrix[which(is.na(emp.matrix) == T)]<-0 
-        rand.matrix[which(is.na(rand.matrix) == T)]<-0
+        emp.matrix[which(is.na(emp.matrix) == TRUE)]<-0 
+        rand.matrix[which(is.na(rand.matrix) == TRUE)]<-0
         
         #warning() #clears any warnings that may exist prior to running the mantel test
         #output.test<-ape::mantel.test(emp.matrix, rand.matrix, nperm = numPermutations, alternative = alternative.hyp) #perform the mantel test
@@ -931,7 +939,7 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
       }
     }
     
-    if(x.blocking == T & y.blocking == T){ #if there is blocking in the empirical set AND the random data set, all empirical blocks will be compared to the paired random-summary block.
+    if(x.blocking == TRUE & y.blocking == TRUE){ #if there is blocking in the empirical set AND the random data set, all empirical blocks will be compared to the paired random-summary block.
       blockSeq.x <- unique(x$block) #pull the unique block ids in x
       final_out <-NULL #create the empty final output that we will bind loop items to.
       for(j in blockSeq.x){ #use a for-loop to subset x by each block id
@@ -949,12 +957,12 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
           rand.matrix[randRows,randCols[i]]<-block.y[,(3+i)]
         }
         
-        emp.mean<-mean(emp.matrix, na.rm = T) #calculate the mean number of contacts in the empirical set
-        rand.mean <- mean(rand.matrix, na.rm = T) #calculate the mean number of contacts in the random set
+        emp.mean<-mean(emp.matrix, na.rm = TRUE) #calculate the mean number of contacts in the empirical set
+        rand.mean <- mean(rand.matrix, na.rm = TRUE) #calculate the mean number of contacts in the random set
         
         #the ape::mantel.test function below DOES NOT accept NAs in the input data frames, so have to replace NAs with 0
-        emp.matrix[which(is.na(emp.matrix) == T)]<-0 
-        rand.matrix[which(is.na(rand.matrix) == T)]<-0
+        emp.matrix[which(is.na(emp.matrix) == TRUE)]<-0 
+        rand.matrix[which(is.na(rand.matrix) == TRUE)]<-0
         
         warning() #clears any warnings that may exist prior to running the mantel test
         output.test<-ape::mantel.test(emp.matrix, rand.matrix, nperm = numPermutations, alternative = alternative.hyp) #perform the mantel test

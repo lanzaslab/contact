@@ -20,7 +20,7 @@ Description: Process spatiotemporal data into contact and social networks, and
     and fixed areas (e.g., home ranges, waterbodies, buildings, etc.). As such,
     this package is an incredibly useful resource for facilitating 
     epidemiological, ecological, ethological and sociological research.
-Depends: R (>= 2.10)
+Depends: R (>= 3.6.0)
 Imports:
     ape (>= 5.3),
     data.table (>= 1.12.2),

@@ -3,8 +3,8 @@
 \docType{data}
 \name{calves2018}
 \alias{calves2018}
-\title{Real-time location data for 70 calves in June 2018}
-\format{A data frame with 7297680 rows and 4 variables:
+\title{Real-time location data for 20 calves in June 2018}
+\format{A data frame with 193551 rows and 4 variables:
 \describe{
   \item{calftag}{a unique identifier for each calf}
   \item{x}{planar x coordinate}
@@ -15,8 +15,8 @@
 data(calves2018)
 }
 \description{
-A dataset containing planar real-time point locations for 70 calves between
-   00:00:00 on June 1st, 2018 and 23:59:59 UTC on June 30, 2018.
+A dataset containing planar real-time point locations for 20 calves between
+   00:00:00 on June 1st, 2018 and 23:59:59 UTC on June 3, 2018.
 }
 \details{
 Calves were approximately 1.5-year-old castrated male cattle (i.e., steer) 

@@ -83,12 +83,12 @@
 #' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
 #'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
 #'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-#'    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
-#'    na.rm = FALSE, smooth.type = 1) #smooth locations to 10-second fix 
+#'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
+#'    na.rm = TRUE, smooth.type = 1) #smooth locations to 10-second fix 
 #'    #intervals. 
 #'
 #' #generate empirical time-ordered network edges.
-#' calves.dist<-dist2All(x = calves.agg, parallel = FALSE, dataType = "Point", 
+#' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point", 
 #'    lonlat = FALSE) #calculate distance between all individuals at each 
 #'    #timepoint.
 #' 

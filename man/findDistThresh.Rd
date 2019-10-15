@@ -52,12 +52,12 @@ This function is for adjusting contact-distance thresholds (spTh) to account
    #manufacturer, was "90\% of points fall within 0.5 m of true locations."
 
 #Point-based distance-threshold contacts
-findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
+findDistThresh(n1 = 100, n2 = 100, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the 
    #initially-defined spatial threshold for contact
 
 #Polygon-intersection-based contacts
-findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
+findDistThresh(n1 = 100, n2 = 100, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
    pWithin1 = 90, pWithin2 = NULL, spTh = 0)
 
 #Note that because these confidence intervals are obtained from 

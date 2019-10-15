@@ -15,7 +15,22 @@
 
 #change "ID," "xloc," and "yloc" columns to "calftag," "x," and "y," respectively.
 colnames(calves2018)[1:3]<-c("calftag", "x", "y")
-usethis::use_data(calves2018)
+
+#subset the dates further to reduce the size of the output data
+calves2018$date<- lubridate::date(calves2018$dateTime) #identify unique dates
+
+calves2018<-droplevels(subset(calves2018, date == "2018-06-01" | date == "2018-06-02" | date ==  "2018-06-03"))
+
+calves2018<- calves2018[,-5] #remove date
+
+#reduce the number of calves from 70 to 20.
+
+calvesSet<- unique(calves2018$calftag)
+calves2018<-droplevels(calves2018[which(calves2018$calftag%in%calvesSet[1:20] == TRUE),])
+
+
+
+usethis::use_data(calves2018, overwrite = TRUE)
 
 
 

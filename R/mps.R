@@ -64,13 +64,18 @@
 #' @export
 #' @examples
 #' data(calves) #load calves data
-#' system.time(calves_filter1 <- contact::mps(calves, id = calves$calftag, 
-#'    point.x = calves$x, point.y = calves$y, dateTime = calves$dateTime, 
-#'    mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, filterOutput = TRUE))
-#'    #we assume that if calves are point-locations suggest calves moved faster
-#'    #than 10m/s, points are erroneous and should be removed. #This removed 2 
-#'    #observaltions.
-
+#' 
+#' #pre-process the data
+#' calves.dateTime<-datetime.append(calves, date = calves$date,
+#'    time = calves$time) #create a dataframe with dateTime identifiers for
+#'    #location fixes.
+#' 
+#' system.time(calves_filter1 <- contact::mps(calves.dateTime, id = calves.dateTime$calftag,
+#'    point.x = calves.dateTime$x, point.y = calves.dateTime$y, 
+#'    dateTime = calves.dateTime$dateTime, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, 
+#'    filterOutput = TRUE)) #we assume that if calves are point-locations suggest calves moved 
+#'    #faster than 10m/s, points are erroneous and should be removed.
+#'
 mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, nCores = parallel::detectCores(), filterOutput = TRUE){
 
   filter3.func<-function(x, id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores){

@@ -139,24 +139,18 @@
 #' @examples
 #' #read in the calves data set
 #' data("calves")
-#' calves.dateTime<-datetime.append(calves, date = calves$date, 
+#' calves.dateTime<-datetime.append(calves, date = calves$date,
 #'    time = calves$time) #add dateTime identifiers for location fixes.
 #' 
-#' #create our data set that shows calves average position every 10 seconds
-#' system.time(calves.10secSmoothed <- tempAggregate(x = calves, id = calves$calftag, 
-#'    point.x = calves$x, point.y = calves$y, dateTime = calves$dateTime, secondAgg = 10, 
-#'    extrapolate.left = TRUE, resolutionLevel = "reduced", extrapolate.right = FALSE, na.rm = TRUE, 
-#'    smooth.type = 2, parallel = FALSE))
-#' 
 #' #Create 0.333 m X 0.333 m calf head polygons.
-#'   #Note that this is done using the original reference points which denote the locations of RFID 
+#'   #Note that this is done using the original reference points which denote the locations of RFID
 #'   #tags on individuals' left ears.
-#' system.time(calf_heads <- contact::referencePoint2Polygon(x = calves.10secSmoothed, 
-#'    id = calves.10secSmoothed$id, dateTime = calves.10secSmoothed$dateTime, 
-#'    point.x = calves.10secSmoothed$x, point.y = calves.10secSmoothed$y, direction = NULL, 
-#'    StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, 
-#'    CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE, 
-#'    modelOrientation = 90)) 
+#' system.time(calf_heads <- contact::referencePoint2Polygon(x = calves.dateTime,
+#'    id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime,
+#'    point.x = calves.dateTime$x, point.y = calves.dateTime$y, direction = NULL,
+#'    StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333,
+#'    CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE,
+#'    modelOrientation = 90))
 
 referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, StartLocation = "UL", UpDownRepositionLen = 1, LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0, parallel = FALSE, nCores = parallel::detectCores(), modelOrientation = 90){
 

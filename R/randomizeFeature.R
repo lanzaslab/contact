@@ -33,7 +33,7 @@
 #' data(calves)
 #' 
 #' system.time(randomizedValues<-contact::randomizeFeature(x = calves, 
-#'    feature = c("calftag", "date"), shuffle = T, maintainDistr = T, 
+#'    feature = c("calftag", "date"), shuffle = TRUE, maintainDistr = TRUE, 
 #'    numRandomizations = 3)) #note: in this example, there's only one unique 
 #'    #"date" value, so there's no point in randomizing this vector. The "date"
 #'    #column was only included here to demonstrate that the feature argument 

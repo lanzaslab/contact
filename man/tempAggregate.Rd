@@ -2,7 +2,7 @@
 % Please edit documentation in R/tempAggregate.R
 \name{tempAggregate}
 \alias{tempAggregate}
-\title{Smooth Location Data Points Over Time}
+\title{Smooth Point-Locations Over Time}
 \usage{
 tempAggregate(x = NULL, id = NULL, point.x = NULL, point.y = NULL,
   dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE,
@@ -116,9 +116,9 @@ head(calves.agg1) #now the fix intervals are every 10 seconds.
 calves.agg2<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
+   extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
    na.rm = TRUE, smooth.type = 1) #smooth locations to 10-second fix 
-   #intervals again, but with na.rm == TRUE.
+   #intervals again, but with na.rm == TRUE & resolutionLevel = "reduced."
    
 head(calves.agg2) #reported fix intervals are still generally every 10 
    #seconds now. However, if any calves were missing during a 10-second 

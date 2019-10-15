@@ -8,12 +8,12 @@
 load("baboons_raw.RData")
 #To reduce processing times associated with using our functions on this data set, we will only keep data from the first 2 days of the 14 days presented in the data set.
 #so, we first need to quantify days in the data set.
-baboon.dateTime<-contact::datetime.append(baboons, dateTime = lubridate::ymd_hms(baboons$timestamp), dateFormat = "ymd", day = TRUE)
+baboon.dateTime<-contact::datetime.append(baboons_raw, dateTime = lubridate::ymd_hms(baboons_raw$timestamp), dateFormat = "ymd", day = TRUE, hour = TRUE)
 #now subset the data set
-baboons<-subset(baboon.dateTime, day < 2)
+baboons<-subset(baboon.dateTime, day == 5 & hour == 3)
 baboons<-droplevels(baboons)
 #now remove the "day" column
-baboons<-baboons[,-match("day", names(baboons))]
+baboons<-baboons[,-c(match("day", names(baboons)), match("hour", names(baboons)))]
 #finally, the data set reports time points to 1/1000th of the second. This is a bit too precise for our needs. We'll round up each value to the nearest second.
 baboons$dateTime <- lubridate::ymd_hms(baboons$timestamp)
 #we create the processed data set here

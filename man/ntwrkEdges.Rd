@@ -32,60 +32,42 @@ Output dataframe will have 3 or 4 columns, depending on if
 \examples{
 data("calves")
 
-calves.dateTime<-datetime.append(calves, date = calves$date, 
-   time = calves$time) #create a dataframe with dateTime identifiers for 
-   #location fixes.
-   
-calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
-   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-   point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
+calves.dateTime<-datetime.append(calves, date = calves$date,
+   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
+
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
+   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x,
+   point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE,
+   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE,
    na.rm = TRUE, smooth.type = 1) #smooth to 10-second fix intervals.
-   
-calves.dist<-dist2All(x = calves.agg, parallel = FALSE, dataType = "Point", 
-   lonlat = FALSE) #calculate inter-animal distances at each timepoint.
-   
-calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1, 
-   sec.threshold=10, blocking = FALSE, equidistant.time = FALSE, 
-   parallel = FALSE, reportParameters = TRUE) #compile inter-calf contacts 
-   #without blocking. Contacts are defined here as occurring when calves 
+
+calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE,
+   dataType = "Point", lonlat = FALSE) #calculate inter-animal distances at each timepoint.
+
+calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1,
+   sec.threshold=10, blocking = FALSE, equidistant.time = FALSE,
+   parallel = FALSE, reportParameters = TRUE) #compile inter-calf contacts
+   #without blocking. Contacts are defined here as occurring when calves
    #were within 1 m of one another.
-   
-calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
-   sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
-   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE) 
-   #compile inter-calf contacts with 1-hr blocking. Contacts are defined 
-   #here as occurring when calves were within 1 m of one another.
-   
-calves.edges1<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE, 
-   removeDuplicates = TRUE) #creates an edgeset that can easily be utilized 
-   #with network-creation functions in igraph. Note that, because 
-   #importBlocks == FALSE, this network CANNOT be 
-   #time-ordered/time-aggregated. In fact, if importBlocks was set as 
-   #"TRUE," an error would be returned because calves.contact.NOblock 
-   #contains no block information
-   
+
+calves.edges1<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE,
+   removeDuplicates = TRUE) #creates an edgeset to easily be utilized with network-creation
+   #functions in igraph. 
+
 head(calves.edges1)
 
-calves.network1 <- igraph::graph_from_data_frame(d=calves.edges1, 
-   directed=F)
-   
-igraph::V(calves.network1)$color<- "orange1" 
+calves.network1 <- igraph::graph_from_data_frame(d=calves.edges1,
+   directed=FALSE)
+
+igraph::V(calves.network1)$color<- "orange1"
 igraph::V(calves.network1)$size <-13
-igraph::E(calves.network1)$width <- calves.edges1$duration/1000 
+igraph::E(calves.network1)$width <- calves.edges1$duration/100
    #edge width is proportional to contact frequency
 igraph::E(calves.network1)$color <- "black"
-igraph::plot.igraph(calves.network1, vertex.label.cex=0.4, 
-   layout = igraph::layout.circle, main = "Inter-Calf Contacts") 
+igraph::plot.igraph(calves.network1, vertex.label.cex=0.4,
+   layout = igraph::layout.circle, main = "Inter-Calf Contacts")
    #plot the network
-   
-calves.edges2<-ntwrkEdges(x =calves.contact.block, importBlocks = TRUE, 
-   removeDuplicates = TRUE) #creates an edgeset that can easily be 
-   #utilized with network-creation functions in igraph. Note that because 
-   #importBlocks == TRUE, temporal information is included, and created 
-   #networks can be time-ordered/time-aggregated.
-   
-head(calves.edges2)
+
 }
 \keyword{contact}
 \keyword{data-processing}

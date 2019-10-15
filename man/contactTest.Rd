@@ -23,7 +23,11 @@ determined by averaging contacts reported in each list entry.}
 \item{dist.input}{List or data frame containing dist.all/distToArea function
 output refering to the empirical data. Note that if test == "chisq," a 
 dist.input argument is required. If test == "mantel," however,
-dist.input can be set to NULL.}
+dist.input can be set to NULL. This input is used to determine the  
+number of durations that each pair of individuals (or individuals and 
+fixed locations/polygons if distToArea output is used) were observed 
+during the same timestep (i.e., the maximum number of durations dyad 
+members could potentially be in contact with one another).}
 
 \item{test}{Character string. Describes the statistical test used to 
 evaluate differences. Currently only takes the values "chisq," or 
@@ -220,12 +224,12 @@ calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id",
    #calves.agg data set with calves' xy coordinates within 10-minute blocks 
    #pseudo-randomized.
 
-calves.dist.rand1<-dist2All(x = calves.agg.rand1, point.x = "x.rand", 
+calves.dist.rand1<-dist2All_df(x = calves.agg.rand1, point.x = "x.rand", 
    point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
    #calculate distance between all individuals at each timepoint in 
    #calves.rand1. Note that point.x and point.y must be specified as 
    #"x.rand" and "y.rand," respectively.
-calves.dist.rand2<-dist2All(x = calves.agg.rand2, point.x = "x.rand", 
+calves.dist.rand2<-dist2All_df(x = calves.agg.rand2, point.x = "x.rand", 
    point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
    #calculate distance between all individuals at each timepoint in 
    #calves.rand2. Note that point.x and point.y must be specified as 

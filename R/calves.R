@@ -1,14 +1,14 @@
-#' Real-time location data for 70 calves on May 2nd 2016
+#' Real-time location data for 20 calves on May 2nd 2016
 #'
-#' A dataset containing planar real-time point locations for 70 calves between
+#' A dataset containing planar real-time point locations for 20 calves between
 #'    00:00:00 and 03:00:00 UTC on May 2nd, 2016. These data are a subset of 
 #'    the data set published in the supplemental materials of Dawson et al.
 #'    2019, and are included here primarily to be used for function-testing 
 #'    purposes.
 #'
-#' Calves were approximately 
-#'    1.5-year-old beef cattle kept in a 30 X 35 m2 pen at the Kansas State 
-#'    University Beef Cattle Research Center in Manhattan, KS.
+#' Calves were approximately 1.5-year-old beef cattle kept in a 30 X 35 m2 pen 
+#'    at the Kansas State University Beef Cattle Research Center in Manhattan, 
+#'    KS.
 #' 
 #' Data collection was supported by U.S. National Institute of Health (NIH) 
 #'    grant R01GM117618 as part of the joint National Science 
@@ -17,7 +17,7 @@
 #'
 #' @docType data
 #' @usage data(calves)
-#' @format A data frame with 130255 rows and 5 variables:
+#' @format A data frame with 35672 rows and 5 variables:
 #' \describe{
 #'   \item{calftag}{a unique identifier for each calf}
 #'   \item{x}{planar x coordinate}

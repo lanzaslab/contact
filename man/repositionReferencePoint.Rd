@@ -157,9 +157,10 @@ calves.dateTime<-datetime.append(calves, date = calves$date,
    #bodies. Note that we are assuming left ears (where the tracking devices are located) are 
    #parallel to shoulder-tips. 
 system.time(leftShoulder.point<-contact::repositionReferencePoint(x = calves.dateTime, 
-   id = calves.dateTime$id, dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-   point.y = calves.dateTime$y, direction = NULL, repositionAngle = 180, 
-   repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, modelOrientation = 90)) 
+   id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, 
+   point.x = calves.dateTime$x, point.y = calves.dateTime$y, direction = NULL, 
+   repositionAngle = 180, repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, 
+   modelOrientation = 90)) 
    #Note that we do not specify a standing threshold here. Rather, we will do so when we create 
    #the polygon later on. See the package vignette.
 }

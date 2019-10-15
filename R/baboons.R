@@ -1,12 +1,8 @@
-#' Real-time location data for 26 baboons
+#' Real-time location data for 19 baboons
 #'
-#' A dataset containing geographic real-time point locations for 26 baboons 
-#'     observed on August 1st 2012.
-#'     
-#'This data set was first published on the movebank data repository. 
-#'     When using this data set, cite both references listed here. The 
-#'     following item descriptions appear in the README text provided for the 
-#'     repository entry verbatim.
+#' A dataset containing geographic real-time point locations for 19 baboons 
+#'     observed between 03:00:00 and 04:00:00 UTC on August 13th 2012, and are 
+#'     included here primarily to be used for function-testing purposes.
 #' 
 #' This data file a subset of a larger one published by the Movebank Data 
 #'     Repository (www.datarepository.movebank.org). The larger data set on 
@@ -15,8 +11,11 @@
 #'     published animal tracking data set can be viewed on Movebank 
 #'     (www.movebank.org) in the study "Collective movement in wild baboons 
 #'     (data from Strandburg-Peshkin et al. 2015)". Individual attributes in 
-#'     the data files are defined below and in the Movebank Attribute 
+#'     the data files are defined here and in the Movebank Attribute 
 #'     Dictionary, available at www.movebank.org/node/2381.
+#'     
+#' The item descriptions described herein appear in the README text provided 
+#'    for the repository entry verbatim.
 #'     
 #' Note that according to data publishers, "this dataset does not include 
 #'     interpolated locations or locations that failed the speed filter (see 
@@ -24,7 +23,7 @@
 #'
 #' @docType data
 #' @usage data(baboons)
-#' @format A data frame with 1967768 rows and 5 variables:
+#' @format A data frame with 65140 rows and 5 variables:
 #' \describe{
 #'   \item{timestamp}{The date and time a sensor measurement was taken. 
 #'    Time units are in UTC (Coordinated Universal Time) or GPS time, which 

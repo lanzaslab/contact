@@ -63,8 +63,8 @@ Note: this function does not allow any NA coordinate values in
 
 data(baboons)
 head(baboons) #see that locations are in geographic coordinates
-lon.na <- which(is.na(baboons$location.long) == T) #pull row ids of lon NAs
-lat.na <- which(is.na(baboons$location.lat) == T) #pull row ids of lat NAs
+lon.na <- which(is.na(baboons$location.long) == TRUE) #pull row ids of lon NAs
+lat.na <- which(is.na(baboons$location.lat) == TRUE) #pull row ids of lat NAs
 baboons.naRM <- droplevels(baboons[-unique(c(lon.na, lat.na)),]) #remove NAs
 baboons.naRM_planar <- makePlanar(x = baboons.naRM, 
    x.lon = baboons.naRM$location.long, x.lat = baboons.naRM$location.lat, 
