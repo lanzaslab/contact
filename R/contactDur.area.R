@@ -53,6 +53,12 @@
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
 #'   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #'
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+#'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
+#'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
+#'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
+#'
 #' #delineate the water trough polygon (showing where the water trough in the calves' 
 #'   #feedlot pen is)
 #' water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622),
@@ -70,19 +76,17 @@
 #' }
 #'
 #' #generate empirical time-ordered network edges.
-#' water_dist<-contact::dist2Area_df(x = calves.dateTime, y = water_poly, 
-#'   x.id = "calftag", y.id = "water", dateTime = "dateTime", point.x = calves.dateTime$x, 
-#'   point.y = calves.dateTime$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
+#' water_dist<-dist2Area_df(x = calves.agg, y = water_poly, 
+#'   x.id = calves.agg$id, y.id = "water", dateTime = "dateTime", point.x = calves.agg$x, 
+#'   point.y = calves.agg$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
 #'   lonlat = FALSE, numVertices = NULL) #note that the poly.xy and numVertices arguments 
-#'   
-#' #refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," 
-#' #these arguments are irrelevant here.
+#'   #refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," 
+#'   #these arguments are irrelevant here.
 #'
 #'water_contacts <- contactDur.area(water_dist, dist.threshold=1,
 #'   sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10,
 #'   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
 #'   
-#' #More examples coming later
 
 contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = TRUE, blockUnit = "mins", blockLength = 10, equidistant.time = FALSE, parallel = FALSE, nCores = parallel::detectCores(), reportParameters = TRUE){ 
   

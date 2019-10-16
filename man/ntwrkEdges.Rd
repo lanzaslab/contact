@@ -37,9 +37,9 @@ calves.dateTime<-datetime.append(calves, date = calves$date,
 
 calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x,
-   point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE,
-   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE,
-   na.rm = TRUE, smooth.type = 1) #smooth to 10-second fix intervals.
+   point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE,
+   extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE,
+   na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 
 calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE,
    dataType = "Point", lonlat = FALSE) #calculate inter-animal distances at each timepoint.
@@ -61,7 +61,7 @@ calves.network1 <- igraph::graph_from_data_frame(d=calves.edges1,
 
 igraph::V(calves.network1)$color<- "orange1"
 igraph::V(calves.network1)$size <-13
-igraph::E(calves.network1)$width <- calves.edges1$duration/100
+igraph::E(calves.network1)$width <- calves.edges1$duration
    #edge width is proportional to contact frequency
 igraph::E(calves.network1)$color <- "black"
 igraph::plot.igraph(calves.network1, vertex.label.cex=0.4,

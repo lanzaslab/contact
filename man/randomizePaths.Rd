@@ -149,31 +149,18 @@ calves.dateTime<-datetime.append(calves, date = calves$date,
    
 calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-   point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-   extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
-   na.rm = FALSE, smooth.type = 1) #smooth to 10-second fix intervals. 
-   #Note that na.rm was set to "FALSE" because randomizing this data set 
-   #according to Spiegel et al.'s method (see below) requires equidistant 
-   #time points.
+   point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
+   extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
+   na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals. 
 
-#generate randomized time-ordered network edges. (2 examples)
-calves.agg.rand1<-randomizePaths(x = calves.agg, id = "id", 
-   dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
-   parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
-   blockUnit = "mins", blockLength = 10, shuffle.type = 2, 
-   shuffleUnit = "Hours", indivPaths = TRUE, numRandomizations = 1) #create 
-   #1 replicate of an hour (shuffleUnit) with 10-minute blocks shuffled 
-   #around. This randomization process was first described by Spiegel et al.
-   #2016.
-calves.agg.rand2<-randomizePaths(x = calves.agg, id = "id", 
+#generate randomized time-ordered network edges. 
+calves.agg.rand<-randomizePaths(x = calves.agg, id = "id", 
    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
    parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
    blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
    indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
-   #calves.agg data set with calves' xy coordinates within 10-minute blocks 
-   #pseudo-randomized.
-
-#More examples will be added later.
+   #calves.agg data set with calves' xy coordinates within pseudo-randomized 10-minute blocks.
+   
 }
 \references{
 Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 

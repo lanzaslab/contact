@@ -85,26 +85,12 @@
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
 #'    time = calves$time) #add dateTime identifiers for location fixes.
 #'    
-#' calves.agg1<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
 #'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-#'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
-#'    extrapolate.right = FALSE, resolutionLevel = "Full", parallel = FALSE, 
-#'    na.rm = FALSE, smooth.type = 1) #smooth to 10-second fix intervals.
-#'    
-#' head(calves.agg1) #now the fix intervals are every 10 seconds.
-#' 
-#' calves.agg2<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
-#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-#'    point.y = calves.dateTime$y, secondAgg = 10, extrapolate.left = FALSE, 
+#'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
-#'    na.rm = TRUE, smooth.type = 1) #smooth locations to 10-second fix 
-#'    #intervals again, but with na.rm == TRUE & resolutionLevel = "reduced."
+#'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 #'    
-#' head(calves.agg2) #reported fix intervals are still generally every 10 
-#'    #seconds now. However, if any calves were missing during a 10-second 
-#'    #block, that location fix was removed, so fixes are no longer 
-#'    #necessariliy temporally equidistant (e.g., observed fixes may be 10, 20,
-#'    #30, etc. seconds apart).
 
 tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "full", parallel = FALSE, nCores = parallel::detectCores(), na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
 

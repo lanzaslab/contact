@@ -1,7 +1,7 @@
-#' Real-time location data for 20 calves on May 2nd 2016
+#' Real-time location data for 10 calves on May 2nd 2016
 #'
-#' A dataset containing planar real-time point locations for 20 calves between
-#'    00:00:00 and 03:00:00 UTC on May 2nd, 2016. These data are a subset of 
+#' A dataset containing planar real-time point locations for 10 calves between
+#'    00:00:00 and 02:00:00 UTC on May 2nd, 2016. These data are a subset of 
 #'    the data set published in the supplemental materials of Dawson et al.
 #'    2019, and are included here primarily to be used for function-testing 
 #'    purposes.
@@ -17,7 +17,7 @@
 #'
 #' @docType data
 #' @usage data(calves)
-#' @format A data frame with 35672 rows and 5 variables:
+#' @format A data frame with 11118 rows and 5 variables:
 #' \describe{
 #'   \item{calftag}{a unique identifier for each calf}
 #'   \item{x}{planar x coordinate}

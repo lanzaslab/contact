@@ -75,6 +75,12 @@
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
 #'   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #'
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+#'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
+#'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
+#'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
+#'
 #' #delineate the water trough polygon (showing where the water trough in the calves' 
 #'   #feedlot pen is)
 #' water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622),
@@ -92,12 +98,12 @@
 #' }
 #'
 #' #generate empirical time-ordered network edges.
-#' water_dist<-contact::dist2Area_df(x = calves.dateTime, y = water_poly, 
-#'   x.id = "calftag", y.id = "water", dateTime = "dateTime", point.x = calves.dateTime$x, 
-#'   point.y = calves.dateTime$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
+#' water_dist<-dist2Area_df(x = calves.agg, y = water_poly, 
+#'   x.id = calves.agg$id, y.id = "water", dateTime = "dateTime", point.x = calves.agg$x, 
+#'   point.y = calves.agg$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
 #'   lonlat = FALSE, numVertices = NULL) #note that the poly.xy and numVertices arguments 
-#'  
-#' #More examples coming later
+#'   #refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," 
+#'   #these arguments are irrelevant here.
 
 dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", lonlat = FALSE, numVertices = 4){
   

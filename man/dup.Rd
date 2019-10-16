@@ -76,11 +76,11 @@ If users want to remove specific duplicated observations, we suggest setting
 \examples{
 
 data(calves2018) #load the data set
-system.time(calves_dup<- contact::dup(calves2018, id = calves2018$calftag, 
+
+calves_dup<- dup(calves2018, id = calves2018$calftag, 
    point.x = calves2018$x, point.y = calves2018$y, 
    dateTime = calves2018$dateTime, avg = FALSE, parallel = FALSE, 
-   filterOutput = TRUE)) #there were no duplicates to remove in the first place.
-head(calves_dup)
+   filterOutput = TRUE) #there were no duplicates to remove in the first place.
 }
 \keyword{duplicates}
 \keyword{filter}
