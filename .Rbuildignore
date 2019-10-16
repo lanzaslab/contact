@@ -6,3 +6,7 @@
 ^inProgress_functions$
 ^doc$
 ^Meta$
+^tarballs$
+^CRAN_comments$
+^README\.Rmd$
+^NEWS$

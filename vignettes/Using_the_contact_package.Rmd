@@ -69,6 +69,7 @@ head(calves)#The calves data set does not have a singular dateTime column. Rathe
 system.time(calves.dateTime<- contact::datetime.append(x = calves, date = calves$date, time= calves$time, dateTime = NULL, dateFormat = "mdy", dateFake = FALSE, startYear = NULL, tz.in = "UTC", tz.out = NULL, month = FALSE, day = FALSE, year = FALSE, hour = FALSE, minute = FALSE, second = FALSE, daySecond = FALSE, totalSecond = FALSE))
 
 ```
+
 **B.) Calculate distances between the water-trough polygon and calves at each time step.**
 
 First, we must define the location of the water trough. To do this, we read in point-location data for the water-trough vertices.
@@ -138,7 +139,7 @@ Now we can vizualize the network using igraph functions.
 
 ```{r, echo=TRUE, warning = FALSE, eval = FALSE}
 
-water.network <- igraph::simplify(igraph::graph_from_data_frame(d=water_edges, directed=F, vertices =  c(seq(101,120), "water")),remove.multiple = T, remove.loops = T) #Note that we have to specify the nodes here because not all calves were observed in contact with the water trough.
+water.network <- igraph::simplify(igraph::graph_from_data_frame(d=water_edges, directed=F, vertices =  c(seq(101,110), "water")),remove.multiple = T, remove.loops = T) #Note that we have to specify the nodes here because not all calves were observed in contact with the water trough.
 igraph::V(water.network)$color<- "orange1" #make calf nodes orange
 igraph::V(water.network)$color[length(igraph::V(water.network))]<- "steelblue1" #make water node blue
 igraph::V(water.network)$label<-NA #no need to label nodes
