@@ -1,6 +1,6 @@
 Package: contact
 Title: Creating Contact and Social Networks
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: 
     c(person(given = "Trevor", family = "Farthing", role = c("aut", "cre"),
     email = "tsfarthi@ncsu.edu"), person(given = "Daniel", family = "Dawson",
@@ -10,15 +10,15 @@ Description: Process spatiotemporal data into contact and social networks, and
     facilitate network analysis by randomizing individuals' movement paths 
     and/or related categorical variables. To use this package, users need only 
     have a dataset containing spatial data (i.e., latitude/longitude, or planar
-    xy coordinates), individual IDs relating spatial data to specific 
+    x & y coordinates), individual IDs relating spatial data to specific 
     individuals, and date/time information relating spatial locations to 
     temporal locations. The functionality of this package ranges from data
     "cleaning" via multiple filtration functions, to spatial and temporal data
     interpolation, and network creation and summarization. Functions within 
     this package are not limited to describing interpersonal contacts. Package 
     functions can also identify and quantify "contacts" between individuals 
-    and fixed areas (e.g., home ranges, waterbodies, buildings, etc.). As such,
-    this package is an incredibly useful resource for facilitating 
+    and fixed areas (e.g., home ranges, water bodies, buildings, etc.). As 
+    such, this package is an incredibly useful resource for facilitating 
     epidemiological, ecological, ethological and sociological research.
 Depends: R (>= 3.6.0)
 Imports:
@@ -40,9 +40,6 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
 BugReports: https://github.com/lanzaslab/contact/issues
-Citation: Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-    C. in Review. Accounting for space and uncertainty in real-time-location-
-    system-derived contact networks. Ecology and Evolution.
 Suggests: 
     knitr,
     rmarkdown

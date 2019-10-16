@@ -1,5 +1,7 @@
 ---
 title: "Using the contact package"
+author: "Trevor S. Farthing"
+date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Using_the_contact_package}

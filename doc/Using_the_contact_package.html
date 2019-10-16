@@ -11,7 +11,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<meta name="author" content="Trevor S. Farthing" />
 
+<meta name="date" content="2019-10-16" />
 
 <title>Using the contact package</title>
 
@@ -93,6 +95,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 <h1 class="title toc-ignore">Using the contact package</h1>
+<h4 class="author">Trevor S. Farthing</h4>
+<h4 class="date">2019-10-16</h4>
 
 
 
@@ -217,7 +221,7 @@ calves06012018 &lt;-<span class="st"> </span><span class="kw">droplevels</span>(
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">
 <span class="kw">system.time</span>(calves_filter1 &lt;-<span class="st"> </span>contact<span class="op">::</span><span class="kw">mps</span>(calves06012018, <span class="dt">id =</span> calves06012018<span class="op">$</span>calftag, <span class="dt">point.x =</span> calves06012018<span class="op">$</span>x, <span class="dt">point.y =</span> calves06012018<span class="op">$</span>y, <span class="dt">dateTime =</span> calves06012018<span class="op">$</span>dateTime, <span class="dt">mpsThreshold =</span> <span class="dv">10</span>, <span class="dt">lonlat =</span> <span class="ot">FALSE</span>, <span class="dt">parallel =</span> <span class="ot">FALSE</span>, <span class="dt">filterOutput =</span> <span class="ot">TRUE</span>)) <span class="co">#we assume that if calves' point-locations suggest they moved faster than 10m/s, points are erroneous and should be removed. #This did not remove any observations.</span>
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   3.998   0.065   4.120</span></code></pre></div>
+<span class="co">#&gt;   4.167   0.098   4.380</span></code></pre></div>
 <p>Now we want to ensure that all points are within the specific feedlot pen boundaries. As calves could not escape fedlot pens, points outside the pen or adjacent feed bunks are erroneous.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">
 confinementCoords &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">object =</span> <span class="kw">c</span>(<span class="st">&quot;feed&quot;</span>, <span class="st">&quot;feed&quot;</span>, <span class="st">&quot;feed&quot;</span>, <span class="st">&quot;feed&quot;</span>,<span class="st">&quot;fence&quot;</span>, <span class="st">&quot;fence&quot;</span>, <span class="st">&quot;fence&quot;</span>, <span class="st">&quot;fence&quot;</span>, <span class="st">&quot;fence&quot;</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">46.0118</span>, <span class="fl">46.6482</span>, <span class="fl">58.3415</span>, <span class="fl">57.6507</span>, <span class="fl">60.5775</span>, <span class="fl">29.3054</span>, <span class="fl">16.7602</span>, <span class="fl">17.0590</span>, <span class="fl">46.0309</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">197.0570</span>, <span class="fl">197.4131</span>, <span class="fl">175.9618</span>, <span class="fl">175.6284</span>, <span class="fl">170.4628</span>, <span class="fl">153.6002</span>, <span class="fl">176.5861</span>, <span class="fl">181.6315</span>, <span class="fl">197.1261</span>)) <span class="co">#these are the x &amp; y coordinates for the feedlot-pen fenceline and adjacent feedbunk vertices. Note that they are arranged in a clockwise order, as the confine function below requires input vertices to be ordered clockwise or counter-clockwise.</span>
@@ -233,14 +237,14 @@ confinementCoords &lt;-<span class="st"> </span><span class="kw">data.frame</spa
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">
 <span class="kw">system.time</span>(calves_filter3&lt;-<span class="st"> </span>contact<span class="op">::</span><span class="kw">dup</span>(calves_filter2, <span class="dt">id =</span> calves_filter2<span class="op">$</span>calftag, <span class="dt">point.x =</span> calves_filter2<span class="op">$</span>x, <span class="dt">point.y =</span> calves_filter2<span class="op">$</span>y, <span class="dt">dateTime =</span> calves_filter2<span class="op">$</span>dateTime, <span class="dt">avg =</span> <span class="ot">FALSE</span>, <span class="dt">parallel =</span> <span class="ot">FALSE</span>, <span class="dt">filterOutput =</span> <span class="ot">TRUE</span>)) <span class="co">#it looks like there were no duplicates to remove in the first place. We're ready to proceed with analyses.</span>
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   0.300   0.008   0.310</span></code></pre></div>
+<span class="co">#&gt;   0.319   0.012   0.331</span></code></pre></div>
 <p><strong>C.) Temporally smooth point-locations, ensuring that animals are observed at identical timepoints</strong></p>
 <p>Note: This was an unnecessary step in Section 1 because the water trough’s location was fixed and unchanging over time.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">
 <span class="co">#create our data set that shows calves average position every 10 seconds</span>
 <span class="kw">system.time</span>(calves.10secSmoothed &lt;-<span class="st"> </span>contact<span class="op">::</span><span class="kw">tempAggregate</span>(<span class="dt">x =</span> calves_filter3, <span class="dt">id =</span> calves_filter3<span class="op">$</span>calftag, <span class="dt">point.x =</span> calves_filter3<span class="op">$</span>x, <span class="dt">point.y =</span> calves_filter3<span class="op">$</span>y, <span class="dt">dateTime =</span> calves_filter3<span class="op">$</span>dateTime, <span class="dt">secondAgg =</span> <span class="dv">10</span>, <span class="dt">extrapolate.left =</span> <span class="ot">FALSE</span>, <span class="dt">resolutionLevel =</span> <span class="st">&quot;reduced&quot;</span>, <span class="dt">extrapolate.right =</span> <span class="ot">FALSE</span>, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>, <span class="dt">smooth.type =</span> <span class="dv">2</span>)) 
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   9.780   0.361  10.287</span></code></pre></div>
+<span class="co">#&gt;   9.236   0.347   9.619</span></code></pre></div>
 <p>Note that we set na.rm to TRUE and resolutionLevel to “reduced” here. This means that temporal intervals between observed relocations may not necessarily be equidistant, as when individuals were not observed at a given time point, they are removed from the data set (rather than introducing an NA instead). This speeds up later processing functions (because the size of calves.10secSmoothed is relatively small). Please note, however, that having equidistant temporal intervals between observed relocations is a requirement for some contact-function processes (e.g., the path-randomization procedure based on Spiegel <em>et al.</em> 2016 methods that can be implemented using contact::randomizePaths). Thus, before these specific processes can be run, the data set must be re-processed with na.rm == FALSE.</p>
 <p><strong>D.) Derive calf head and body polygons from point locations.</strong></p>
 <p>We could transform empirical point-locations into polygon vertices one vertex at a time by repeatedly using the repositionReferencePoint function, but the referencePoint2Polygon function provides an expediant shortcut for generating square/rectangular polygons from point-locations. Moving forward, we assume that calves’ body sizes are equivalent and stable, and that 0.333 m X 0.333 and 1.167 m X 0.5 m polygons accurately represent areas where calves’ heads and bodies exist, respectively.</p>
@@ -249,7 +253,7 @@ confinementCoords &lt;-<span class="st"> </span><span class="kw">data.frame</spa
 <span class="co">#Note that this is done using the original reference points, which denote the locations of RFID tags on individuals' left ears.</span>
 <span class="kw">system.time</span>(calf_heads &lt;-<span class="st"> </span>contact<span class="op">::</span><span class="kw">referencePoint2Polygon</span>(<span class="dt">x =</span> calves.10secSmoothed, <span class="dt">id =</span> calves.10secSmoothed<span class="op">$</span>id, <span class="dt">dateTime =</span> calves.10secSmoothed<span class="op">$</span>dateTime, <span class="dt">point.x =</span> calves.10secSmoothed<span class="op">$</span>x, <span class="dt">point.y =</span> calves.10secSmoothed<span class="op">$</span>y, <span class="dt">direction =</span> <span class="ot">NULL</span>, <span class="dt">StartLocation =</span> <span class="st">&quot;DL&quot;</span>, <span class="dt">UpDownRepositionLen =</span> <span class="fl">0.333</span>, <span class="dt">LeftRightRepositionLen =</span> <span class="fl">0.333</span>, <span class="dt">CenterPoint =</span> <span class="ot">FALSE</span>, <span class="dt">MidPoints =</span> <span class="ot">FALSE</span>, <span class="dt">immobThreshold =</span> <span class="dv">0</span>, <span class="dt">parallel =</span> <span class="ot">FALSE</span>, <span class="dt">modelOrientation =</span> <span class="dv">90</span>)) <span class="co">#Note that we do not specify an immobility threshold here. This is because the head polygons will later be unioned with body polygons generated from different point-locations, and prematurely thresholding them will potentially cause misalignment between the two polygons.</span>
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;    9.03    0.80    9.86</span>
+<span class="co">#&gt;   9.639   0.934  11.060</span>
 
 <span class="kw">head</span>(calf_heads) 
 <span class="co">#&gt;    id cornerPoint1.x cornerPoint1.y cornerPoint2.x cornerPoint2.y</span>
@@ -285,7 +289,7 @@ confinementCoords &lt;-<span class="st"> </span><span class="kw">data.frame</spa
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">
 <span class="kw">system.time</span>(leftShoulder.point&lt;-contact<span class="op">::</span><span class="kw">repositionReferencePoint</span>(<span class="dt">x =</span> calves.10secSmoothed, <span class="dt">id =</span> calves.10secSmoothed<span class="op">$</span>id, <span class="dt">dateTime =</span> calves.10secSmoothed<span class="op">$</span>dateTime, <span class="dt">point.x =</span> calves.10secSmoothed<span class="op">$</span>x, <span class="dt">point.y =</span> calves.10secSmoothed<span class="op">$</span>y, <span class="dt">direction =</span> <span class="ot">NULL</span>, <span class="dt">repositionAngle =</span> <span class="dv">180</span>, <span class="dt">repositionDist =</span> <span class="fl">0.0835</span>, <span class="dt">immobThreshold =</span> <span class="dv">0</span>, <span class="dt">parallel =</span> <span class="ot">FALSE</span>, <span class="dt">modelOrientation =</span> <span class="dv">90</span>))  <span class="co">#Again, see that we do not specify a immobility threshold here.</span>
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;  10.937   0.807  11.768</span></code></pre></div>
+<span class="co">#&gt;  10.723   0.838  11.593</span></code></pre></div>
 <p>Now we have the left-shoulder points, but before we create the bodies, let’s take examine these new points more closely.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">
 <span class="kw">head</span>(leftShoulder.point) 
@@ -323,7 +327,7 @@ confinementCoords &lt;-<span class="st"> </span><span class="kw">data.frame</spa
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">
 <span class="kw">system.time</span>(calf_bods &lt;-<span class="st"> </span>contact<span class="op">::</span><span class="kw">referencePoint2Polygon</span>(<span class="dt">x =</span> leftShoulder.point, <span class="dt">id =</span> leftShoulder.point<span class="op">$</span>id, <span class="dt">dateTime =</span> leftShoulder.point<span class="op">$</span>dateTime, <span class="dt">point.x =</span> leftShoulder.point<span class="op">$</span>x.adjusted, <span class="dt">point.y =</span> leftShoulder.point<span class="op">$</span>y.adjusted, <span class="dt">direction =</span> leftShoulder.point<span class="op">$</span>movementDirection, <span class="dt">StartLocation =</span> <span class="st">&quot;UL&quot;</span>, <span class="dt">UpDownRepositionLen =</span> <span class="fl">1.167</span>, <span class="dt">LeftRightRepositionLen =</span> <span class="fl">0.5</span>, <span class="dt">CenterPoint =</span> <span class="ot">FALSE</span>, <span class="dt">MidPoints =</span> <span class="ot">TRUE</span>, <span class="dt">immobThreshold =</span> <span class="dv">0</span>, <span class="dt">parallel =</span> <span class="ot">FALSE</span>, <span class="dt">modelOrientation =</span> <span class="dv">90</span>)) <span class="co">#note that direction == leftShoulder.point$movementDirection. </span>
 <span class="co">#&gt;    user  system elapsed </span>
-<span class="co">#&gt;   9.033   0.800   9.853</span>
+<span class="co">#&gt;   9.143   0.838  10.015</span>
 
 <span class="kw">head</span>(calf_bods) <span class="co">#notice the additional columns compared to calf_heads</span>
 <span class="co">#&gt;    id cornerPoint1.x cornerPoint1.y midPoint1.x midPoint1.y cornerPoint2.x</span>

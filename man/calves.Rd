@@ -13,7 +13,7 @@
   \item{date}{date on which fix location occurred}
 }}
 \source{
-\url{https://doi.org/10.1016/j.epidem.2018.08.003/}
+\url{https://doi.org/10.1016/j.epidem.2018.08.003}
 }
 \usage{
 data(calves)
