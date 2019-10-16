@@ -1,2 +1,8 @@
+^data-raw$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^issues$
+^package_management_code$
+^inProgress_functions$
+^doc$
+^Meta$
