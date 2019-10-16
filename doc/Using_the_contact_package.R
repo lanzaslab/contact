@@ -1,7 +1,10 @@
 ## ---- include = FALSE----------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.height = 4, 
+  fig.width = 7, 
+  fig.align = "center"
 )
 
 ## ----setup---------------------------------------------------------------
@@ -81,7 +84,7 @@ library(contact)
 #  igraph::plot.igraph(water.network, layout = watercoords1)
 #  
 
-## ----polygon-derivation, echo=FALSE--------------------------------------
+## ----polygon-derivation, echo=FALSE, out.width = "600px"-----------------
 knitr::include_graphics("Farthing_Figure1.PNG")
 
 ## ----Section 2, echo=TRUE, warning = FALSE-------------------------------
@@ -167,15 +170,15 @@ fullBodyExample <- data.frame(section = c("body", rep("head", 4), rep("body", 5)
  legend(39.2, 193.8, col = c(1,2), legend = c("body", "head"), cex = 0.7, pch = 16)}
 
 
-## ---- echo=FALSE---------------------------------------------------------
+## ---- echo=FALSE, warning=FALSE------------------------------------------
 
 calves.10secSmoothed.subset<-droplevels(calves.10secSmoothed[1:30,]) #subset for speed
 leftShoulder.point.subset<-droplevels(leftShoulder.point[1:30,]) #subset for speed
 
 #new polygon sets
-system.time(calf_heads2 <- contact::referencePoint2Polygon(x = calves.10secSmoothed.subset, id = calves.10secSmoothed.subset$id, dateTime = calves.10secSmoothed.subset$dateTime, point.x = calves.10secSmoothed.subset$x, point.y = calves.10secSmoothed.subset$y, direction = NULL, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90))
+calf_heads2 <- contact::referencePoint2Polygon(x = calves.10secSmoothed.subset, id = calves.10secSmoothed.subset$id, dateTime = calves.10secSmoothed.subset$dateTime, point.x = calves.10secSmoothed.subset$x, point.y = calves.10secSmoothed.subset$y, direction = NULL, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90)
 
-system.time(calf_bods2 <- contact::referencePoint2Polygon(x = leftShoulder.point.subset, id = leftShoulder.point.subset$id, dateTime = leftShoulder.point.subset$dateTime, point.x = leftShoulder.point.subset$x.adjusted, point.y = leftShoulder.point.subset$y.adjusted, direction = leftShoulder.point.subset$movementDirection, StartLocation = "UL", UpDownRepositionLen = 1.167, LeftRightRepositionLen = 0.5, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90)) #note that direction == leftShoulder.point$movementDirection. 
+calf_bods2 <- contact::referencePoint2Polygon(x = leftShoulder.point.subset, id = leftShoulder.point.subset$id, dateTime = leftShoulder.point.subset$dateTime, point.x = leftShoulder.point.subset$x.adjusted, point.y = leftShoulder.point.subset$y.adjusted, direction = leftShoulder.point.subset$movementDirection, StartLocation = "UL", UpDownRepositionLen = 1.167, LeftRightRepositionLen = 0.5, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90) #note that direction == leftShoulder.point$movementDirection. 
 
 calf_FullBody2 <- data.frame(calf_id = calf_bods2$id, vertex1.x = calf_bods2$cornerPoint1.x, vertex1.y = calf_bods2$cornerPoint1.y, vertex2.x = calf_heads2$cornerPoint1.x, vertex2.y = calf_heads2$cornerPoint1.y, vertex3.x = calf_heads2$cornerPoint2.x, vertex3.y = calf_heads2$cornerPoint2.y, vertex4.x = calf_heads2$cornerPoint3.x, vertex4.y = calf_heads2$cornerPoint3.y, vertex5.x = calf_heads2$cornerPoint4.x, vertex5.y = calf_heads2$cornerPoint4.y, vertex6.x = calf_bods2$cornerPoint2.x, vertex6.y = calf_bods2$cornerPoint2.y,  vertex7.x = calf_bods2$midPoint2.x, vertex7.y = calf_bods2$midPoint2.y, vertex8.x = calf_bods2$cornerPoint3.x, vertex8.y = calf_bods2$cornerPoint3.y, vertex9.x = calf_bods2$cornerPoint4.x, vertex9.y = calf_bods2$cornerPoint4.y, vertex10.x = calf_bods2$midPoint4.x, vertex10.y = calf_bods2$midPoint4.y, dateTime = calf_bods2$dateTime)
  

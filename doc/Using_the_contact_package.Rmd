@@ -10,7 +10,10 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.height = 4, 
+  fig.width = 7, 
+  fig.align = "center"
 )
 ```
 ## Package description and vignette purpose
@@ -163,7 +166,7 @@ The steps for direct-contact-network creation are described below.
 
   Note: This is done using a novel methodology described in detail in a manuscript currently under review for publication in *Ecology and Evolution* (the same manuscript in which we introduce this package to the scientific community). Our methodology is briefly outlined by the figure below.
   
-```{r polygon-derivation, echo=FALSE}
+```{r polygon-derivation, echo=FALSE, out.width = "600px"}
 knitr::include_graphics("Farthing_Figure1.PNG")
 ```
 *Steps for deriving polygons representing calf physical space. (a) Create a planar model describing the physical dimensions of the animal, and denote where where tracking devices (i.e., loc(it)-star) exist on the individual’s body. Note that "star" designations differentiate planar-model parameters from their empirical counterparts, and that eta-star is used to describe the orientation of this model (b) Describe the location of each vertex, V(itl)-star, exists relative to loc(it)-star. Here, we use V(it1)-star as a specific example. (c) Using the relative location information ascribed to each vertex in the planar model, interpolate empirical vertex coordinates, {V(it)}, while accounting for angular direction of observed movements (eta). Thus, point-location transformations maintain observed angular orientations for individuals' movement paths.*
@@ -314,15 +317,15 @@ Recall that these polygons were created without specifying immobility threshold 
 
 For reference, we show an example of a misalignment that may occur when enforcing an immobility threshold of 0.1m for head and body polygons prior to unioning them. Note that this is the same polygon that was shown above (i.e., same individual at the same time step).
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 
 calves.10secSmoothed.subset<-droplevels(calves.10secSmoothed[1:30,]) #subset for speed
 leftShoulder.point.subset<-droplevels(leftShoulder.point[1:30,]) #subset for speed
 
 #new polygon sets
-system.time(calf_heads2 <- contact::referencePoint2Polygon(x = calves.10secSmoothed.subset, id = calves.10secSmoothed.subset$id, dateTime = calves.10secSmoothed.subset$dateTime, point.x = calves.10secSmoothed.subset$x, point.y = calves.10secSmoothed.subset$y, direction = NULL, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90))
+calf_heads2 <- contact::referencePoint2Polygon(x = calves.10secSmoothed.subset, id = calves.10secSmoothed.subset$id, dateTime = calves.10secSmoothed.subset$dateTime, point.x = calves.10secSmoothed.subset$x, point.y = calves.10secSmoothed.subset$y, direction = NULL, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90)
 
-system.time(calf_bods2 <- contact::referencePoint2Polygon(x = leftShoulder.point.subset, id = leftShoulder.point.subset$id, dateTime = leftShoulder.point.subset$dateTime, point.x = leftShoulder.point.subset$x.adjusted, point.y = leftShoulder.point.subset$y.adjusted, direction = leftShoulder.point.subset$movementDirection, StartLocation = "UL", UpDownRepositionLen = 1.167, LeftRightRepositionLen = 0.5, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90)) #note that direction == leftShoulder.point$movementDirection. 
+calf_bods2 <- contact::referencePoint2Polygon(x = leftShoulder.point.subset, id = leftShoulder.point.subset$id, dateTime = leftShoulder.point.subset$dateTime, point.x = leftShoulder.point.subset$x.adjusted, point.y = leftShoulder.point.subset$y.adjusted, direction = leftShoulder.point.subset$movementDirection, StartLocation = "UL", UpDownRepositionLen = 1.167, LeftRightRepositionLen = 0.5, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90) #note that direction == leftShoulder.point$movementDirection. 
 
 calf_FullBody2 <- data.frame(calf_id = calf_bods2$id, vertex1.x = calf_bods2$cornerPoint1.x, vertex1.y = calf_bods2$cornerPoint1.y, vertex2.x = calf_heads2$cornerPoint1.x, vertex2.y = calf_heads2$cornerPoint1.y, vertex3.x = calf_heads2$cornerPoint2.x, vertex3.y = calf_heads2$cornerPoint2.y, vertex4.x = calf_heads2$cornerPoint3.x, vertex4.y = calf_heads2$cornerPoint3.y, vertex5.x = calf_heads2$cornerPoint4.x, vertex5.y = calf_heads2$cornerPoint4.y, vertex6.x = calf_bods2$cornerPoint2.x, vertex6.y = calf_bods2$cornerPoint2.y,  vertex7.x = calf_bods2$midPoint2.x, vertex7.y = calf_bods2$midPoint2.y, vertex8.x = calf_bods2$cornerPoint3.x, vertex8.y = calf_bods2$cornerPoint3.y, vertex9.x = calf_bods2$cornerPoint4.x, vertex9.y = calf_bods2$cornerPoint4.y, vertex10.x = calf_bods2$midPoint4.x, vertex10.y = calf_bods2$midPoint4.y, dateTime = calf_bods2$dateTime)
  
