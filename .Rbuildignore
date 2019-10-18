@@ -10,3 +10,4 @@
 ^CRAN_comments$
 ^README$
 ^NEWS$
+^vignettes$
