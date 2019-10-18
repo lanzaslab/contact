@@ -3,6 +3,6 @@
 
 # contact 1.0.0
 
-  - submitted to CRAN on 10/10/2019
+  - submitted to CRAN on 10/18/2019
 
 \`\`\`

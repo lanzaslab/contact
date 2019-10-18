@@ -11,7 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Test environments
 * local macOS Mojave (10.14.6), R 3.6.0
-* local Windows 10 (10.0.17763), R 3.6.1, devel
+* local Windows 10 (10.0.17763), R 3.6.1
+* winbuilder, devel
 
 ## R CMD check results
 There were no ERRORs or WARNINGs. 
