@@ -94,7 +94,7 @@ dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel
   
   if (parallel == TRUE){
     cl<-parallel::makeCluster(nCores)
-    if(nrow(y.sf) > 9){ #for some reason the apply function would always return " Error in from[[1]] : subscript out of bounds " when processing rows 9-10. When run individually or run with sets ≤ 9, or ≥ 10 it worked just fine.
+    if(nrow(y.sf) > 9){ #for some reason the apply function would always return " Error in from[[1]] : subscript out of bounds " when processing rows 9-10. When run individually or run with sets <= 9, or >= 10 it worked just fine.
       spat.apply1 <-parallel::parApply(cl, breakFrame[1:9,], 1, spatDistCalc, y = y.sf, z = x.spatial)
       spat.apply2 <-parallel::parApply(cl, breakFrame[10:nrow(y.sf),], 1, spatDistCalc, y = y.sf, z = x.spatial)
       parallel::stopCluster(cl)
@@ -106,7 +106,7 @@ dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel
       parallel::stopCluster(cl)
     }
   }else{ #if parallel == FALSE
-    if(nrow(y.sf) > 9){ #for some reason the apply function would always return " Error in from[[1]] : subscript out of bounds " when processing rows 9-10. When run individually or run with sets ≤ 9, or ≥ 10 it worked just fine.
+    if(nrow(y.sf) > 9){ #for some reason the apply function would always return " Error in from[[1]] : subscript out of bounds " when processing rows 9-10. When run individually or run with sets <= 9, or >= 10 it worked just fine.
       spat.apply1 <- apply(breakFrame[1:9,], 1, spatDistCalc, y = y.sf, z = x.spatial)
       spat.apply2 <- apply(breakFrame[10:nrow(y.sf),], 1, spatDistCalc, y = y.sf, z = x.spatial)
       bind1<-data.frame(data.table::rbindlist(spat.apply1))

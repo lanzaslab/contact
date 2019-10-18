@@ -7,7 +7,7 @@
 #' Note: the shuffle argument supercedes the maintainDistr argument. Therefore,
 #'    if shuffle == TRUE, the maintainDistr argument is irrelevant. 
 #' @param x Data frame containing real-time-location data.
-#' @param feature Vector of length ≥ 1 containing the column names of variables
+#' @param feature Vector of 1 or more column names describing variables
 #'    in x to be randomized.
 #' @param shuffle Logical. If TRUE, unique values will be replaced with 
 #'    another, random unique value from the same distribution with 100% 
@@ -37,7 +37,7 @@
 #'    numRandomizations = 3)) #note: in this example, there's only one unique 
 #'    #"date" value, so there's no point in randomizing this vector. The "date"
 #'    #column was only included here to demonstrate that the feature argument 
-#'    #can be a vector of length ≥ 1.
+#'    #can be a vector of length >= 1.
 #'    
 #' randomizedFrame<-data.frame(randomizedValues[[1]])
 #' 

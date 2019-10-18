@@ -10,7 +10,7 @@ randomizeFeature(x, feature = NULL, shuffle = FALSE,
 \arguments{
 \item{x}{Data frame containing real-time-location data.}
 
-\item{feature}{Vector of length ≥ 1 containing the column names of variables
+\item{feature}{Vector of 1 or more column names describing variables
 in x to be randomized.}
 
 \item{shuffle}{Logical. If TRUE, unique values will be replaced with 
@@ -48,7 +48,7 @@ system.time(randomizedValues<-contact::randomizeFeature(x = calves,
    numRandomizations = 3)) #note: in this example, there's only one unique 
    #"date" value, so there's no point in randomizing this vector. The "date"
    #column was only included here to demonstrate that the feature argument 
-   #can be a vector of length ≥ 1.
+   #can be a vector of length >= 1.
    
 randomizedFrame<-data.frame(randomizedValues[[1]])
 
