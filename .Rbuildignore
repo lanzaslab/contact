@@ -9,5 +9,8 @@
 ^tarballs$
 ^CRAN_comments$
 ^README$
+<<<<<<< HEAD
 ^NEWS$
 ^vignettes$
+=======
+>>>>>>> 451b87779bee5acee89346fbede58e43de376839
