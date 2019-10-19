@@ -151,16 +151,22 @@ data("calves")
 calves.dateTime<-datetime.append(calves, date = calves$date, 
    time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+   point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
+   extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
+   na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
+
 #Because the head is not the same width of the body and is assumed to be centered at the 
    #front of the body, before creating body polygons, we must move reference points (on the 
    #left ear) to the left by 0.3335 m to reposition them at the upper-left corner of calves 
    #bodies. Note that we are assuming left ears (where the tracking devices are located) are 
    #parallel to shoulder-tips. 
-system.time(leftShoulder.point<-contact::repositionReferencePoint(x = calves.dateTime, 
-   id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime, 
-   point.x = calves.dateTime$x, point.y = calves.dateTime$y, direction = NULL, 
+leftShoulder.point<-contact::repositionReferencePoint(x = calves.agg, 
+   id = calves.agg$id, dateTime = calves.agg$dateTime, 
+   point.x = calves.agg$x, point.y = calves.agg$y, direction = NULL, 
    repositionAngle = 180, repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, 
-   modelOrientation = 90)) 
+   modelOrientation = 90)
    #Note that we do not specify a standing threshold here. Rather, we will do so when we create 
    #the polygon later on. See the package vignette.
 }

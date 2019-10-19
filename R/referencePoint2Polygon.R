@@ -142,15 +142,21 @@
 #' calves.dateTime<-datetime.append(calves, date = calves$date,
 #'    time = calves$time) #add dateTime identifiers for location fixes.
 #' 
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
+#'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
+#'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
+#'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
+#' 
 #' #Create 0.333 m X 0.333 m calf head polygons.
 #'   #Note that this is done using the original reference points which denote the locations of RFID
 #'   #tags on individuals' left ears.
-#' system.time(calf_heads <- contact::referencePoint2Polygon(x = calves.dateTime,
-#'    id = calves.dateTime$calftag, dateTime = calves.dateTime$dateTime,
-#'    point.x = calves.dateTime$x, point.y = calves.dateTime$y, direction = NULL,
+#' calf_heads <- contact::referencePoint2Polygon(x = calves.agg,
+#'    id = calves.agg$id, dateTime = calves.agg$dateTime,
+#'    point.x = calves.agg$x, point.y = calves.agg$y, direction = NULL,
 #'    StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333,
 #'    CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE,
-#'    modelOrientation = 90))
+#'    modelOrientation = 90)
 
 referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, StartLocation = "UL", UpDownRepositionLen = 1, LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0, parallel = FALSE, nCores = parallel::detectCores(), modelOrientation = 90){
 

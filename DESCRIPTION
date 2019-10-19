@@ -6,7 +6,7 @@ Authors@R:
     email = "tsfarthi@ncsu.edu"), person(given = "Daniel", family = "Dawson",
     role = "aut", email = "dedawson@ncsu.edu"), person(given = "Cristina", 
     family = "Lanzas", role = "ctb", email = "clanzas@ncsu.edu"))
-Description: Process spatiotemporal data into contact and social networks, and
+Description: Process spatio-temporal data into contact and social networks, and
     facilitate network analysis by randomizing individuals' movement paths 
     and/or related categorical variables. To use this package, users need only 
     have a dataset containing spatial data (i.e., latitude/longitude, or planar
@@ -14,7 +14,7 @@ Description: Process spatiotemporal data into contact and social networks, and
     individuals, and date/time information relating spatial locations to 
     temporal locations. The functionality of this package ranges from data
     "cleaning" via multiple filtration functions, to spatial and temporal data
-    interpolation, and network creation and summarization. Functions within 
+    interpolation, and network creation and analysis. Functions within 
     this package are not limited to describing interpersonal contacts. Package 
     functions can also identify and quantify "contacts" between individuals 
     and fixed areas (e.g., home ranges, water bodies, buildings, etc.). As 
