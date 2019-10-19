@@ -162,6 +162,7 @@ Second, unless the direction argument is specifically given (i.e.,
    absolute movement directions, as opposed to relative ones.
 }
 \examples{
+\donttest{
 #read in the calves data set
 data("calves")
 calves.dateTime<-datetime.append(calves, date = calves$date,
@@ -182,6 +183,7 @@ calf_heads <- contact::referencePoint2Polygon(x = calves.agg,
    StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333,
    CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE,
    modelOrientation = 90)
+   }
 }
 \references{
 Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 

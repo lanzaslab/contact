@@ -126,6 +126,7 @@
 #'    system-derived contact networks. Ecology and Evolution.
 #' @export
 #' @examples
+#' \donttest{
 #' #read in the calves data set
 #' data("calves")
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
@@ -149,6 +150,7 @@
 #'    modelOrientation = 90)
 #'    #Note that we do not specify a standing threshold here. Rather, we will do so when we create 
 #'    #the polygon later on. See the package vignette.
+#'    }
 
 repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, repositionAngle = 0, repositionDist = 1, immobThreshold = 0, parallel = FALSE, nCores = parallel::detectCores(), modelOrientation = 90){
 

@@ -146,6 +146,7 @@ Second, unless the direction argument is specifically given (i.e.,
    absolute movement directions, as opposed to relative ones.
 }
 \examples{
+\donttest{
 #read in the calves data set
 data("calves")
 calves.dateTime<-datetime.append(calves, date = calves$date, 
@@ -169,6 +170,7 @@ leftShoulder.point<-contact::repositionReferencePoint(x = calves.agg,
    modelOrientation = 90)
    #Note that we do not specify a standing threshold here. Rather, we will do so when we create 
    #the polygon later on. See the package vignette.
+   }
 }
 \references{
 Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 

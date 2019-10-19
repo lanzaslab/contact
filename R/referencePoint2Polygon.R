@@ -137,6 +137,7 @@
 #'    system-derived contact networks. Ecology and Evolution.
 #' @export
 #' @examples
+#' \donttest{
 #' #read in the calves data set
 #' data("calves")
 #' calves.dateTime<-datetime.append(calves, date = calves$date,
@@ -157,6 +158,7 @@
 #'    StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333,
 #'    CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE,
 #'    modelOrientation = 90)
+#'    }
 
 referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, StartLocation = "UL", UpDownRepositionLen = 1, LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0, parallel = FALSE, nCores = parallel::detectCores(), modelOrientation = 90){
 
