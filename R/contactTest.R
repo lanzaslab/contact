@@ -9,32 +9,33 @@
 #'    contactDur.area output generated from randomized data (rand.input).
 #'
 #' Note: The current functionality is limited to comparisons using the 
-#'    X-squared test of independence or Mantel test for evaluating correlations
-#'    between two matrices. Please note that the output of this function 
-#'    changes based on what test is run. The assumptions and intricacies 
-#'    associated with running these tests here are described below in brief. 
+#'    X-squared "goodness of fit" test or Mantel test for evaluating 
+#'    correlations between two matrices. Please note that the output of this 
+#'    function changes based on what test is run. The assumptions and 
+#'    intricacies associated with running these tests here are described below 
+#'    in brief. 
 #'    
 #'    X-Squared (chisq.test): In this function, chisq.test is used to compare 
-#'    the observed number of TSWs (temporal sampling windows; see the 
-#'    tempAggregate function) in a given dataset, emp.input, that individuals 
-#'    spent in contact with other individuals or fixed locations (i.e., 
-#'    observed contact counts) to those reported by a NULL model, rand.input 
-#'    (i.e., expected contact counts). This test requires equidistant TSWs in 
-#'    each movement paths within dist.input. The dist (z ; from dist.all or 
-#'    dist2Area output) input is used here to determine how frequently each 
-#'    individual was observed in the empirical dataset/block of interest, 
-#'    allowing us to calculate the number of TSWs each individual was present 
-#'    but not involved in contacts. Note here that if X-squared expected 
-#'    values will be very small, approximations of p may not be right (and in 
-#'    fact, all estimates will be poor). It may be best to weight these tests 
-#'    differently. To address this, I've added the "warning" column to the 
-#'    output which notifies users when the chi-sq function reported that 
-#'    results may be inaccurate. Output is a list contataining two data 
-#'    frames. The first data frame contains pairwise analyses of node degree 
-#'    and total edge weight (i.e., the sum of all observed contacts involving 
-#'    each individual). The second data frame contains results of pairwise 
-#'    analyses specific dyadic relationships (e.g., contacts between 
-#'    individuals 1 and 2). Each data frame contains the following columns: 
+#'    the distribution of observed inter-animal or animal-environment contacts 
+#'    in an empirical dataset, emp.input, to a distribution described in a NULL
+#'    model, rand.input (i.e., expected contact counts). This test requires 
+#'    equidistant TSWs (temporal-sampling windows; see the tempAggregate 
+#'    function) in each movement path within dist.input. The dist.input (i.e., 
+#'    output from dist.all or dist2Area functions) is used here to determine 
+#'    how frequently each individual was observed in the empirical 
+#'    dataset/block of interest, allowing us to calculate the number of TSWs 
+#'    each individual was present but not involved in contacts. Note here that 
+#'    if X-squared expected values will be very small, approximations of p may 
+#'    not be right (and in fact, all estimates will be poor). It may be best 
+#'    to weight these tests differently. To address this, We've added the 
+#'    "warning" column to the output which notifies users when the chi-sq 
+#'    function reported that results may be inaccurate. Output is a list 
+#'    contataining two data frames. The first data frame contains pairwise 
+#'    analyses of node degree and total edge weight (i.e., the sum of all 
+#'    observed contacts involving each individual). The second data frame 
+#'    contains results of pairwise analyses specific dyadic relationships 
+#'    (e.g., contacts between individuals 1 and 2). Each data frame contains 
+#'    the following columns: 
 #'    
 #'    id1 - the id of the first individual involved in the contact.
 #'    
