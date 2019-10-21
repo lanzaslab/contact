@@ -1,0 +1,685 @@
+---
+title: "Using the contact package"
+author: "Trevor S. Farthing"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using_the_contact_package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.height = 4, 
+  fig.width = 7, 
+  fig.align = "center"
+)
+```
+## Package description and vignette purpose
+
+The contact package is intended to allow for easy processing of spatiotemporal data into contact and social networks, and facilitate network analysis by randomizing individuals' movement paths and/or related categorical variables. To use this package, users need only have a dataset containing spatial data (i.e., latitude/longitude, or planar xy coordinates), individual IDs relating spatial data to specific individuals, and date/time information relating spatial locations to temporal locations. The functionality of this package ranges from data "cleaning" via multiple filtration functions, to spatial and temporal data interpolation, and network creation and summarization. Functions within this package are not limited to describing interpersonal contacts. Package functions can also identify and quantify "contacts" between individuals and fixed areas (e.g., home ranges, waterbodies, buildings, etc.). As such, this package is an incredibly useful resource for facilitating epidemiological, ecological, ethological and sociological research.
+
+Here we demonstrate how to use contact functions to:
+
+###1.) Create a point-location-based environmental-contact network
+###2.) Create polygon-intersection-based contact networks using point-location data
+###3.) Test networks against NULL models
+###4.) Increase processing speed when using certain contact functions
+
+Please note that a manuscript detailing novel methodologies we've developed for accounting for space and real-time-location-system accuracy when creating contact networks from point-location data is currently under review for publication in *Ecology and Evolution*. This same manuscript will introduce the *contact* package to the scientific community. Methods from this manuscript are described briefly in this vignette, but will be described in much greater detail upon publication of our manuscript. In this vignette, you may notice the citation "Farthing *et al.* (in Review)." This citation refers to the aforementioned manuscript. When the manuscript is published, we will update citation and reference information here.
+
+```{r setup}
+#load the contact package
+library(contact)
+
+```
+###Section 1.) Creating a point-location-based environmental contact network
+
+Here, we show how to create a contact network detailing the number of contacts each tracked individual has with fixed area/points. In this case, our network will represent contacts between calves in a single feedlot pen with their water trough (for which we know the coordinates). The data set we use, calves, is comprised of point-locations collected using a radio-telemetry-based real-time location system (RTLS) (Smartbow GmbH, Weibern, Austria) to monitor the locations of n = 10 steers in a single 30m X 35m feedlot pen located at the Kansas State University Beef Cattle Research Center in Manhattan, KS. Manufacturer-reported RTLS spatial resolution and accuracy was 0.5m and 90%, respectively (i.e., 90% of location fixes are within 0.5m of animals' true locations). Tracked steers were approximately 1.5 years old, with estimated 1.5-m nose-to-tail lengths and 0.5-m shoulder widths, and radio-frequency-identication (RFID) tracking devices were located on animals' left ears. Data in this set were collected continuously between 00:00:00 and 02:00:00 UTC on 06/01/2018 at a 5-10s temporal resolution (i.e., positional fixes for each individual were obtained every 5-10 seconds).
+
+Using the calves data set, we identify the number of "contacts" each individual in had with the water trough in their pen. We define "contact" as occuring when point-locations were within a pre-determine spatial-threshold distance (SpTh) of water-trough edges. In this case, we set our initial SpTh as 0.333 m (i.e., the approximate distace from RFID tags to calves' noses), then re-define this SpTh to account for RTLS accuracy using the findDistThresh function below. 
+
+The steps for environmental-contact network creation are described below.
+
+**A.) Ensure all required columns exist in the calves data set (i.e., xy coordinates, unique individual IDs, dateTime).**
+
+**B.) Calculate distances between the water-trough polygon and calves at each time step.**
+
+**C.) Identify what SpTh value will allow us to capture 99% of contacts, defined as instances when point-locations were within 0.333 m of the water trough, given the RTLS accuracy.**
+
+**D.) Identify time points when calves were within the re-adjusted SpTh distance from water trough.**
+
+**E.) Visualize the contact network with edgeweights weighted according to number of observed contacts.**
+
+```{r Section 1, echo=TRUE, warning = FALSE, eval = FALSE}
+
+data("calves") #load the calves data set
+
+```
+
+**A.) Ensure all required columns exist in the calves data set (i.e., xy coordinates, unique individual IDs, dateTime)**
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+head(calves)#The calves data set does not have a singular dateTime column. Rather, it has "date" and "time" columns. We must append a dateTime column to the data frame.
+
+system.time(calves.dateTime<- contact::datetime.append(x = calves, date = calves$date, time= calves$time, dateTime = NULL, dateFormat = "mdy", dateFake = FALSE, startYear = NULL, tz.in = "UTC", tz.out = NULL, month = FALSE, day = FALSE, year = FALSE, hour = FALSE, minute = FALSE, second = FALSE, daySecond = FALSE, totalSecond = FALSE))
+
+```
+
+**B.) Calculate distances between the water-trough polygon and calves at each time step.**
+
+First, we must define the location of the water trough. To do this, we read in point-location data for the water-trough vertices.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622), y = c(62.44815, 62.73341, 61.93864, 61.67411)) #This is a data frame containing the x and y coordinates of the four trough vertices.
+
+```
+
+As noted in the dist2Area_df help documention, polygon-vertex coordinates must be arranged in a particular way. Here we arrange them accordingly.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+water_poly<-data.frame(matrix(ncol = 8, nrow = 1)) #(ncol = number of vertices)*2
+colnum = 0
+for(h in 1:nrow(water)){
+  water_poly[1,colnum + h] <- water$x[h] #pull the x location for each vertex
+  water_poly[1, (colnum + 1 + h)] <- water$y[h] #pull the y location for each vertex
+  colnum <- colnum + 1
+}
+
+```
+
+Calculate distances between calves and the water polygon at every timestep.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(water_distance<-contact::dist2Area_df(x = calves.dateTime, y = water_poly, x.id = "calftag", y.id = "water", dateTime = "dateTime", point.x = calves.dateTime$x, point.y = calves.dateTime$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", lonlat = FALSE, numVertices = NULL)) #note that the poly.xy and numVertices arguments refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," these arguments are irrelevant here.
+
+head(water_distance)
+
+```
+
+**C.) Identify what SpTh value will allow us to capture 99% of contacts, defined as instances when point-locations were within 0.333 m of the water trough, given the RTLS accuracy.**
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(SpThValues<-contact::findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.5)) #spTh represents the initially-defined spatial threshold for contact
+
+SpThValues #it looks like an adjusted SpTh value of approximately 0.74 m will likely capture 99% of contacts, defined as instances when point-locations were within 0.333 m of the water trough, given the RTLS accuracy. #Note that because these confidence intervals are obtained from distributions generated from random samples, every time this function is run, results will be slightly different. 
+
+CI_99<-unname(SpThValues[21]) #we will use this SpTh value moving forward.
+
+```
+
+**D.) Identify time points when calves were within the re-adjusted SpTh distance from water trough.**
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(water_contacts <- contact::contactDur.area(water_distance, dist.threshold=CI_99,sec.threshold=1, blocking = FALSE, equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)) #Note that because we are not interested in making a time-aggregated network with > 1 temporal levels, we set blocking = FALSE to reduce processing time.
+
+head(water_contacts)
+
+```
+
+**E.) Visualize the contact network with edgeweights weighted according to number of observed contacts.**
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(water_edges<- contact::ntwrkEdges(x = water_contacts, importBlocks = FALSE, removeDuplicates = TRUE)) #get specific weighted edges
+
+head(water_edges)
+
+```
+Now we can vizualize the network using igraph functions.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+water.network <- igraph::simplify(igraph::graph_from_data_frame(d=water_edges, directed=F, vertices =  c(seq(101,110), "water")),remove.multiple = T, remove.loops = T) #Note that we have to specify the nodes here because not all calves were observed in contact with the water trough.
+igraph::V(water.network)$color<- "orange1" #make calf nodes orange
+igraph::V(water.network)$color[length(igraph::V(water.network))]<- "steelblue1" #make water node blue
+igraph::V(water.network)$label<-NA #no need to label nodes
+igraph::V(water.network)$size <-13
+igraph::V(water.network)$shape<-c(rep("circle", (length(igraph::V(water.network)) - 1)), "square") #make the calf nodes circular and the water node square
+igraph::E(water.network)$width <- water_edges$duration/10 #edge width is proportional to contact frequency
+igraph::E(water.network)$color <- "black" #make edges black
+watercoords1<- igraph::layout_as_star(water.network, center = igraph::V(water.network)[length(igraph::V(water.network))]) #set the center of the star layout as the water polygon
+igraph::plot.igraph(water.network, layout = watercoords1)
+
+```
+###Section 2.) Creating polygon-intersection-based direct-contacts network using point-location data
+
+Here, we show how to create contact networks detailing the number of direct, physical contacts between tracked individuals. We derive polygons represntative of animals' physical space from point-locations. We then define "contact" as occuring when polygons intersect (i.e., SpTh == 0). However, we re-define this SpTh to account for RTLS accuracy using the findDistThresh function below. 
+
+The data set we use, calves2018, is comprised of point-locations collected using a radio-telemetry-based real-time location system (RTLS) (Smartbow GmbH, Weibern, Austria) to monitor the locations of n = 20 steers in a 30m X 35m feedlot pen located at the Kansas State University Beef Cattle Research Center in Manhattan, KS. Manufacturer-reported RTLS spatial resolution and accuracy was 0.5m and 90%, respectively (i.e., 90% of location fixes are within 0.5m of animals' true locations). Tracked steers were approximately 1.5 years old, with estimated 1.5-m nose-to-tail lengths and 0.5-m shoulder widths, and radio-frequency-identication (RFID) tracking devices were located on animals' left ears. Data in this set were collected continuously between 00:00:00 06/01/2018 and 11:59:59 06/03/2018 UTC at a 5-10s temporal resolution (i.e., positional fixes for each individual were obtained every 5-10 seconds). However, to reduce processing time in this vignette, we subset the calves2018 data set to only contain point-locations observed between 00:00:00 and 11:59:59 UTC on 06/01/2018. 
+
+The steps for direct-contact-network creation are described below.
+
+**A.) Subset calves2018 and ensure all required columns exist in the calves data set (i.e., xy coordinates, unique individual IDs, dateTime).**
+
+**B.) Clean and filter the data set.**
+
+**C.) Temporally smooth point-locations, ensuring that animals are observed at identical timepoints (Note: this was an unnecessary step in Section 1 because the water trough's location was fixed and unchanging over time).**
+
+**D.) Derive calf head and body polygons from point locations.**
+
+  Note: This is done using a novel methodology described in detail in a manuscript currently under review for publication in *Ecology and Evolution* (the same manuscript in which we introduce this package to the scientific community). Our methodology is briefly outlined by the figure below.
+  
+```{r polygon-derivation, echo=FALSE, out.width = "600px"}
+knitr::include_graphics("Farthing_Figure1.PNG")
+```
+*Steps for deriving polygons representing calf physical space. (a) Create a planar model describing the physical dimensions of the animal, and denote where where tracking devices (i.e., loc(it)-star) exist on the individual's body. Note that "star" designations differentiate planar-model parameters from their empirical counterparts, and that eta-star is used to describe the orientation of this model (b) Describe the location of each vertex, V(itl)-star, exists relative to loc(it)-star. Here, we use V(it1)-star as a specific example. (c) Using the relative location information ascribed to each vertex in the planar model, interpolate empirical vertex coordinates, {V(it)}, while accounting for angular direction of observed movements (eta). Thus, point-location transformations maintain observed angular orientations for individuals' movement paths.*
+
+**E.) Calculate inter-animal distances at each time step.**
+
+**F.) Identify what SpTh value will allow us to capture 99% of contacts, polygon intersections, given the RTLS accuracy.**
+
+**G.) Identify time points when calf heads were within the re-adjusted SpTh distance from one another or body polygons.**
+
+**H.) Visualize the contact networks with edgeweights weighted according to number of observed contacts.**
+
+```{r Section 2, echo=TRUE, warning = FALSE}
+data("calves2018") #load the data set
+
+```
+
+**A.) Subset calves2018 and ensure all required columns exist in the calves data set (i.e., xy coordinates, unique individual IDs, dateTime)**
+
+```{r, echo=TRUE, warning = FALSE}
+
+head(calves2018) #see that all necessary columns are there.
+
+```
+
+We will only look at points from the 1st date represented in the data set (06/01/2018). Therefore, we need to get the unique date values in the data.
+
+```{r, echo=TRUE, warning = FALSE}
+
+calves2018$date<-lubridate::date(calves2018$dateTime) #add the date column to the data set
+
+calves06012018 <- droplevels(subset(calves2018, date == unique(calves2018$date)[1])) #pull the observations from 06/01/2018
+
+```
+**B.) Clean and filter the data set.**
+
+Here we run the various spatiotemporal-data-filtering functions offered by the package (i.e., mps, confine, dup). We run them in this particular order because one filtration process may trigger others to remove points that are not necessariliy erroneous. For example, removing duplicated point-locations could create a situation where it appears that individuals moved at a speed exceeding a specified mps threshold. Thus, in this scenario, subsequently running the mps function may remove points that would not have been flagged for removal prior to removing duplicated points.
+
+First, we ensure that points do not represent impossible/highly unlikely movement speeds.
+
+```{r, echo = TRUE, warning = FALSE}
+
+system.time(calves_filter1 <- contact::mps(calves06012018, id = calves06012018$calftag, point.x = calves06012018$x, point.y = calves06012018$y, dateTime = calves06012018$dateTime, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, filterOutput = TRUE)) #we assume that if calves' point-locations suggest they moved faster than 10m/s, points are erroneous and should be removed. #This did not remove any observations.
+
+```
+
+Now we want to ensure that all points are within the specific feedlot pen boundaries. As calves could not escape fedlot pens, points outside the pen or adjacent feed bunks are erroneous.
+
+```{r, echo = TRUE, warning = FALSE}
+
+confinementCoords <- data.frame(object = c("feed", "feed", "feed", "feed","fence", "fence", "fence", "fence", "fence"), x = c(46.0118, 46.6482, 58.3415, 57.6507, 60.5775, 29.3054, 16.7602, 17.0590, 46.0309), y = c(197.0570, 197.4131, 175.9618, 175.6284, 170.4628, 153.6002, 176.5861, 181.6315, 197.1261)) #these are the x & y coordinates for the feedlot-pen fenceline and adjacent feedbunk vertices. Note that they are arranged in a clockwise order, as the confine function below requires input vertices to be ordered clockwise or counter-clockwise.
+
+{plot(confinementCoords$x,confinementCoords$y, col = confinementCoords$object, lines(c(confinementCoords$x, confinementCoords$x[1]),c(confinementCoords$y, confinementCoords$y[1])), pch=16, main = "confinement polygon")
+ legend(15.6, 198, col = c(2,1), legend = c("fence vertex", "feed vertex"), cex = 0.7, pch = 16)} #this is what the pen outline looks like. 
+
+system.time(calves_filter2<-contact::confine(calves_filter1, point.x = calves_filter1$x, point.y = calves_filter1$y, confinementCoord.x = confinementCoords$x, confinementCoord.y = confinementCoords$y, filterOutput = TRUE)) #this removed an additional 1784 observations
+
+```
+
+Finally, we want to remove duplicate observations. This is an important step because many data-processing functions below require that no duplicates exist.
+
+```{r, echo = TRUE, warning = FALSE}
+
+system.time(calves_filter3<- contact::dup(calves_filter2, id = calves_filter2$calftag, point.x = calves_filter2$x, point.y = calves_filter2$y, dateTime = calves_filter2$dateTime, avg = FALSE, parallel = FALSE, filterOutput = TRUE)) #it looks like there were no duplicates to remove in the first place. We're ready to proceed with analyses.
+
+```
+**C.) Temporally smooth point-locations, ensuring that animals are observed at identical timepoints** 
+
+Note: This was an unnecessary step in Section 1 because the water trough's location was fixed and unchanging over time.
+
+```{r, echo=TRUE, warning = FALSE}
+
+#create our data set that shows calves average position every 10 seconds
+system.time(calves.10secSmoothed <- contact::tempAggregate(x = calves_filter3, id = calves_filter3$calftag, point.x = calves_filter3$x, point.y = calves_filter3$y, dateTime = calves_filter3$dateTime, secondAgg = 10, extrapolate.left = FALSE, resolutionLevel = "reduced", extrapolate.right = FALSE, na.rm = TRUE, smooth.type = 2)) 
+
+```
+
+Note that we set na.rm to TRUE and resolutionLevel to "reduced" here. This means that temporal intervals between observed relocations may not necessarily be equidistant, as when individuals were not observed at a given time point, they are removed from the data set (rather than introducing an NA instead). This speeds up later processing functions (because the size of calves.10secSmoothed is relatively small). Please note, however, that having equidistant temporal intervals between observed relocations is a requirement for some contact-function processes (e.g., the path-randomization procedure based on Spiegel *et al.* 2016 methods that can be implemented using contact::randomizePaths). Thus, before these specific processes can be run, the data set must be re-processed with na.rm == FALSE.
+
+**D.) Derive calf head and body polygons from point locations.**
+
+We could transform empirical point-locations into polygon vertices one vertex at a time by repeatedly using the repositionReferencePoint function, but the referencePoint2Polygon function provides an expediant shortcut for generating square/rectangular polygons from point-locations. Moving forward, we assume that calves' body sizes are equivalent and stable, and that 0.333 m X 0.333 and 1.167 m X 0.5 m polygons accurately represent areas where calves' heads and bodies exist, respectively.
+
+```{r, echo=TRUE, warning = FALSE}
+
+##Create 0.333 m X 0.333 m calf head polygons.
+#Note that this is done using the original reference points, which denote the locations of RFID tags on individuals' left ears.
+system.time(calf_heads <- contact::referencePoint2Polygon(x = calves.10secSmoothed, id = calves.10secSmoothed$id, dateTime = calves.10secSmoothed$dateTime, point.x = calves.10secSmoothed$x, point.y = calves.10secSmoothed$y, direction = NULL, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0, parallel = FALSE, modelOrientation = 90)) #Note that we do not specify an immobility threshold here. This is because the head polygons will later be unioned with body polygons generated from different point-locations, and prematurely thresholding them will potentially cause misalignment between the two polygons.
+
+head(calf_heads) 
+
+```
+
+When creating the head polygons, we set direction == NULL because we do not have gyroscopic data detailing movement directions associated with each relocation event. Thus, polygons are subject to the assumptions pertaining to deriving polygons from point-locations as described by Farthing *et al.* (in Review). (*see* the contact::referencePoint2Polygon help page for a brief description of these assumptions).
+
+Note that the referencePoint2Polygon function assumes the input point-locations represent a single vertex of desired polygons. Because calves' heads are not the same width as their bodies (i.e., 1.167 m X 0.5 m ; L X W), and are assumed to be centered at the front of the body, however, we must move reference points (on the left ear) to the left by 0.0835 m to reposition them at the upper-left corner of calves bodies before creating body polygons. Additionally, note that we are assuming ears are parallel to shoulder-tips.
+
+```{r, echo=TRUE, warning = FALSE}
+
+system.time(leftShoulder.point<-contact::repositionReferencePoint(x = calves.10secSmoothed, id = calves.10secSmoothed$id, dateTime = calves.10secSmoothed$dateTime, point.x = calves.10secSmoothed$x, point.y = calves.10secSmoothed$y, direction = NULL, repositionAngle = 180, repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, modelOrientation = 90))  #Again, see that we do not specify a immobility threshold here.
+
+```
+
+Now we have the left-shoulder points, but before we create the bodies, let's take examine these new points more closely.
+
+```{r, echo=TRUE, warning = FALSE}
+
+head(leftShoulder.point) 
+
+```
+
+See that moving the points changed the calculated dx,dy values from those associated with empirical data points. Therefore, movement angles calculated from these data points will differ from values calculated using the empirical observations. Because of that, when creating body polygons, we must specify that the function use angle values from the empirical data set. Luckily, the function allows for this very easily.  
+
+Additionally, the differing calculated-distance values will potentially cause misalignment errors when unioning the head and body polygons if either is created with a specified immobility threshold (*see* referencePoint2Polygon help page). As outlined by Farthing *et al.* (in Review), in the absence of accompanying gyroscopic data, movement angles are calculated based on observed relocation events with the assumption that all individuals are forward-facing when moving. Thus, specifying an immobility threshold (i.e., observed relocation distance required for us to state that movement actually occurred) is necessary to reduce directional errors by discounting observed movements so miniscule that the majority of the modeled physical-space is likely unaffected (e.g., head shaking), and therefore would not be repositioned. Thus, prior to unioning the polygons, we will not implement an immobility threshold.
+
+Moving forward, let's generate the vertices for calves' anterior- and posterior-body polygons (i.e., we're dividing body polygons into two halves). Rather than running the referencePoint2Polygon function twice, we instead set MidPoints = TRUE, which will effectively identify vertices for the bottom of anterior body sections/top of posterior ones. 
+
+```{r, echo=TRUE, warning = FALSE}
+
+system.time(calf_bods <- contact::referencePoint2Polygon(x = leftShoulder.point, id = leftShoulder.point$id, dateTime = leftShoulder.point$dateTime, point.x = leftShoulder.point$x.adjusted, point.y = leftShoulder.point$y.adjusted, direction = leftShoulder.point$movementDirection, StartLocation = "UL", UpDownRepositionLen = 1.167, LeftRightRepositionLen = 0.5, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold = 0, parallel = FALSE, modelOrientation = 90)) #note that direction == leftShoulder.point$movementDirection. 
+
+head(calf_bods) #notice the additional columns compared to calf_heads
+
+```
+
+Now we can take vertices from calf_heads and calf_bods, and create a vertex set {V(it)} delineating the calves full bodies (i.e., we essentially union the calf_heads and calf_bod polygons). Note that in this calf_FullBody data frame, vertex1 is located on calves left shoulders, and vertices are ordered in a clockwise direction from that point.
+
+```{r, echo=TRUE, warning = FALSE}
+
+calf_FullBody <- data.frame(calf_id = calf_bods$id, vertex1.x = calf_bods$cornerPoint1.x, vertex1.y = calf_bods$cornerPoint1.y, vertex2.x = calf_heads$cornerPoint1.x, vertex2.y = calf_heads$cornerPoint1.y, vertex3.x = calf_heads$cornerPoint2.x, vertex3.y = calf_heads$cornerPoint2.y, vertex4.x = calf_heads$cornerPoint3.x, vertex4.y = calf_heads$cornerPoint3.y, vertex5.x = calf_heads$cornerPoint4.x, vertex5.y = calf_heads$cornerPoint4.y, vertex6.x = calf_bods$cornerPoint2.x, vertex6.y = calf_bods$cornerPoint2.y,  vertex7.x = calf_bods$midPoint2.x, vertex7.y = calf_bods$midPoint2.y, vertex8.x = calf_bods$cornerPoint3.x, vertex8.y = calf_bods$cornerPoint3.y, vertex9.x = calf_bods$cornerPoint4.x, vertex9.y = calf_bods$cornerPoint4.y, vertex10.x = calf_bods$midPoint4.x, vertex10.y = calf_bods$midPoint4.y, dateTime = calf_bods$dateTime)
+                            
+head(calf_FullBody)
+
+```
+
+This is what an example of a calf full-body polygon looks like.
+
+```{r, echo=TRUE, warning = FALSE}
+
+fullBodyExample <- data.frame(section = c("body", rep("head", 4), rep("body", 5)), x = unname(unlist(calf_FullBody[10,c(seq(2,21, by =2))])), y = unname(unlist(calf_FullBody[10,c(seq(3,21, by =2))])))
+
+{plot(fullBodyExample$x,fullBodyExample$y, col = fullBodyExample$section, lines(c(fullBodyExample$x, fullBodyExample$x[1]),c(fullBodyExample$y, fullBodyExample$y[1])), pch=16, main = "Calves' body shape")
+ legend(39.2, 193.8, col = c(1,2), legend = c("body", "head"), cex = 0.7, pch = 16)}
+
+```
+
+Recall that these polygons were created without specifying immobility threshold values.
+
+For reference, we show an example of a misalignment that may occur when enforcing an immobility threshold of 0.1m for head and body polygons prior to unioning them. Note that this is the same polygon that was shown above (i.e., same individual at the same time step).
+
+```{r, echo=FALSE, warning=FALSE}
+
+calves.10secSmoothed.subset<-droplevels(calves.10secSmoothed[1:30,]) #subset for speed
+leftShoulder.point.subset<-droplevels(leftShoulder.point[1:30,]) #subset for speed
+
+#new polygon sets
+calf_heads2 <- contact::referencePoint2Polygon(x = calves.10secSmoothed.subset, id = calves.10secSmoothed.subset$id, dateTime = calves.10secSmoothed.subset$dateTime, point.x = calves.10secSmoothed.subset$x, point.y = calves.10secSmoothed.subset$y, direction = NULL, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90)
+
+calf_bods2 <- contact::referencePoint2Polygon(x = leftShoulder.point.subset, id = leftShoulder.point.subset$id, dateTime = leftShoulder.point.subset$dateTime, point.x = leftShoulder.point.subset$x.adjusted, point.y = leftShoulder.point.subset$y.adjusted, direction = leftShoulder.point.subset$movementDirection, StartLocation = "UL", UpDownRepositionLen = 1.167, LeftRightRepositionLen = 0.5, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold = 0.1, parallel = FALSE, modelOrientation = 90) #note that direction == leftShoulder.point$movementDirection. 
+
+calf_FullBody2 <- data.frame(calf_id = calf_bods2$id, vertex1.x = calf_bods2$cornerPoint1.x, vertex1.y = calf_bods2$cornerPoint1.y, vertex2.x = calf_heads2$cornerPoint1.x, vertex2.y = calf_heads2$cornerPoint1.y, vertex3.x = calf_heads2$cornerPoint2.x, vertex3.y = calf_heads2$cornerPoint2.y, vertex4.x = calf_heads2$cornerPoint3.x, vertex4.y = calf_heads2$cornerPoint3.y, vertex5.x = calf_heads2$cornerPoint4.x, vertex5.y = calf_heads2$cornerPoint4.y, vertex6.x = calf_bods2$cornerPoint2.x, vertex6.y = calf_bods2$cornerPoint2.y,  vertex7.x = calf_bods2$midPoint2.x, vertex7.y = calf_bods2$midPoint2.y, vertex8.x = calf_bods2$cornerPoint3.x, vertex8.y = calf_bods2$cornerPoint3.y, vertex9.x = calf_bods2$cornerPoint4.x, vertex9.y = calf_bods2$cornerPoint4.y, vertex10.x = calf_bods2$midPoint4.x, vertex10.y = calf_bods2$midPoint4.y, dateTime = calf_bods2$dateTime)
+ 
+fullBodyExample2 <- data.frame(section = c("body", rep("head", 4), rep("body", 5)), x = unname(unlist(calf_FullBody2[10,c(seq(2,21, by =2))])), y = unname(unlist(calf_FullBody2[10,c(seq(3,21, by =2))])))
+
+{plot(fullBodyExample2$x,fullBodyExample2$y, col = fullBodyExample2$section, lines(c(fullBodyExample2$x, fullBodyExample2$x[1]),c(fullBodyExample2$y, fullBodyExample2$y[1])), pch=16, main = "Calves' body shape", sub = "improper immobility-threshold specification")
+ legend(39.2, 193.8, col = c(1,2), legend = c("body", "head"), cex = 0.7, pch = 16)}
+
+```
+
+So, even when polygons are ultimately derived from the same empirical data, it's clear that repositioning the reference point-locations to create different polygons does not allow for the implementation of immobility thresholds prior to unioning procedures. 
+
+We are still interested in reducing directional errors by implementing this threshold, however. We can do that now with a simple for-loop. 
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+immobility.vec<- (which(leftShoulder.point$dist.original < 0.1) + 1) #create a vector describing which polygons in calf_heads2 moved < 0.1m. Note that we add 1 to returned values because leftShoulder.point$dist.original details the distance to the successive point, but we want distance to the proceeding point.
+calf_FullBody.immob<-calf_FullBody
+
+for(i in immobility.vec){ #this can be a bit slow due to the length of the data sets, but a simple apply function is not appropriate here because rows must be updated sequentially. The within-function immobility-evaluating sub-function is much more efficient, but much larger and more unwieldy than this.
+  calf_FullBody.immob[i,2:21] <- calf_FullBody[(i-1),2:21] #replace i-th observations in calf_FullBody with the preceding coordinates.
+}
+
+```
+
+Now that we have defined the (x,y) coordinates for the full-body vertex set {V(it)}, we can use these polygons to generate contact networks. Before we move on, however, we will briefly mention another aspect of polygon-derivation that may also introduce movement-orientation error into the data set. As we note on the referencePoint2Polygon help page, in the absence of accompanying gyroscopic-movement data, under normal circumstances we would consider removing observations from our vertex set that represent movements outside of a pre-determined dt (i.e., length of time between consecutive relocation events) threshold. This would be done to ensure that relocation intervals are sufficiently small to minimize chances that animals face unknown directions between observed relocations. For the purposes of this vignette, however, we will assume that the dt-introduced errors are irrelevant.
+
+**E.) Calculate inter-animal distances at each time step.**
+
+The first step to network creation is calculating the distance between calves at each time step.
+
+Note: the dist2All_df does not allow NA values in polygon coordinates (recall that the polygon derivation process introduced some NAs). Before running this function, we must remove these NA coordinates.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+naObs<-which(is.na(calf_FullBody.immob$vertex10.x) == T) #by identifying where NAs were introduced for any body vertex (other than vertex 1, which was left-shoulder point used to generate other vertices), we can determine what rows to remove. Note: we use a body vertex because two NAs were introduced (i.e., one from left-shoulder repositioning and another from polygon creation), as opposed to only one.
+
+FullBody_noNAs<-droplevels(calf_FullBody.immob[-naObs,]) #remove NA coordinates
+
+```
+
+Now we can proceed with calculating inter-animal distances.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(fullbody_distances<-contact::dist2All_df(x = FullBody_noNAs, id = FullBody_noNAs$calf_id, dateTime = FullBody_noNAs$dateTime, point.x = NULL, point.y = NULL, poly.xy = FullBody_noNAs[,2:21], elev = NULL, parallel = FALSE, dataType = "Polygon", lonlat = FALSE, numVertices = 10)) #these are the distances from the nearest polygon edges (i.e., not distance from centroids).
+
+head(fullbody_distances) #note that if individuals were not observed in the data at a specific time, the function reports NAs for their respective distances.
+
+```
+
+**F.) Identify what SpTh value will allow us to capture 99-percent of contacts, polygon intersections, given the RTLS accuracy.**
+
+We initially define "contact" as occurring when two polygons intersect (i.e., SpTh = 0) on any given time step. As we did in Section 1, however, we want to account for RTLS positional accuracy by sampling from a multivariate distribution. Thus, here we seek to determine what SpTh value will likely capture 99-percent of contacts, defined as polygon intersections, and re-define "contact" accordingly.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(polySpThValues<-contact::findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0)) #spTh represents the initially-defined spatial threshold for contact
+
+polySpThValues #it looks like an adjusted SpTh value of approximately 0.56 m will likely capture 99% of contacts, defined as instances when point-locations were within 0 m of one another, given the RTLS accuracy. #Note that because these confidence intervals are obtained from distributions generated from random samples, every time this function is run, results will be slightly different. 
+
+polyCI_99<-unname(polySpThValues[21]) #we will use this SpTh value moving forward.
+
+```
+
+**G.) Identify time points when calf heads were within the re-adjusted SpTh distance from one another or body polygons.**
+
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(calf_fullBody_contacts <- contact::contactDur.all(fullbody_distances,dist.threshold=polyCI_99,sec.threshold=10, blocking = FALSE, equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)) #Note that because we are not interested in making a time-aggregated network with > 1 temporal levels, we set blocking = FALSE to reduce processing time.
+
+```
+
+**H.) Visualize the contact networks with edgeweights weighted according to number of observed contacts.**
+
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+#Generate a static network edge set (aggregated to the day resolution) 
+system.time(fullBody_edges<- contact::ntwrkEdges(x = calf_fullBody_contacts, importBlocks = FALSE, removeDuplicates = TRUE))
+
+#visualize the network
+fullBody.network <- igraph::simplify(igraph::graph_from_data_frame(d=fullBody_edges, directed=F),remove.multiple = T, remove.loops = T) #create network
+
+igraph::V(fullBody.network)$color<- "orange1"
+igraph::V(fullBody.network)$size <-13
+igraph::E(fullBody.network)$width <- fullBody_edges$duration/100 #edge width is proportional to contact frequency
+igraph::E(fullBody.network)$color <- "black"
+igraph::plot.igraph(fullBody.network, vertex.label.cex=0.4, layout = igraph::layout.circle) 
+
+```
+
+###Section 3.) Test networks against NULL models
+
+Farine (2017) provides a general overview of the importance of NULL-model creation and evaluation. Briefly, comparing empirical contact networks to NULL models, allows us to determine if observed contacts occurred more or less frequently than would be expected at random. This allows us to test a number of hypotheses. For example, by comparing contact-networks derived from tracked sleepy lizard (*Tiliqua rugosa*) point-locations, Spiegel *et al.* (2016) determined that this species exhibits sociality. The point-location randomization procedure they developed for NULL-model creation accounts for environmental drivers of movement, suggesting that any observed differences in contact frequency (relative to NULL models) are driven by social behaviors. This point-location randomization procedure can be implemented through the randomizePaths function.
+
+Here, using previously-loaded/created data, we demonstrate how to create NULL contact-network models and how to statistically test network models against one another using *contact* functions. Specifically, we determine if average hourly number of full-body contacts occur more or less frequently than would be expected at random in the calves06012018 data set. Furthermore, we use a Mantel test to assess if head X head and full-body contact networks are related to one another.
+
+The steps for NULL-model creation and evaluation are described below.
+
+**A.) Generate the hourly head X head and full-body contact networks.**
+
+**B.) Temporally smooth previously-filtered calves2018 point-locations, ensuring that animals are observed at identical timepoints AND that all timepoints are equidistant** (Recall that equidistant timepoints are a requirement for using contact::randomizePaths to randomize point-locations according to the Spiegel *et al* (2016) method).
+
+**C.) Randomize the newly-created point-location data set.**
+
+**D.) Generate contact networks from randomized data (NULL models).**
+
+**E.) Test empirical networks against NULL models.**
+
+**F.) Test empirical networks against each other.**
+
+Recall the data sets created in Section 2 that we will continue using.
+
+```{r, Section 3, echo=TRUE, warning = FALSE, eval = FALSE}
+
+head(calves06012018) #point-location data set to be temporally smoothed
+head(FullBody_noNAs) #polygon data set
+head(fullbody_distances) #distances between each full-body polygon at each timestep
+polyCI_99 #adjusted polygon-contact SpTh value that likely captures 99% of of inter-calf contacts, defined as instances when calf polygons intersect, given the RTLS accuracy.
+
+```
+**A.) Generate the hourly head X head and full-body contact networks.**
+
+Here we create a time-aggregated contact network describing head X head contacts and full-body contacts (i.e., body polygons unioned with head polygons) between calves each hour of 06/01/2018.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(calf_fullBody_contacts.hr <- contact::contactDur.all(fullbody_distances,dist.threshold=polyCI_99,sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)) #Note that the difference between this edge set and the one created in Section 2 is that blocking is set to TRUE here. 
+
+headVertexColumns<-4:11 #these are the columns within FullBody_noNAs representative of head polygons
+
+system.time(head_distances<-contact::dist2All_df(x = FullBody_noNAs, id = FullBody_noNAs$calf_id, dateTime = FullBody_noNAs$dateTime, point.x = NULL, point.y = NULL, poly.xy = FullBody_noNAs[,headVertexColumns], elev = NULL, parallel = FALSE, dataType = "Polygon", lonlat = FALSE, numVertices = 4)) #Note that the difference between this distance set and the one created in Section 2 is that poly.xy and numVertices arguments refer to head polygons only 
+
+system.time(calf_head_contacts.hr <- contact::contactDur.all(head_distances,dist.threshold=polyCI_99,sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)) 
+
+```
+Now, because we're interested in comparing the *average* hourly contacts to NULL models, as opposed to comparing each hour sequentially, we need to break these edge sets into lists with on object per hour.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+hourBlocks <- unique(calf_fullBody_contacts.hr$block) #vector containing the unique block (hour) values in the edge sets.
+
+#create empty lists to be filled using the for-loop below
+fullBodyContacts.list <-list(NULL)
+headContacts.list<-(NULL)
+
+for(i in 1:length(hourBlocks)){
+  headContacts.list[[i]] <- droplevels(subset(calf_head_contacts.hr, block == hourBlocks[i]))
+  fullBodyContacts.list[[i]] <- droplevels(subset(calf_fullBody_contacts.hr, block == hourBlocks[i]))
+}
+
+```
+Now that we have our empirical edge sets to be analyzed, we need to create our NULL models.
+
+**B.) Temporally smooth previously-filtered calves2018 point-locations, ensuring that animals are observed at identical timepoints AND that all timepoints are equidistant** (Recall that equidistant timepoints are a requirement for using contact::randomizePaths to randomize point-locations according to the Spiegel *et al* (2016) method).
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+system.time(calves.10secSmoothed.na <- contact::tempAggregate(x = calves_filter3, id = calves_filter3$calftag, point.x = calves_filter3$x, point.y = calves_filter3$y, dateTime = calves_filter3$dateTime, secondAgg = 10, extrapolate.left = FALSE, resolutionLevel = "reduced", extrapolate.right = FALSE, na.rm = FALSE, smooth.type = 2)) #Note that the difference between this data set and the one created in Section 2 is that na.rm = FALSE.
+
+```
+Note that the newly-created smoothed-point-location data set, calves.10secSmoothed.na, is substantially larger than calves.10secSmoothed, which did not include NA locations.
+
+**C.) Randomize the newly-created point-location data set.**
+
+In accordance with the Spiegel *et al.* (2016) procedure, individuals' movement paths (i.e., sequential relocation events) within defined time blocks will be shuffled around in time, so that individuals visit the same places, just not at the same times. Here, 10-minute time blocks are shuffled between hours of the day on 06/01/2018. For a more detailed description of the relationship between blockUnits and shuffleUnits in the randomizePaths function, please see the randomizePaths function help page. In the interest of relatively quick processing speeds later on, we will only create 100 randomized replicates here.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+nRandomizations <- 100 #we will create 100 randomized-hour replicates.
+
+system.time(randomHourlyCalfPaths.list <- contact::randomizePaths(x = calves.10secSmoothed.na, id = calves.10secSmoothed.na$id, dateTime = calves.10secSmoothed.na$dateTime, point.x = calves.10secSmoothed.na$x, point.y = calves.10secSmoothed.na$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", numVertices = 4, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 2, shuffleUnit = "hours", indivPaths = TRUE, numRandomizations = nRandomizations))
+
+head(data.frame(randomHourlyCalfPaths.list[[1]])) #here's what the output looks like when you shuffle.type == 2.
+
+```
+
+**D.) Generate contact networks from randomized data (NULL models).**
+
+Now we need to put the randomized data through the same network-creation procedures we used for the empirical data. Note that many of the function arguments below now use take column names as inputs, as opposed to vectors of length nrow(x), which we used above. This allows us input list objects as "x" in these functions, with variable values called by other arguments.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+##Create 0.333 m X 0.333 m calf head polygons.
+#Note that this is done using the original (randomized) reference points, which denote the locations of RFID tags on individuals' left ears.
+system.time(calf_heads.random <- contact::referencePoint2Polygon(x = randomHourlyCalfPaths.list, id = "id", dateTime = "dateTime", point.x = "x.rand", point.y = "y.rand", direction = NULL, StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333, CenterPoint = FALSE, MidPoints = FALSE, immobThreshold = 0, parallel = FALSE, modelOrientation = 90))
+
+#reposition randomized reference points to left-shoulder points
+system.time(leftShoulder.point.random<-contact::repositionReferencePoint(x = randomHourlyCalfPaths.list, id = "id", dateTime = "dateTime", point.x = "x.rand", point.y = "y.rand", direction = NULL, repositionAngle = 180, repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, modelOrientation = 90))
+
+#create 1.167 m X 0.5 m calf body polygons
+system.time(calf_bods.random <- contact::referencePoint2Polygon(x = leftShoulder.point.random, id = "id", dateTime = "dateTime", point.x = "x.adjusted", point.y = "y.adjusted", direction = "movementDirection", StartLocation = "UL", UpDownRepositionLen = 1.167, LeftRightRepositionLen = 0.5, CenterPoint = FALSE, MidPoints = TRUE, immobThreshold = 0, parallel = FALSE, modelOrientation = 90)) #note that direction == leftShoulder.point.random$movementDirection. 
+
+```
+
+Because the randomized outputs are in list form rather than being data frames, we need to do a bit more work to finish processing them than what was necessary with the empirical data.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+calf_fullBody.random.list<-list(NULL) #make empty list to be filled with the for-loop below
+
+for(j in seq(from = 1, to = nRandomizations, by = 1)){ 
+  
+  head.random_j <- data.frame(calf_heads.random[[j]]) #pull the j-th data frame in calf_heads.random
+  bod.random_j <- data.frame(calf_bods.random[[j]]) #pull the j-th data frame in calf_bods.random
+  leftShoulder.random_j <- data.frame(leftShoulder.point.random[[j]]) #pull the j-th data frame in leftShoulder.point.random
+  
+  #union the two randomized-polygon sets
+  calf_fullBody.random <- data.frame(calf_id = bod.random_j$id, vertex1.x = bod.random_j$cornerPoint1.x, vertex1.y = bod.random_j$cornerPoint1.y, vertex2.x = head.random_j$cornerPoint1.x, vertex2.y = head.random_j$cornerPoint1.y, vertex3.x = head.random_j$cornerPoint2.x, vertex3.y = head.random_j$cornerPoint2.y, vertex4.x = head.random_j$cornerPoint3.x, vertex4.y = head.random_j$cornerPoint3.y, vertex5.x = head.random_j$cornerPoint4.x, vertex5.y = head.random_j$cornerPoint4.y, vertex6.x = bod.random_j$cornerPoint2.x, vertex6.y = bod.random_j$cornerPoint2.y,  vertex7.x = bod.random_j$midPoint2.x, vertex7.y = bod.random_j$midPoint2.y, vertex8.x = bod.random_j$cornerPoint3.x, vertex8.y = bod.random_j$cornerPoint3.y, vertex9.x = bod.random_j$cornerPoint4.x, vertex9.y = bod.random_j$cornerPoint4.y, vertex10.x = bod.random_j$midPoint4.x, vertex10.y = bod.random_j$midPoint4.y, dateTime = bod.random_j$dateTime)
+  
+  immobility.vec.random<- (which(leftShoulder.random_j$dist.original < 0.1) + 1) #create a vector describing which polygons in head.random_j moved < 0.1m. Note that we add 1 to returned values because leftShoulder.random_j$dist.original details the distance to the successive point, but we want distance to the proceeding point.
+  calf_fullBody.random.immob<-calf_fullBody.random
+
+  for(h in immobility.vec.random){ 
+    calf_fullBody.random.immob[h,2:21] <- calf_fullBody.random[(h-1),2:21] #replace h-th observations in calf_FullBody.random with the preceding coordinates.
+  }
+  
+  naObs.random<-which(is.na(calf_fullBody.random.immob$vertex10.x) == T) #by identifying where NAs were introduced for any body vertex (other than vertex 1, which was left-shoulder point used to generate other vertices), we can determine what rows to remove. Note: we use a body vertex because two NAs were introduced (i.e., one from left-shoulder repositioning and another from polygon creation), as opposed to only one.
+
+  fullBody_noNAs.random<-droplevels(calf_fullBody.random.immob[-naObs.random,]) #remove NA coordinates
+
+  calf_fullBody.random.list[[j]] <- fullBody_noNAs.random
+}
+
+```
+
+Now we calculate the inter-polygon distances for the randomized full-body polygon set.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+fullBodyVertexColnames<- colnames(data.frame(calf_fullBody.random.list[[1]]))[2:21] #these are the column names of columns in the data frames contained within calf_fullBody.random.list that contain full-body-polygon-vertex information.
+
+system.time(fullBody_distances.random<-contact::dist2All_df(x = calf_fullBody.random.list, id = "calf_id", dateTime = "dateTime", point.x = NULL, point.y = NULL, poly.xy = fullBodyVertexColnames, elev = NULL, parallel = FALSE, dataType = "Polygon", lonlat = FALSE, numVertices = 10)) #Note that the difference between this distance set and the one created in Section 2 is that x is a list and other arguments are given column-name information rather than vectors of length(nrow(x)).
+
+```
+
+Having calculated inter-polygon distances at each time step, we can now create the contact networks from randomized data sets (i.e., NULL models). Note that we continue to use polyCI_99 as the SpTh value. Note that, though the randomized data sets were generated using point-locations where relocations were separated by equidistant timepoints, because we removed polygons with NAs so that the dist2All_df function would work, we can no longer gaurantee that the equidistant-timepoint assumption is valid. Thus, when running the contactDur.all function below, we set the equidistant.time argument to FALSE.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+system.time(calf_fullBody_contacts.hr.random <- contact::contactDur.all(x = fullBody_distances.random, dist.threshold = polyCI_99, sec.threshold=10, blocking = FALSE, equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)) #Note that we do not set blocking == TRUE here. There's no point, as because we randomized data according to the Spiegel et al. (2016) method, each list entry is only an hour's worth of data (see contact::randomizePaths help page). 
+
+```
+
+**E.) Test empirical networks against NULL models.**
+
+Through the *contactTest* function we will use Chi-squared tests to evaluate if differences exist between observed fullbody contacts and expected contacts described in the NULL model. The function takes three data inputs: emp.input, rand.input, and dist.input. Of these inputs, emp.input and rand.input represent the empirical and NULL netowork edgesets, respectively. The object used as for dist.input will be used by *contactTest* to calculate the maximum number of contacts that could occur based on the number of timepoints when individuals were observed concurrently in the data set. One assumption that the function makes is that sequential timepoints in the dist.input are equidistant. Thus, we will recreate the fullBody_distances object using the calves.10secSmoothed.na point-location data set as input. Note that the actual distances represented in the dist.input are irrelevant.
+
+```{r, echo=TRUE, warning=FALSE, eval = FALSE}
+
+system.time(fullBody_distances2<-contact::dist2All_df(x = calves.10secSmoothed.na, id = calves.10secSmoothed.na$id, dateTime = "dateTime", point.x = NULL, point.y = NULL, poly.xy = fullBodyVertexColnames, elev = NULL, parallel = FALSE, dataType = "Point", lonlat = FALSE, numVertices = 1)) 
+
+```
+
+Note that because of the warning settings in the chisq.test function, we cannot effectively silence the error "Chi-squared approximation may be incorrect." As such, you may get many warnings to that end. 
+
+These warnings are normal and occur when expected pairwise counts are are very small, leading to potentially innacurate chi-squared values. Warnings for specific pairwise tests can be seen in the "warnings" column of the data frames within function output. 
+
+```{r, echo=TRUE, warning=FALSE, eval = FALSE}
+
+system.time(fullBody_NULLTest1<-contact::contactTest(emp.input = fullBodyContacts.list, rand.input = calf_fullBody_contacts.hr.random, dist.input = fullBody_distances2, test = "chisq", numPermutations = NULL, importBlocks = FALSE, shuffle.type = 2))
+
+```
+
+See that when the "test" argument is "chisq," the function returns a list containing two data frames. The first data frame contains Chi-squared test results for observed node degree and total contact durations specific to each tracked individual, and the second data frame details Chi-squared test results for observed contacts between specific inidividuals.
+
+```{r, echo=TRUE, warning = FALSE, eval = FALSE}
+
+contactDuration_nodeDegree.frame1<- data.frame(fullBody_NULLTest1[[1]])
+pairwiseContacts.frame1<- data.frame(fullBody_NULLTest1[[2]])
+
+head(contactDuration_nodeDegree.frame1)
+head(pairwiseContacts.frame1)
+
+```
+
+These outputs are great for looking at per-capita results, but recall that we are interested in determining if the overall number of hourly contacts differ from what would be expected at random. We can easily figure this out with a bit more processing.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+total_Durations<-droplevels(subset(contactDuration_nodeDegree.frame1, id2 == "totalContactDurations"))
+
+maxDurations <- sum(c(total_Durations[,8], total_Durations[,10])) #total number of temporal sampling-windows observed
+
+observedVec <- c(sum(total_Durations[,7]), sum(total_Durations[,9])) #create a vector describing total observed counts of contacts and non-contacting timepoints
+expectedProb <- c((sum(total_Durations[,8])/maxDurations), (sum(total_Durations[,10])/maxDurations)) #convert the observed random durations to probabilities.
+ 
+stats::chisq.test(x = observedVec, p = expectedProb) #it looks like, on average, there are indeed a different number of observed empirical contacts each hour than we might expect at random (assuming an alpha-level of 0.05).
+
+```
+
+Alternatively, we can use the same function test the similarity of the empirical and NULL networks using a Mantel test.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+system.time(fullBody_NULLTest2<-contact::contactTest(emp.input = fullBodyContacts.list, rand.input = calf_fullBody_contacts.hr.random, dist.input = NULL, test = "mantel", numPermutations = 1000, alternative.hyp = "two.sided", importBlocks = FALSE))
+
+fullBody_NULLTest2 #based on the reported p-value, given an alpha-level of 0.05, we CANNOT reject the NULL hypothesis that these two networks are unrelated.
+
+```
+
+**E.) Test empirical networks against each other.**
+
+The current functionality of *contactTest* does not allow for comparing empirical networks using Chi-squared tests, as the function assumes emp.input and rand.input represent observed and expected values, respectively. We can, however, use the same function to test contact-network similarity via Mantel tests. Below we test the similarity of the fullbody and head X head contact networks.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+system.time(fullBody_head_test<-contact::contactTest(emp.input = calf_fullBody_contacts.hr, rand.input = calf_head_contacts.hr, dist.input = NULL, test = "mantel", numPermutations = 1000, alternative.hyp = "two.sided", importBlocks = FALSE))
+
+fullBody_head_test #based on the reported p-value, given an alpha-level of 0.05, we can reject the NULL hypothesis that these two networks are unrelated. (This is as we would expect, because the head X head-contact network is nested within the fullBody-contact network.)
+
+```
+###Section 4.) Increase processing speed when using certain contact functions
+
+We are working to improve the speed and efficiency of *contact* functions, as the required processing time for a number of functions within the package (e.g., dist2All_df) increase exponentially with the number of observed relocation events and tracked individuals within input data sets. To increase processing speeds we have added the ability to parallelize sub-functions within many *contact* functions through procedures from the *parallel* and *doParallel* libraries. In addition to parallelizing sub-functions, package users may increase processing speeds in many cases by breaking large data sets into lists of smaller ones prior to implementing processing procedures. 
+For example: 
+
+Recall the calves06012018 data set created in Section 2.
+
+```{r Section 4, echo = TRUE, warning = FALSE, eval = FALSE}
+
+head(calves06012018)
+
+```
+
+If we create a list of hourly objects from this data set prior to processing, the dist2All_df function will process the list more quickly than the complete data set.
+
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
+
+calves06012018$hour<-lubridate::hour(calves06012018$dateTime) #identify unique hours
+
+calves06012018.hourlyList<-list(NULL) #create empty list object to be filled by the for-loop below.
+
+for(i in 1:length(unique(calves06012018$hour))){ #fill the empty list
+  calves06012018.hourlyList[[i]]<-subset(calves06012018, hour == unique(calves06012018$hour)[i])
+}
+
+speedTest.list<-system.time(contact::dist2All_df(x = calves06012018.hourlyList, id = "calftag", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = 1, dataType = "Point", lonlat = FALSE, numVertices = 1))
+
+speedTest.df<-system.time(contact::dist2All_df(x = calves06012018, id = "calftag", dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = 1, dataType = "Point", lonlat = FALSE, numVertices = 1))
+
+speedTest.df[3]/speedTest.list[3] #the full data set took substantially longer to process than the list of subsets.
+
+```
+
+##References
+
+Farine, D.R., 2017. A guide to null models for animal social network analysis. *Methods in Ecology and Evolution* 8:1309-1320. https://doi.org/10.1111/2041-210X.12772.
+
+Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. in Review. Accounting for space and uncertainty in real-time-location- system-derived contact networks. *Ecology and Evolution.*
+
+Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially interacting or indifferent neighbors? Randomization of movement paths to tease apart social preference and spatial constraints. *Methods in Ecology and Evolution* 7:971-979. https://doi.org/10.1111/2041-210X.12553.

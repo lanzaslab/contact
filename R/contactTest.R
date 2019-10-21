@@ -15,24 +15,25 @@
 #'    associated with running these tests here are described below in brief. 
 #'    
 #'    X-Squared (chisq.test): In this function, chisq.test is used to compare 
-#'    the number of TSWs (temporal sampling windows; see the tempAggregate 
-#'    function)  in a given dataset/block between individuals/fixed 
-#'    locations and the number of TSWs during which individuals were observed, 
-#'    but were not in contact with specific individuals/places, for empirical 
-#'    (x) and randomized (y) datasets. This test requires equidistant TSWs. The
-#'    dist (z ; from dist.all or dist2Area output) input is used here to 
-#'    determine how frequently each individual was observed in the empirical 
-#'    dataset/block of interest, allowing us to calculate the number of TSWs 
-#'    each individual was present but not involved in contacts. Note here that 
-#'    if X-squared expected values will be very small, approximations of p may 
-#'    not be right (and in fact, all estimates will be poor). It may be best to
-#'    weight these tests differently. To address this, I've added the "warning"
-#'    column to the output which notifies users when the chi-sq function 
-#'    reported that results may be inaccurate. Output is a list contataining 
-#'    two data frames. The first data frame contains pairwise analyses of node 
-#'    degree and total edge weight (i.e., the sum of all observed contacts 
-#'    involving each individual). The second data frame contains results of 
-#'    pairwise analyses specific dyadic relationships (e.g., contacts between 
+#'    the observed number of TSWs (temporal sampling windows; see the 
+#'    tempAggregate function) in a given dataset, emp.input, that individuals 
+#'    spent in contact with other individuals or fixed locations (i.e., 
+#'    observed contact counts) to those reported by a NULL model, rand.input 
+#'    (i.e., expected contact counts). This test requires equidistant TSWs in 
+#'    each movement paths within dist.input. The dist (z ; from dist.all or 
+#'    dist2Area output) input is used here to determine how frequently each 
+#'    individual was observed in the empirical dataset/block of interest, 
+#'    allowing us to calculate the number of TSWs each individual was present 
+#'    but not involved in contacts. Note here that if X-squared expected 
+#'    values will be very small, approximations of p may not be right (and in 
+#'    fact, all estimates will be poor). It may be best to weight these tests 
+#'    differently. To address this, I've added the "warning" column to the 
+#'    output which notifies users when the chi-sq function reported that 
+#'    results may be inaccurate. Output is a list contataining two data 
+#'    frames. The first data frame contains pairwise analyses of node degree 
+#'    and total edge weight (i.e., the sum of all observed contacts involving 
+#'    each individual). The second data frame contains results of pairwise 
+#'    analyses specific dyadic relationships (e.g., contacts between 
 #'    individuals 1 and 2). Each data frame contains the following columns: 
 #'    
 #'    id1 - the id of the first individual involved in the contact.
@@ -604,23 +605,29 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
           if(length(randDurations) == 0){ #if removing the NAs removed the only observations, then randDurations reverts to 0
             randDurations <- 0
           }
-          compareTable <- matrix(ncol =2, nrow =2) #create a 2X2 table for testing total contact durations
-          compareTable[1:4] <- c(sum(empDurations), sum(randDurations), maxDurations-sum(empDurations), maxDurations-sum(randDurations)) #order the 2X2 table entries as empirical contact durations, random contact durations, empirical noContact durations, and random noContact durations
+          
+          #compareTable <- matrix(ncol =2, nrow =2) #create a 2X2 table for testing total contact durations
+          #compareTable[1:4] <- c(sum(empDurations), sum(randDurations), maxDurations-sum(empDurations), maxDurations-sum(randDurations)) #order the 2X2 table entries as empirical contact durations, random contact durations, empirical noContact durations, and random noContact durations
+          
+          observedVec <- c(sum(empDurations), maxDurations-sum(empDurations)) #create a vector describing observed counts
+          expectedProb <- c((sum(randDurations)/maxDurations), ((maxDurations-sum(randDurations))/maxDurations)) #convert the observed random durations to probabilities.
           
           #oldw <- getOption("warn") #pull the current warn setting 
           #options(warn = -1) #silence the warnings
           #options(warn = 1) #make warnings appear as they occur, rather than be stored until the top-level function returns
           
           assign("last.warning", NULL, envir = baseenv()) #clears the warnings
-          test<- stats::chisq.test(compareTable) #run the 
+          
+          #test<- stats::chisq.test(x = observedVec, p = expectedProb) #run the 
           #warn1 <- tryCatch({test<- stats::chisq.test(compareTable)}, warning=function(w) print(names(warnings())[1]))
           
-          test<-tryCatch.W.E(stats::chisq.test(compareTable))$value
-          warn1<-tryCatch.W.E(stats::chisq.test(compareTable))$warning$message
+          #test<-tryCatch.W.E(stats::chisq.test(compareTable))$value
+          #warn1<-tryCatch.W.E(stats::chisq.test(compareTable))$warning$message
           
+          test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value
+          warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message
           
           #warn1<- names(warnings())[1] #used to identify when the chi-sq.test produces the "Chi-squared approximation may be incorrect" warning, indicating that that expected X-squared values are very small, and generated estimates will be poor.
-          #assign("last.warning", NULL, envir = baseenv()) #clears the warnings
           if(length(warn1) == 0){
             warn1 = ""
           }
@@ -689,7 +696,7 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
           
           if(length(grep(unlist(unname(cols[i])),colnames(randomized))) == 0){ #if i is trying to reference a specific object not present in the random set, rand duration will equal "0."
             randDurations <- 0
-          }else{ # if the relavent column DOES exist in randomized
+          }else{ # if the relvant column DOES exist in randomized
             randDurations<-randomized[which(randomized$id == unlist(unname(ids[i]))), grep(unlist(unname(cols[i])),colnames(randomized))]
           }
           randDurations<-randDurations[is.na(randDurations) == FALSE] #remove the NAs
@@ -697,20 +704,26 @@ contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPerm
             randDurations <- 0
           }
          
-          compareTable <- matrix(ncol =2, nrow =2) #create a 2X2 table for testing total contact durations
-          compareTable[1:4] <- c(sum(empDurations), sum(randDurations), maxDurations-sum(empDurations), maxDurations-sum(randDurations)) #order the 2X2 table entries as empirical contact durations, random contact durations, empirical noContact durations, and random noContact durations
+          #compareTable <- matrix(ncol =2, nrow =2) #create a 2X2 table for testing total contact durations
+          #compareTable[1:4] <- c(sum(empDurations), sum(randDurations), maxDurations-sum(empDurations), maxDurations-sum(randDurations)) #order the 2X2 table entries as empirical contact durations, random contact durations, empirical noContact durations, and random noContact durations
+          
+          observedVec <- c(sum(empDurations), maxDurations-sum(empDurations)) #create a vector describing observed counts
+          expectedProb <- c((sum(randDurations)/maxDurations), ((maxDurations-sum(randDurations))/maxDurations)) #convert the observed random durations to probabilities.
           
           #oldw <- getOption("warn") #pull the current warn setting 
           #options(warn = -1) #silence the warnings
           #options(warn = 1) #make warnings appear as they occur, rather than be stored until the top-level function returns
           
           assign("last.warning", NULL, envir = baseenv()) #clears the warnings
-          test<- stats::chisq.test(compareTable) #run the 
+          
+          #test<- stats::chisq.test(x = observedVec, p = expectedProb) #run the 
           #warn1 <- tryCatch({test<- stats::chisq.test(compareTable)}, warning=function(w) print(names(warnings())[1]))
           
-          test<-tryCatch.W.E(stats::chisq.test(compareTable))$value
-          warn1<-tryCatch.W.E(stats::chisq.test(compareTable))$warning$message
+          #test<-tryCatch.W.E(stats::chisq.test(compareTable))$value
+          #warn1<-tryCatch.W.E(stats::chisq.test(compareTable))$warning$message
           
+          test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value
+          warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message
           
           #warn1<- names(warnings())[1] #used to identify when the chi-sq.test produces the "Chi-squared approximation may be incorrect" warning, indicating that that expected X-squared values are very small, and generated estimates will be poor.
           #assign("last.warning", NULL, envir = baseenv()) #clears the warnings
