@@ -577,7 +577,9 @@ system.time(calf_fullBody_contacts.hr.random <- contact::contactDur.all(x = full
 
 **E.) Test empirical networks against NULL models.**
 
-Through the *contactTest* function we will use Chi-squared tests to evaluate if differences exist between observed fullbody contacts and expected contacts described in the NULL model. The function takes three data inputs: emp.input, rand.input, and dist.input. Of these inputs, emp.input and rand.input represent the empirical and NULL netowork edgesets, respectively. The object used as for dist.input will be used by *contactTest* to calculate the maximum number of contacts that could occur based on the number of timepoints when individuals were observed concurrently in the data set. One assumption that the function makes is that sequential timepoints in the dist.input are equidistant. Thus, we will recreate the fullBody_distances object using the calves.10secSmoothed.na point-location data set as input. Note that the actual distances represented in the dist.input are irrelevant.
+Through the *contactTest* function we will use Chi-squared tests to evaluate if differences exist between observed fullbody contacts and expected contacts described in the NULL model. Essentially, we will perform a "goodness-of-fit" test to determine if empirical data fit the distribution describe in the NULL model. Therefore our NULL hypothesis/hypotheses is that the distribution of empirical contacts is equivalent to that NULL-model contacts, and our alternative hypothesis is that a difference exists. 
+
+The function takes three data inputs: emp.input, rand.input, and dist.input. Of these inputs, emp.input and rand.input represent the empirical and NULL netowork edgesets, respectively. The object used as for dist.input will be used by *contactTest* to calculate the maximum number of contacts that could occur based on the number of timepoints when individuals were observed concurrently in the data set. One assumption that the function makes is that sequential timepoints in the dist.input are equidistant. Thus, we will recreate the fullBody_distances object using the calves.10secSmoothed.na point-location data set as input. Note that the actual distances represented in the dist.input are irrelevant.
 
 ```{r, echo=TRUE, warning=FALSE, eval = FALSE}
 
@@ -618,7 +620,7 @@ maxDurations <- sum(c(total_Durations[,8], total_Durations[,10])) #total number 
 observedVec <- c(sum(total_Durations[,7]), sum(total_Durations[,9])) #create a vector describing total observed counts of contacts and non-contacting timepoints
 expectedProb <- c((sum(total_Durations[,8])/maxDurations), (sum(total_Durations[,10])/maxDurations)) #convert the observed random durations to probabilities.
  
-stats::chisq.test(x = observedVec, p = expectedProb) #it looks like, on average, there are indeed a different number of observed empirical contacts each hour than we might expect at random (assuming an alpha-level of 0.05).
+stats::chisq.test(x = observedVec, p = expectedProb) #It looks like the p-value is very small. Thus, given an alpha-level of 0.05, we can reject the NULL hypothesis and conclude that, on average, there are indeed a different number of observed empirical contacts each hour than we might expect at random.
 
 ```
 
