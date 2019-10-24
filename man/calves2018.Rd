@@ -29,9 +29,10 @@ Data collection was supported by U.S. National Institute of Health (NIH)
    Evolution of Infectious Disease program.
 }
 \examples{
-data("calves2018") #alternatively, you may use the command: 
-    #contact::calves2018
+\donttest{
+data("calves2018") #alternatively, you may use the command: contact::calves2018
 head(calves2018)
+}
 }
 \references{
 Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 

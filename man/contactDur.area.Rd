@@ -5,7 +5,7 @@
 \title{Identify Environmental Contacts}
 \usage{
 contactDur.area(x, dist.threshold = 1, sec.threshold = 10,
-  blocking = TRUE, blockUnit = "mins", blockLength = 10,
+  blocking = FALSE, blockUnit = "mins", blockLength = 10,
   equidistant.time = FALSE, parallel = FALSE,
   nCores = parallel::detectCores(), reportParameters = TRUE)
 }
@@ -51,6 +51,41 @@ parallel processes. Defaults to the maximum number of cores available
 \item{reportParameters}{Logical. If TRUE, function argument values will be 
 appended to output data frame(s). Defaults to TRUE.}
 }
+\value{
+Returns a data frame (or list of data frames if \code{x} is a 
+   list of data frames) with the following columns:
+   
+   \item{indiv.id}{The unique ID of an individual observed in contact 
+   with a specified fixed point/polygon.}
+   \item{area.id}{The unique ID of a fixed point/polygon observed in contact
+   with \code{indiv.id}.}
+   \item{contact.id}{The unique ID used to identify contacts between the 
+   \code{indiv.id} and \code{contact.id} pair.}    
+   \item{contactDuration}{The number of sequential timepoints in \code{x} 
+   that \code{indiv.id} and \code{area.id} were observed to be in 
+   contact.}
+   \item{contactStartTime}{The timepoint in \code{x} at which contact
+   between \code{indiv.id} and \code{area.id} begins.}
+   \item{contactEndTime}{The timepoint in \code{x} at which contact
+   between \code{indiv.id} and \code{area.id} ends.}
+   
+   If blocking == TRUE, the following codes are appended to the output
+   data frame described above:
+   
+   \item{block}{Integer ID describing unique blocks of time during which 
+   contacts occur.}
+   \item{block.start}{The timepoint in \code{x} at which the \code{block}
+   begins.}
+   \item{block.end}{The timepoint in \code{x} at which the \code{block}
+   ends.}
+   \item{numBlocks}{Integer describing the total number of time blocks 
+   observed within \code{x} at which the \code{block}}
+    
+   Finally, if reportParameters == TRUE function arguments 
+   \code{distThreshold}, \code{secThreshold}, \code{equidistant.time},
+   and \code{blockLength} (if applicable) will be appended to the 
+   output data frame.
+}
 \description{
 This function uses the output from distToArea to determine when tracked 
    individuals are in "contact" with fixed locations. Individuals are said 
@@ -66,10 +101,8 @@ The output of this function is a data frame containing a time-ordered
    contact edge set detailing animal-environment contacts.
 }
 \examples{
-#load the calves data set
 data(calves)
 
-#pre-process the data
 calves.dateTime<-datetime.append(calves, date = calves$date, 
   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 
@@ -79,15 +112,10 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 
-#delineate the water trough polygon (showing where the water trough in the calves' 
-  #feedlot pen is)
 water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622),
                   y = c(62.44815, 62.73341, 61.93864, 61.67411)) 
 
-#As noted in the dist2Area_df help documention, polygon-vertex coordinates 
-  #must be arranged in a particular way. Here we arrange them accordingly.
-
-water_poly<-data.frame(matrix(ncol = 8, nrow = 1)) #(ncol = number of vertices)*2
+water_poly<-data.frame(matrix(ncol = 8, nrow = 1)) #(ncol = number of vertices)*2 #arrange data
 colnum = 0
 for(h in 1:nrow(water)){
  water_poly[1,colnum + h] <- water$x[h] #pull the x location for each vertex
@@ -95,13 +123,10 @@ for(h in 1:nrow(water)){
  colnum <- colnum + 1
 }
 
-#generate empirical time-ordered network edges.
 water_dist<-dist2Area_df(x = calves.agg, y = water_poly, 
   x.id = calves.agg$id, y.id = "water", dateTime = "dateTime", point.x = calves.agg$x, 
   point.y = calves.agg$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
-  lonlat = FALSE, numVertices = NULL) #note that the poly.xy and numVertices arguments 
-  #refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," 
-  #these arguments are irrelevant here.
+  lonlat = FALSE, numVertices = NULL) #find distances to the water trough 
 
 water_contacts <- contactDur.area(water_dist, dist.threshold=1,
   sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10,

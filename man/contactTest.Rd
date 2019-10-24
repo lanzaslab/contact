@@ -50,6 +50,55 @@ randomizePaths function) was used to randomize the rand.input data
 set(s). Takes the values "0," "1," or "2." For tests other than 
 "chisq" this value is irrelevant.}
 }
+\value{
+Output format is dependent on \code{test} value.
+
+   If \code{test} == "chisq," output will be a list of two data frames.
+   The first data frame contains pairwise analyses of node degree and total 
+   edge weight (i.e., the sum of all observed contacts involving each 
+   individual). The second data frame contains results of pairwise analyses 
+   specific dyadic relationships (e.g., contacts between individuals 1 and 
+   2). Each data frame contains the following columns: 
+   
+   \item{id1}{the id of the first individual involved in the contact.}
+   \item{id2}{designation of what is being compared (e.g., totalDegree, 
+   totalContactDurations, individual 2, etc.). Content will 
+   change depending on which data frame is being observed.}
+   \item{method}{Statistical test used to determine significance.}
+   \item{statistic}{Test statistic associated with the specific method.}
+   \item{p.value}{p.values associated with each comparison.}
+   \item{df}{Degrees of freedom associated with the statistical test.}
+   \item{block}{Denotes the relevant time block for each 
+   analysis. (if applicable)}
+   \item{warning}{Denotes if any specific warning occurred during analysis.}
+   \item{empiricalContactDurations}{Describes the number of observed events
+   in emp.input.}
+   \item{randContactDurations.mean}{Describes the average number of observed
+   events in rand.input.}
+   \item{empiricalNoContactDurations}{Describes the number of events that 
+   were not observed given the total number of potential events in 
+   emp.input.}
+   \item{randNoContactDurations.mean}{Describes the average number of events
+   that were not observed given the total number of potential events
+   in rand.input.}
+   \item{difference}{The value given by subtracting 
+   randContactDurations.mean from empiricalContactDurations.}
+
+   If \code{test} == "mantel," output will be a single data frame with the
+   following columns:
+    
+   \item{method}{Statistical test used to determine significance.}
+   \item{z.val}{z statistic associated with the specific method.}
+   \item{p.value}{p.values associated with each comparison.}
+   \item{emp.mean}{mean contacts in the emp.input overall or by block (if 
+   applicable).}
+   \item{rand.mean}{mean contacts in the rand.input overall or by block (if
+   applicable).} 
+   \item{alternative.hyp}{The nature of the alternative hypothesis being 
+   tested.}
+   \item{nperm}{Number of permutations used to generate p value.}
+   \item{warning}{Denotes if any specific warning occurred during analysis.}
+}
 \description{
 This function is used to determine if tracked individuals in an empirical 
    dataset had more or fewer contacts with other tracked 
@@ -77,76 +126,15 @@ Note: The current functionality is limited to comparisons using the
    dataset/block of interest, allowing us to calculate the number of TSWs 
    each individual was present but not involved in contacts. Note here that 
    if X-squared expected values will be very small, approximations of p may 
-   not be right (and in fact, all estimates will be poor). It may be best 
+   not be correct (and in fact, all estimates will be poor). It may be best 
    to weight these tests differently. To address this, We've added the 
-   "warning" column to the output which notifies users when the chi-sq 
-   function reported that results may be inaccurate. Output is a list 
-   contataining two data frames. The first data frame contains pairwise 
-   analyses of node degree and total edge weight (i.e., the sum of all 
-   observed contacts involving each individual). The second data frame 
-   contains results of pairwise analyses specific dyadic relationships 
-   (e.g., contacts between individuals 1 and 2). Each data frame contains 
-   the following columns: 
-   
-   id1 - the id of the first individual involved in the contact.
-   
-   id2 - designation of what is being compared (e.g., totalDegree, 
-         totalContactDurations, individual 2, etc.). Content will 
-         change depending on which data frame is being observed.
-         
-   method - statistical test used to determine significance.
-   
-   statistic - test statistic associated with the specific method.
-   
-   p.value - p.values associated with each comparison.
-   
-   df - degrees of freedom associated with the statistical test.
-   
-   block (if applicable) - denotes the relevant time block for each 
-         analysis.
-         
-   warning - denotes if any specific warning occurred during analysis.
-   
-   empiricalContactDurations - Describes the number of observed events in 
-         emp.input.
-         
-   randContactDurations.mean - Describes the average number of observed 
-         events in rand.input.
-         
-   empiricalNoContactDurations - Describes the number of events that were 
-         not observed given the total number of potential events in 
-         emp.input.
-         
-   randNoContactDurations.mean - Describes the average number of events that
-         were not observed given the total number of potential events in 
-         rand.input.
-         
-   difference - The value given by subtracting randContactDurations.mean 
-         from empiricalContactDurations.
+   "warning" column to the output which notifies users when the chisq.test 
+   function reported that results may be inaccurate. 
    
    Mantel test (abe::mantel.test): tests for similarity of the emp.input to 
    rand.input. Please note that abe::mantel.test does not allow for missing
    values in matrices, so all NAs will be treated as 0. Output is a single
-   data frame describing the test results. Data frames contain the following
-   columns:
-   
-   method - statistical test used to determine significance.
-   
-   z.val - z statistic associated with the specific method.
-   
-   p.value - p.values associated with each comparison.
-   
-   emp.mean - mean contacts in the emp.input overall or by block (if 
-          applicable).
-          
-   rand.mean - mean contacts in the rand.input overall or by block (if 
-          applicable).  
-          
-   alternative.hyp - the nature of the alternative hypothesis being tested. 
-           
-   nperm - number of permutations used to generate p value.
-   
-   warning - denotes if any specific warning occurred during analysis.
+   data frame describing the test results.
 
 This function was inspired by the methods described by Spiegel et al. 2016. 
    Who determined individuals to be expressing social behavior when nodes 
@@ -183,59 +171,43 @@ Note: if importBlocks == TRUE, a "block" column MUST exist in emp.input.
    Block columns will also be appended to function outputs.
 }
 \examples{
-#load the calves data set
+\donttest{
 data(calves)
 
-#pre-process the data
 calves.dateTime<-datetime.append(calves, date = calves$date, 
-   time = calves$time) #create a dataframe with dateTime identifiers for 
-   #location fixes.
+   time = calves$time) 
    
 calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
-   na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix 
-   #intervals. Note that na.rm was set to "FALSE" because randomizing this 
-   #data set according to Spiegel et al.'s method (see below) requires 
-   #equidistant time points.
+   na.rm = TRUE, smooth.type = 1) 
 
-#generate empirical time-ordered network edges.
 calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, 
-   dataType = "Point", lonlat = FALSE) #calculate distance between all 
-   #individuals at each timepoint.
+   dataType = "Point", lonlat = FALSE) 
    
 calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
    sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
    equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE) 
-   #compile inter-calf contacts with 1-hr blocking. Contacts are defined 
-   #here as occurring when calves were within 1 m of one another.
 
-#generate randomized time-ordered network edges.
 calves.agg.rand<-randomizePaths(x = calves.agg, id = "id", 
    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
    parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
    blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
-   indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
-   #calves.agg data set with calves' xy coordinates within 10-minute blocks 
-   #pseudo-randomized.
+   indivPaths = TRUE, numRandomizations = 1) 
 
 calves.dist.rand<-dist2All_df(x = calves.agg.rand, point.x = "x.rand", 
    point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
-   #calculate distance between all individuals at each timepoint in 
-   #calves.rand. Note that point.x and point.y must be specified as 
-   #"x.rand" and "y.rand," respectively.
    
 calves.contact.rand<-contactDur.all(x = calves.dist.rand, 
    dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours",
    blockLength = 1, equidistant.time = FALSE, parallel = FALSE, 
-   reportParameters = TRUE) #compile randomized inter-calf contacts with 
-   #1-hr blocking. Contacts are defined here as occurring when calves were 
-   #within 1 m of one another.
+   reportParameters = TRUE) 
 
 nullTest<- contactTest(emp.input = calves.contact.block, 
    rand.input = calves.contact.rand, dist.input = calves.dist, 
    importBlocks = FALSE, shuffle.type = 0)
+   }
 }
 \references{
 Farine, D.R., 2017. A guide to null models for animal social 

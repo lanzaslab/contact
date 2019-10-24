@@ -26,7 +26,8 @@
 #'    C. in Review. Accounting for space and uncertainty in real-time-location-
 #'    system-derived contact networks. Ecology and Evolution.
 #' @examples
-#' data("calves2018") #alternatively, you may use the command: 
-#'     #contact::calves2018
+#' \donttest{
+#' data("calves2018") #alternatively, you may use the command: contact::calves2018
 #' head(calves2018)
+#' }
 "calves2018"

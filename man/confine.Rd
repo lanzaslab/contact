@@ -8,7 +8,7 @@ confine(x, point.x = NULL, point.y = NULL, confinementCoord.x,
   confinementCoord.y, filterOutput = TRUE)
 }
 \arguments{
-\item{x}{Non-data-frame list or data frame that will be filtered.}
+\item{x}{Data frame or non-data-frame list that will be filtered.}
 
 \item{point.x}{Vector of length nrow(data.frame(x)) or singular character 
 data, detailing the relevant colname in x, that denotes what planar-x or 
@@ -39,6 +39,17 @@ observations are removed and a "confinement_status" column is appended to
 x, detailing the relationship of each point to the confinement polygon. 
 Defaults to TRUE.}
 }
+\value{
+If filterOutput == TRUE, returns \code{x} less observations where
+   points were located outside of the polygon defined by points in 
+   \code{confinementCoord.x} and \code{confinementCoord.y}.
+   
+   If filterOutput == FALSE, returns \code{x} appended with a 
+   "confinement_status" column which reports the results of 
+   sp::point.in.polygon function, which is used to determine if observed 
+   points are confined within the polygon defined by points in 
+   \code{confinementCoord.x} and \code{confinementCoord.y}.
+}
 \description{
 Identifies and removes timepoints when tracked individuals were observed 
    outside of a defined polygon (note: the polygon should be described by 
@@ -59,21 +70,15 @@ If users are not actually interested in filtering datasets, but rather,
    pol; 3: point is a vertex of pol (see ?sp::point.in.polygon).
 }
 \examples{
-#read in the calves data set
 data("calves")
 
-#report the x and y coordinates for a polygon. In this case the vertices of
-   #the water trough within the feedlot pen where calves were housed.
-water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622)
-water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411)
+water_trough.x<- c(61.43315, 61.89377, 62.37518, 61.82622) #water polygon x-coordinates
+water_trough.y<- c(62.44815, 62.73341, 61.93864, 61.67411) #water polygon y-coordinates
 
-#determine when calves' heads (note that real-time-location points describe
-   #the location of radio-tracking eartags on left ears) were within the 
-   #confines of the water trough.
 headWater1<- confine(calves, point.x = calves$x, point.y = calves$y, 
    confinementCoord.x = water_trough.x, confinementCoord.y = water_trough.y,
-   filterOutput = TRUE) #creates a data set comprised ONLY of points within 
-   #the water polygon.
+   filterOutput = TRUE) #creates a data set comprised ONLY of points within the water polygon.
+   
 headWater2<- confine(calves, point.x = calves$x, point.y = calves$y, 
    confinementCoord.x = water_trough.x, confinementCoord.y = water_trough.y,
    filterOutput = FALSE) #appends the "confinement_status" column to x.

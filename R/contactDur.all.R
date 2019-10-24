@@ -49,35 +49,63 @@
 #' @param reportParameters Logical. If TRUE, function argument values will be 
 #'     appended to output data frame(s). Defaults to TRUE.
 #' @keywords data-processing contact
+#' @return Returns a data frame (or list of data frames if \code{x} is a 
+#'    list of data frames) with the following columns:
+#'    
+#'    \item{dyadMember1}{The unique ID of an individual observed in contact 
+#'    with a specified second individual.}
+#'    \item{dyadMember2}{The unique ID of an individual observed in contact 
+#'    with \code{dyadMember1}.}
+#'    \item{dyadID}{The unique dyad ID used to identify the pair
+#'    of individuals \code{dyadMember1} and \code{dyadMember2}.}    
+#'    \item{contactDuration}{The number of sequential timepoints in \code{x} 
+#'    that \code{dyadMember1} and \code{dyadMember2} were observed to be in 
+#'    contact with one another.}
+#'    \item{contactStartTime}{The timepoint in \code{x} at which contact
+#'    between \code{dyadMember1} and \code{dyadMember2} begins.}
+#'    \item{contactEndTime}{The timepoint in \code{x} at which contact
+#'    between \code{dyadMember1} and \code{dyadMember2} ends.}
+#'    
+#'    If blocking == TRUE, the following codes are appended to the output
+#'    data frame described above:
+#'    
+#'    \item{block}{Integer ID describing unique blocks of time during which 
+#'    contacts occur.}
+#'    \item{block.start}{The timepoint in \code{x} at which the \code{block}
+#'    begins.}
+#'    \item{block.end}{The timepoint in \code{x} at which the \code{block}
+#'    ends.}
+#'    \item{numBlocks}{Integer describing the total number of time blocks 
+#'    observed within \code{x} at which the \code{block}}
+#'     
+#'    Finally, if reportParameters == TRUE function arguments 
+#'    \code{distThreshold}, \code{secThreshold}, \code{equidistant.time},
+#'    and \code{blockLength} (if applicable) will be appended to the 
+#'    output data frame.
 #' @export
 #' @examples
 #' 
 #' data(calves)
 #' 
-#' #pre-process the data
 #' calves.dateTime<-datetime.append(calves, date = calves$date, time =
-#'     calves$time) #create a dataframe with dateTime identifiers for location
-#'     #fixes.
+#'     calves$time) #create a dataframe with dateTime identifiers for location foxes
+#'     
 #' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
 #'     dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x,
 #'     point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE,
 #'     extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE,
 #'     na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix intervals.
 #' 
-#' #generate empirical time-ordered network edges.
 #' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
-#'     lonlat = FALSE) #calculate distance between all individuals at each
-#'     #timepoint.
+#'     lonlat = FALSE) #calculate distance between all individuals at each timepoint
+#'     
 #' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1,
 #'     sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1,
 #'     equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
-#'     #compile inter-calf contacts with 1-hr blocking. Contacts are defined
-#'     #here as occurring when calves were within 1 m of one another.
+#'     
 #' calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1,
 #'     sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1,
 #'     equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
-#'     #Contacts are defined here as occurring when calves were within 1 m of
-#'     #one another.
 
 contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = FALSE, nCores = parallel::detectCores(), reportParameters = TRUE){ 
   
