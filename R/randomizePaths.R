@@ -108,6 +108,30 @@
 #' @param numRandomizations Numerical. The number of replicate data frames 
 #'    produced in output. Defaults to 1.
 #' @keywords data-processing contact
+#' @return Output is \code{x} appended with columns described below.
+#'    
+#'    \item{x.rand}{Randomized values taken from the \code{point.x} 
+#'    argument.}
+#'    \item{y.rand}{Randomized values taken from the \code{point.y} 
+#'    argument.}
+#'    \item{shuffle.type}{The value specified by the \code{shuffle.type} 
+#'    argument.}
+#'    \item{rand.rep}{Randomization replicate.}
+#'    
+#'    If blocking == TRUE, the following codes are appended to the output
+#'    data frame described above:
+#'    
+#'    \item{block}{Integer ID describing unique blocks of time during which 
+#'    contacts occur.}
+#'    \item{block.start}{The timepoint in \code{x} at which the \code{block}
+#'    begins.}
+#'    \item{block.end}{The timepoint in \code{x} at which the \code{block}
+#'    ends.}
+#'    \item{numBlocks}{Integer describing the total number of time blocks 
+#'    observed within \code{x} at which the \code{block}}
+#'    \item{blockLength}{Character string describing the length of blocks 
+#'    described by \code{blockLength} and \code{blockUnit} arguments.}
+#'    
 #' @references Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
 #'    interacting or indifferent neighbors? Randomization of movement paths to 
 #'    tease apart social preference and spatial constraints. Methods in 
@@ -118,13 +142,10 @@
 #'    https://doi.org/10.1111/2041-210X.12772.
 #' @export
 #' @examples
-#' #load the calves data set
 #' data(calves)
 #' 
-#' #pre-process the data
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
-#'    time = calves$time) #create a dataframe with dateTime identifiers for 
-#'    #location fixes.
+#'    time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #'    
 #' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
 #'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
@@ -132,13 +153,11 @@
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
 #'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals. 
 #'
-#' #generate randomized time-ordered network edges. 
 #' calves.agg.rand<-randomizePaths(x = calves.agg, id = "id", 
 #'    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
 #'    parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
 #'    blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
-#'    indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
-#'    #calves.agg data set with calves' xy coordinates within pseudo-randomized 10-minute blocks.
+#'    indivPaths = TRUE, numRandomizations = 1) 
 #'    
 
 randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", numVertices = 4, blocking = TRUE, blockUnit = "hours", blockLength = 1, shuffle.type = 0, shuffleUnit = "days", indivPaths = TRUE, numRandomizations = 1){

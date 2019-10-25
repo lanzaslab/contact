@@ -30,29 +30,16 @@
 #'    C. in Review. Accounting for space and uncertainty in real-time-location-
 #'    system-derived contact networks. Ecology and Evolution.
 #' @export
+#' @return Output is a named vector with 22 observations describing the mean, 
+#'    max, and upper 5%, 10%, 15%, 20%, 25%, 30%, 35%, 40%, 45%, 50%, 55%, 60%,
+#'    65%, 70%, 75%, 80%, 85%, 90%, 95%, and 99% CI values calculated from 
+#'    the contact-distance distribution.
 #' @examples
-#' #Here we use findDistThresh to identify what spatial thresholds for contact 
-#'    #likely report 99% of contacts in the calves system, previously defined as
-#'    #instances where individuals were within 0.5 m, and 0 m of one another for
-#'    #point- and polygon-based networks, respectively. Note that the accuracy 
-#'    #of the RTLS used to collect the calves data set, as reported by the RTLS 
-#'    #manufacturer, was "90% of points fall within 0.5 m of true locations."
-#'
-#' #Point-based distance-threshold contacts
 #' findDistThresh(n1 = 10, n2 = 10, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
-#'    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the 
-#'    #initially-defined spatial threshold for contact
+#'    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) 
 #' 
-#' #Polygon-intersection-based contacts
 #' findDistThresh(n1 = 10, n2 = 10, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
 #'    pWithin1 = 90, pWithin2 = NULL, spTh = 0)
-#' 
-#' #Note that because these confidence intervals are obtained from 
-#'    #distributions generated from random samples, everytime this function is 
-#'    #run, results will be slightly different. When we ran the function, the 
-#'    #outputs indicated that adjusted spatial thresholds of 0.74 m and 0.56 m 
-#'    #likely capture at least 99% of contacts, as previously defined for point- and 
-#'    #polygon-based networks, respectively.
 
 findDistThresh<-function(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.666){
   

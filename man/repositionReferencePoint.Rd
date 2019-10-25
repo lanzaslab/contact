@@ -85,6 +85,41 @@ degrees) of a planar model (see vignette or Farthing et al. in Review
 citation/reference information)) describing vertex locations relative to
 tracking-device point-locations. Defaults to 90.}
 }
+\value{
+Output is a data frame with the following columns:
+      
+   \item{id}{Unique ID of tracked individuals.}
+   \item{x.original}{Original x coordinates from input.}
+   \item{y.original}{Original y coordinates from input.}
+   \item{distance.original}{Original planar distance (m) between 
+   point-location i to point-location i + 1.}
+   \item{dx.original}{Original difference between point-location 
+   x-coordinate i to x-coordinate i + 1.}
+   \item{dy.original}{Original difference between point-location 
+   y-coordinate i to y-coordinate i + 1.}
+   \item{x.adjusted}{Translated x coordinates.}
+   \item{y.adjusted}{Translated y coordinates.}
+   \item{dist.adjusted}{Planar distance (m) between translated
+   point-location i to translated point-location i + 1.}
+   \item{dx.adjusted}{Difference between translated point-location 
+   x-coordinate i to translated x-coordinate i + 1.}
+   \item{dy.adjusted}{Difference between translated point-location 
+   y-coordinate i to translated y-coordinate i + 1.}
+   \item{movementDirection}{Describes the angle of movement (in degrees) 
+   required to translate point-locations to be congruent with planar-model
+   adjustments.}
+   \item{repositionAngle}{Describes the value \code{repositionAngle} of the
+   argument.}
+   \item{repositionDist}{Describes the value \code{repositionDist} of the
+   argument.}
+   \item{immob}{If "0", distance between observed movements is 
+   < \code{immobThreshold}.}
+   \item{immobThreshold}{Returns the value from the \code{immobThreshold}
+   argument.}
+   \item{dateTime}{Timepoint at which polygons were observed.}
+   \item{dt}{The the time between reported xy coordinates in row i to row 
+   i + 1 in each individuals' movement path.}
+}
 \description{
 Translates locations of a single rfid tag/gps transmitter to a different 
    location a fixed distance away, given a known angular offset (in 
@@ -147,7 +182,6 @@ Second, unless the direction argument is specifically given (i.e.,
 }
 \examples{
 \donttest{
-#read in the calves data set
 data("calves")
 calves.dateTime<-datetime.append(calves, date = calves$date, 
    time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
@@ -158,18 +192,11 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 
-#Because the head is not the same width of the body and is assumed to be centered at the 
-   #front of the body, before creating body polygons, we must move reference points (on the 
-   #left ear) to the left by 0.3335 m to reposition them at the upper-left corner of calves 
-   #bodies. Note that we are assuming left ears (where the tracking devices are located) are 
-   #parallel to shoulder-tips. 
 leftShoulder.point<-contact::repositionReferencePoint(x = calves.agg, 
    id = calves.agg$id, dateTime = calves.agg$dateTime, 
    point.x = calves.agg$x, point.y = calves.agg$y, direction = NULL, 
    repositionAngle = 180, repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, 
    modelOrientation = 90)
-   #Note that we do not specify a standing threshold here. Rather, we will do so when we create 
-   #the polygon later on. See the package vignette.
    }
 }
 \references{

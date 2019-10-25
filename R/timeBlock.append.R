@@ -19,6 +19,16 @@
 #' @param blockLength Numerical. Describes the number blockUnits within each 
 #'    temporal block. Defaults to 10.
 #' @keywords data-processing sub-function
+#' @return Appends the following columns to \code{x}.
+#'    
+#'    \item{block}{Integer ID describing unique blocks of time of pre-specified
+#'    length.}
+#'    \item{block.start}{The timepoint in \code{x} at which the \code{block}
+#'    begins.}
+#'    \item{block.end}{The timepoint in \code{x} at which the \code{block}
+#'    ends.}
+#'    \item{numBlocks}{Integer describing the total number of time blocks 
+#'    observed within \code{x} at which the \code{block}}
 #' @export
 #' @examples
 #' data("calves")

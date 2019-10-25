@@ -16,7 +16,7 @@
 #'    coordinates should be in degrees. Otherwise, coordinates should represent
 #'    planar ('Euclidean') space (e.g. units of meters).
 #'
-#' If users are not actually interested in filtering datasets, but rather, 
+#' If users are not actually interested in filtering datasets, but rather 
 #'    determining what observations should be filtered, they may set 
 #'    filterOutput == FALSE. By doing so, this function will append up an "mps"
 #'    column to the dataset, which reports the avg distance per second 
@@ -61,20 +61,23 @@
 #'    reports the avg distance per second individuals moved to get from 
 #'    observation i-1 to observation i. Defaults to TRUE.
 #' @keywords filter movement speed
+#' @return If filterOutput == TRUE, returns \code{x} less observations 
+#'    representing impossible/unlikely movements.
+#'    
+#'    If filterOutput == FALSE, returns \code{x} appended with an 
+#'    "mps" column which reports the avg distance per second 
+#'    individuals moved to get from observation i-1 to observation i.
 #' @export
 #' @examples
 #' data(calves) #load calves data
 #' 
-#' #pre-process the data
 #' calves.dateTime<-datetime.append(calves, date = calves$date,
-#'    time = calves$time) #create a dataframe with dateTime identifiers for
-#'    #location fixes.
+#'    time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #' 
 #' calves_filter1 <- mps(calves.dateTime, id = calves.dateTime$calftag,
 #'    point.x = calves.dateTime$x, point.y = calves.dateTime$y, 
 #'    dateTime = calves.dateTime$dateTime, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, 
-#'    filterOutput = TRUE) #we assume that if calves are point-locations suggest calves moved 
-#'    #faster than 10m/s, points are erroneous and should be removed.
+#'    filterOutput = TRUE) 
 #'
 mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, nCores = parallel::detectCores(), filterOutput = TRUE){
 

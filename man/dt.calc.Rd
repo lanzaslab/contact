@@ -49,6 +49,13 @@ argument == "1," dt values in output represent the difference between
 time t and time t-1. If argument == "2," dt values in output represent 
 the difference between time t and time t+1. Defaults to 1.}
 }
+\value{
+Output is a data frame with the following columns
+
+   \item{id}{The unique ID of a tracked individual.}
+   \item{dt}{Time difference between relocation events.}
+   \item{units}{Temporal unit defined by \code{timeUnits} argument.}
+}
 \description{
 This function calculates the time difference between relocation events, 
    accounting for individuals' ids. This function has the capability to 
@@ -62,10 +69,11 @@ This is a sub-function contained within contactDur variants and contactTest
 }
 \examples{
 data(calves) #load calves data set
-calves.datetime<-contact::datetime.append(calves)
-dt<-contact::dt.calc(x = calves.datetime, id = calves.datetime$calftag, 
+calves.datetime<-datetime.append(calves)
+dt<-dt.calc(x = calves.datetime, id = calves.datetime$calftag, 
    dateTime1 = calves.datetime$dateTime, dateTime2 = NULL, 
    timeUnits = "secs", parallel = FALSE, timeStepRelation = 1)
+   
 head(dt)
 }
 \keyword{contact}

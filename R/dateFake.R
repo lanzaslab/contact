@@ -1,7 +1,7 @@
 #' Create Fake Date Information
 #'
 #' This function assigns fake date information, beginning 01/01/startYear, to 
-#'    each of the timestamps. Users can control what format the output vector 
+#'    each empirical timestamp. Users can control what format the output vector
 #'    is in by changing the dateFormat argument 
 #'    (format: "mdy" =  month-day-year, "ymd" =  year-month-day, 
 #'    "dmy" =  day-month-year, or "ydm" =  year-day-month).
@@ -9,7 +9,7 @@
 #' This is a sub-function that can be found within datetime.append.
 #' 
 #' Note that the timestamp argument should be a vector of all relevant 
-#'    timepoints. Additionally, timepoints should by in hms ("hour, minute, 
+#'    timepoints. Additionally, timepoints should be in hms ("hour, minute, 
 #'    second") format.
 #' @param timestamp Vector of time information with format 
 #'    "hour:minute:second."
@@ -20,12 +20,13 @@
 #' @param startYear Numerical. Denotes what year fake date information will 
 #' begin if dateFake == TRUE. Defaults to 2000.
 #' @keywords data-processing sub-function
+#' @return Output is a vector of date values (e.g., "01-1-2000") with length 
+#'    length(\code{timestamp}).
 #' @export
 #' @examples
 #' 
 #' data("calves")
-#' contact::dateFake(calves$time, dateFormat = "mdy", startYear = 2000) #note 
-#'    #that all of these timepoints happen on the same day.
+#' dateFake(calves$time, dateFormat = "mdy", startYear = 2000) 
 
 dateFake<-function(timestamp, dateFormat ="mdy", startYear = 2000){
   monthSeq<-c("01","02","03","04","05","06","07","08","09","10","11","12")

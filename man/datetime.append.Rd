@@ -11,7 +11,8 @@ datetime.append(x, date = NULL, time = NULL, dateTime = NULL,
   daySecond = FALSE, totalSecond = FALSE)
 }
 \arguments{
-\item{x}{List or data frame to which new information will be appended.}
+\item{x}{Data frame or list of data frames to which new information will be 
+appended.}
 
 \item{date}{Vector of length nrow(data.frame(x)) or singular character data,
 detailing the relevant colname in x, that denotes what date information 
@@ -86,6 +87,10 @@ dateTime value corresponds to. Defaults to FALSE.}
 column with information detailing what the second of the entire data set 
 the associated dateTime value corresponds to. Defaults to FALSE.}
 }
+\value{
+Output is \code{x} with new columns appended according to 
+   corresponding argmuents.
+}
 \description{
 This function appends date-time information to a dataset in POSIXct 
    date_time format. It also uses functions from the lubridate package and 
@@ -98,15 +103,11 @@ This function appends date-time information to a dataset in POSIXct
    zeroes should be included before numbers <10)) and time 
    (format: hour:minute:second (note:preceding zeroes must be included 
    before numbers < 10, ex. 00:00:01)) information, appends this metadata to
-   the dataset,and can assign each day a unique ID.
+   the dataset, and can assign each day a unique ID.
 }
 \examples{
 data("calves")
-head(calves) #observe that the date and time columns are separate. Later 
-   #processing functions require each relocation event to be associated with
-   #a unique dateTime object. 
-calves.dateTime<-contact::datetime.append(calves, date = calves$date, 
-   time = calves$time) #add dateTime identifiers for location fixes.
+calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) 
 head(calves.dateTime) #see now that a dateTime column exists.
 }
 \keyword{date}

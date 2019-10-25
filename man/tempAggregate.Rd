@@ -76,6 +76,15 @@ of smooting used to average individuals' xy-coordinates. If
 smooth.type == 1, data are smoothed forwards. If smooth.type == 2, data 
 are smoothed backwards. Defaults to 1.}
 }
+\value{
+Returns a data frame (or list of data frames if \code{x} is a 
+   list of data frames) with the following columns:
+   
+   \item{id}{The unique ID of tracked individuals.}
+   \item{x}{Smoothed x coordinates.}
+   \item{y}{Smoothed y coordinates.}
+   \item{dateTime}{Timepoint at which smoothed points were observed.}
+}
 \description{
 Aggregate location data by secondAgg seconds over the course of each day 
    represented in the dataset. The function smooths xy data forwards 
@@ -98,7 +107,6 @@ This function is based on real-time-location-data-smoothing methods
    presented by Dawson et al. 2019.
 }
 \examples{
-#read in the calves data set
 data("calves")
 head(calves) #observe that fix intervals occur ever 4-5 seconds.
 

@@ -98,6 +98,31 @@ location distribution). Defaults to TRUE.}
 \item{numRandomizations}{Numerical. The number of replicate data frames 
 produced in output. Defaults to 1.}
 }
+\value{
+Output is \code{x} appended with columns described below.
+   
+   \item{x.rand}{Randomized values taken from the \code{point.x} 
+   argument.}
+   \item{y.rand}{Randomized values taken from the \code{point.y} 
+   argument.}
+   \item{shuffle.type}{The value specified by the \code{shuffle.type} 
+   argument.}
+   \item{rand.rep}{Randomization replicate.}
+   
+   If blocking == TRUE, the following codes are appended to the output
+   data frame described above:
+   
+   \item{block}{Integer ID describing unique blocks of time during which 
+   contacts occur.}
+   \item{block.start}{The timepoint in \code{x} at which the \code{block}
+   begins.}
+   \item{block.end}{The timepoint in \code{x} at which the \code{block}
+   ends.}
+   \item{numBlocks}{Integer describing the total number of time blocks 
+   observed within \code{x} at which the \code{block}}
+   \item{blockLength}{Character string describing the length of blocks 
+   described by \code{blockLength} and \code{blockUnit} arguments.}
+}
 \description{
 Randomizes or pseudorandomizes individuals' spatial locations. Randomized 
    datasets can later be compared to empirical ones to determine if 
@@ -139,13 +164,10 @@ Note that, if shuffle.type == 2, all dateTime values in individuals movement
    our tempAggregate function, with na.rm == FALSE, to make it so.
 }
 \examples{
-#load the calves data set
 data(calves)
 
-#pre-process the data
 calves.dateTime<-datetime.append(calves, date = calves$date, 
-   time = calves$time) #create a dataframe with dateTime identifiers for 
-   #location fixes.
+   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
    
 calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
@@ -153,13 +175,11 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals. 
 
-#generate randomized time-ordered network edges. 
 calves.agg.rand<-randomizePaths(x = calves.agg, id = "id", 
    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
    parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
    blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
-   indivPaths = TRUE, numRandomizations = 1) #create 1 replicate of the 
-   #calves.agg data set with calves' xy coordinates within pseudo-randomized 10-minute blocks.
+   indivPaths = TRUE, numRandomizations = 1) 
    
 }
 \references{

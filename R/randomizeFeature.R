@@ -24,6 +24,11 @@
 #'    maintained. Defaults to TRUE.
 #' @param numRandomizations Description imminent
 #' @keywords randomize analysis
+#' @return Output is \code{x} appended with columns described below. 
+#'    
+#'    \item{...shuff}{Randomized value of specified variables.}
+#'    \item{randomRep}{Randomization replicate.}
+#'    
 #' @references Farine, D.R., 2017. A guide to null models for animal social 
 #'    network analysis. Methods in Ecology and Evolution 8:1309-1320.
 #'    https://doi.org/10.1111/2041-210X.12772.
@@ -34,10 +39,7 @@
 #' 
 #' system.time(randomizedValues<-contact::randomizeFeature(x = calves, 
 #'    feature = c("calftag", "date"), shuffle = TRUE, maintainDistr = TRUE, 
-#'    numRandomizations = 3)) #note: in this example, there's only one unique 
-#'    #"date" value, so there's no point in randomizing this vector. The "date"
-#'    #column was only included here to demonstrate that the feature argument 
-#'    #can be a vector of length >= 1.
+#'    numRandomizations = 3)) 
 #'    
 #' randomizedFrame<-data.frame(randomizedValues[[1]])
 #' 

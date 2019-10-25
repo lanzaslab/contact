@@ -65,7 +65,7 @@
 #'    expected at random.
 #' 
 #' Note: if importBlocks == TRUE, a "block" column MUST exist in emp.input. 
-#'    However, if a "block" column need not exist in rand.contact. If no 
+#'    However, a "block" column need not exist in rand.contact. If no 
 #'    "block" column exists in rand.input, empirical values in all emp.input 
 #'    blocks will be compared to the overall average values in rand.input.
 #'    Block columns will also be appended to function outputs. 
@@ -83,7 +83,7 @@
 #'    dist.input argument is required. If test == "mantel," however,
 #'    dist.input can be set to NULL. This input is used to determine the  
 #'    number of durations that each pair of individuals (or individuals and 
-#'    fixed locations/polygons if distToArea output is used) were observed 
+#'    fixed locations/polygons if dist2Area output is used) were observed 
 #'    during the same timestep (i.e., the maximum number of durations dyad 
 #'    members could potentially be in contact with one another). 
 #' @param test Character string. Describes the statistical test used to 

@@ -42,13 +42,20 @@
 #'    time t and time t-1. If argument == "2," dt values in output represent 
 #'    the difference between time t and time t+1. Defaults to 1.
 #' @keywords data-processing contact sub-function
+#' @return Output is a data frame with the following columns
+#' 
+#'    \item{id}{The unique ID of a tracked individual.}
+#'    \item{dt}{Time difference between relocation events.}
+#'    \item{units}{Temporal unit defined by \code{timeUnits} argument.}
+#'    
 #' @export
 #' @examples
 #' data(calves) #load calves data set
-#' calves.datetime<-contact::datetime.append(calves)
-#' dt<-contact::dt.calc(x = calves.datetime, id = calves.datetime$calftag, 
+#' calves.datetime<-datetime.append(calves)
+#' dt<-dt.calc(x = calves.datetime, id = calves.datetime$calftag, 
 #'    dateTime1 = calves.datetime$dateTime, dateTime2 = NULL, 
 #'    timeUnits = "secs", parallel = FALSE, timeStepRelation = 1)
+#'    
 #' head(dt)
    
 dt.calc<-function(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL, timeUnits = "secs", parallel = FALSE, nCores = parallel::detectCores(), timeStepRelation = 1){

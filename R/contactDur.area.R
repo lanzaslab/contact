@@ -61,7 +61,7 @@
 #'    \item{contactEndTime}{The timepoint in \code{x} at which contact
 #'    between \code{indiv.id} and \code{area.id} ends.}
 #'    
-#'    If blocking == TRUE, the following codes are appended to the output
+#'    If blocking == TRUE, the following columns are appended to the output
 #'    data frame described above:
 #'    
 #'    \item{block}{Integer ID describing unique blocks of time during which 

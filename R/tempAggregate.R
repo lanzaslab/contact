@@ -76,9 +76,16 @@
 #'    data processing decisions. Epidemics 26:32-42. 
 #'    https://doi.org/10.1016/j.epidem.2018.08.003/
 #' @keywords data-processing smoothing location point
+#' @return Returns a data frame (or list of data frames if \code{x} is a 
+#'    list of data frames) with the following columns:
+#'    
+#'    \item{id}{The unique ID of tracked individuals.}
+#'    \item{x}{Smoothed x coordinates.}
+#'    \item{y}{Smoothed y coordinates.}
+#'    \item{dateTime}{Timepoint at which smoothed points were observed.}
+#'    
 #' @export
 #' @examples
-#' #read in the calves data set
 #' data("calves")
 #' head(calves) #observe that fix intervals occur ever 4-5 seconds.
 #' 

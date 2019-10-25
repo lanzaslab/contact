@@ -20,29 +20,46 @@
 #'    containing the mean column values for each id (per block if 
 #'    importBlocks == TRUE). Defaults to FALSE.
 #' @keywords data-processing contact sub-function
+#' @return Returns a data frame (or list of data frames if \code{x} is a 
+#'    list of data frames) with the following columns:
+#'    
+#'    \item{id}{The unique ID of a tracked individual for which we will 
+#'    summarize to all other individuals/fixed locations observed in \code{x}.}
+#'    \item{id}{Sum number of individuals/fixed locations observed in contact 
+#'    specific individuals.}
+#'    \item{id}{Sum number of contacts associated with specific individuals.}
+#'    \item{contactDuration_...}{Number of contacts between specific dyads.} 
+#'    
+#'    If importBlocks == TRUE, the following columns are appended to the output
+#'    data frame described above:
+#'    
+#'    \item{block}{Integer ID describing unique blocks of time during which 
+#'    contacts occur.}
+#'    \item{block.start}{The timepoint in \code{x} at which the \code{block}
+#'    begins.}
+#'    \item{block.end}{The timepoint in \code{x} at which the \code{block}
+#'    ends.}
+#'    \item{numBlocks}{Integer describing the total number of time blocks 
+#'    observed within \code{x} at which the \code{block}}   
 #' @export
 #' @examples
-#' #load the calves data set
 #' data(calves)
 #' 
-#' #pre-process the data
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
-#'    time = calves$time) #create a dataframe with dateTime identifiers for 
-#'    #location fixes.
+#'    time = calves$time) #create a dataframe with dateTime identifiers for location fixes
+#'
 #' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
 #'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
 #'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
 #'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 #'
-#' #generate empirical time-ordered network edges.
 #' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, 
 #'    dataType = "Point", lonlat = FALSE) 
 #' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
 #'    sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
 #'    equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE) 
 #'    
-#' #summarize the contacts
 #' calves.contactSumm.NOblock <- summarizeContacts(calves.contact.block)
 #' head(calves.contactSumm.NOblock)
 #' 

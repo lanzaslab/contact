@@ -49,10 +49,16 @@
 #'    (i.e., parallel::detectCores()).
 #' @param filterOutput Logical. If TRUE, output will be a data frame 
 #'    containing only movement paths with non-duplicated timesteps. If FALSE, 
-#'    no observartions are removed and a "duplicated" column is appended to x, 
+#'    no observations are removed and a "duplicated" column is appended to x, 
 #'    detailing if time steps are duplicated (column value == 1), or not 
 #'    (column value == 0). Defaults to TRUE.
 #' @keywords filter duplicates
+#' @return If filterOutput == TRUE, returns \code{x} less observations at 
+#'    duplicated timepoints.
+#'    
+#'    If filterOutput == FALSE, returns \code{x} appended with a 
+#'    "duplicated" column which reports timepoints are duplicated (column 
+#'    value == 1), or not (column value == 0).
 #' @export
 #' @examples
 #' 

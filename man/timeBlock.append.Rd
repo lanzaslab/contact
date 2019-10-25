@@ -23,6 +23,18 @@ temporal block. Defaults to 10.}
 \item{blockUnit}{Character string taking the values, "secs," "mins," 
 "hours," "days," or "weeks." Defaults to "hours."}
 }
+\value{
+Appends the following columns to \code{x}.
+   
+   \item{block}{Integer ID describing unique blocks of time of pre-specified
+   length.}
+   \item{block.start}{The timepoint in \code{x} at which the \code{block}
+   begins.}
+   \item{block.end}{The timepoint in \code{x} at which the \code{block}
+   ends.}
+   \item{numBlocks}{Integer describing the total number of time blocks 
+   observed within \code{x} at which the \code{block}}
+}
 \description{
 Appends "block," "block.start," "block.end," and "numBlocks" columns to an 
    input data frame (x) with a dateTime (see dateTime.append) column. This 

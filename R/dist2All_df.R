@@ -71,27 +71,36 @@
 #'    the number of vertices contained in each polygon. Defaults to 4. Note: 
 #'    all polygons must contain the same number of vertices.
 #' @keywords data-processing polygon point location planar GRC
+#' @return Returns a data frame (or list of data frames if \code{x} is a 
+#'    list of data frames) with the following columns:
+#'    
+#'    \item{dateTime}{The unique date-time information corresponding to when
+#'    tracked individuals were observed in \code{x}.}
+#'    \item{totalIndividuals}{The total number of individuals observed at least
+#'    one time within \code{x}.}
+#'    \item{individualsAtTimestep}{The number of individuals in \code{x}  
+#'    observed at the timepoint described in the \code{dateTime} column.}    
+#'    \item{id}{The unique ID of a tracked individual for which we will 
+#'    evaluate distances to all other individuals observed in \code{x}.}
+#'    \item{dist.to.indiv...}{The observed distance between the individual 
+#'    described in the \code{id} column to every other individual observed 
+#'    at specific timepoints.}
 #' @export
 #' @examples
-#' #load the calves data set
 #' data(calves)
 #' 
-#' #pre-process the data
 #' calves.dateTime<-datetime.append(calves, date = calves$date, 
-#'    time = calves$time) #create a dataframe with dateTime identifiers for 
-#'    #location fixes.
+#'    time = calves$time) 
+#'    
 #' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
 #'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
 #'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
-#'    na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix intervals. 
+#'    na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix intervals.  
 #'
-#' #generate empirical time-ordered network edges.
 #' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point", 
-#'    lonlat = FALSE) #calculate distance between all individuals at each 
-#'    #timepoint.
+#'    lonlat = FALSE) #calculate distance between all individuals at each timepoint.
 #' 
-#' #More examples will be added later
 
 dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", lonlat = FALSE, numVertices = 4){
 

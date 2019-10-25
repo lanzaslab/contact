@@ -52,7 +52,7 @@
 #'    period of time. In this case, the assumption that individuals are facing 
 #'    a given direction because they moved from the previous timepoint may not 
 #'    be accurate. Consider removing these rows (rows following one with 
-#'    dt > secondAgg; remember that dt indicates the time between recording xy 
+#'    dt > secondAgg; remember that dt indicates the time between reported xy 
 #'    coordinates in row i to row i + 1) from your data set.
 #'
 #'    Second, unless the direction argument is specifically given (i.e., 
@@ -132,13 +132,36 @@
 #'   citation/reference information)) describing vertex locations relative to
 #'   tracking-device point-locations. Defaults to 90.
 #' @keywords data-processing polygon point location planar
+#' @return Output is a data frame with the following columns:
+#'       
+#'    \item{id}{Unique ID of tracked individuals.}
+#'    \item{cornerPoint...x}{Planar x coordinates of polygon-corner vertices.}
+#'    \item{cornerPoint...y}{Planar y coordinates of polygon-corner vertices.}
+#'    \item{startLocation}{Describes the location of input point-locations in 
+#'    the vertex outputs. see \code{StartLocation} argument.}
+#'    \item{upDownRepositionLength}{Describes the vertical movement of 
+#'    point-locations on planar models. see \code{UpDownRepositionLen} 
+#'    argument.}
+#'    \item{leftRightRepositionLength}{Describes the horizontal movement of 
+#'    point-locations on planar models. see \code{leftRightRepositionLen} 
+#'    argument.}
+#'    \item{immob}{If "0", distance between observed movements is 
+#'    < \code{immobThreshold}.}
+#'    \item{immobThreshold}{Returns the value from the \code{immobThreshold}
+#'    argument.}
+#'    \item{dateTime}{Timepoint at which polygons were observed.}
+#'    \item{dt}{The the time between reported xy coordinates in row i to row 
+#'    i + 1 in each individuals' movement path.}
+#'    
+#'    If MidPoints or CenterPoints == TRUE, additional columns will be appended
+#'    to output data frame.
+#'    
 #' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
 #'    C. in Review. Accounting for space and uncertainty in real-time-location-
 #'    system-derived contact networks. Ecology and Evolution.
 #' @export
 #' @examples
 #' \donttest{
-#' #read in the calves data set
 #' data("calves")
 #' calves.dateTime<-datetime.append(calves, date = calves$date,
 #'    time = calves$time) #add dateTime identifiers for location fixes.
@@ -149,10 +172,7 @@
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
 #'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 #' 
-#' #Create 0.333 m X 0.333 m calf head polygons.
-#'   #Note that this is done using the original reference points which denote the locations of RFID
-#'   #tags on individuals' left ears.
-#' calf_heads <- contact::referencePoint2Polygon(x = calves.agg,
+#' calf_heads <- referencePoint2Polygon(x = calves.agg,
 #'    id = calves.agg$id, dateTime = calves.agg$dateTime,
 #'    point.x = calves.agg$x, point.y = calves.agg$y, direction = NULL,
 #'    StartLocation = "DL", UpDownRepositionLen = 0.333, LeftRightRepositionLen = 0.333,

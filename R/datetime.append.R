@@ -11,8 +11,9 @@
 #'    zeroes should be included before numbers <10)) and time 
 #'    (format: hour:minute:second (note:preceding zeroes must be included 
 #'    before numbers < 10, ex. 00:00:01)) information, appends this metadata to
-#'    the dataset,and can assign each day a unique ID.
-#' @param x List or data frame to which new information will be appended.
+#'    the dataset, and can assign each day a unique ID.
+#' @param x Data frame or list of data frames to which new information will be 
+#'    appended.
 #' @param date Vector of length nrow(data.frame(x)) or singular character data,
 #'    detailing the relevant colname in x, that denotes what date information 
 #'    will be used. If argument == NULL, datetime.append assumes a column with 
@@ -71,14 +72,12 @@
 #'    column with information detailing what the second of the entire data set 
 #'    the associated dateTime value corresponds to. Defaults to FALSE.
 #' @keywords date time date-time
+#' @return Output is \code{x} with new columns appended according to 
+#'    corresponding argmuents.
 #' @export
 #' @examples
 #' data("calves")
-#' head(calves) #observe that the date and time columns are separate. Later 
-#'    #processing functions require each relocation event to be associated with
-#'    #a unique dateTime object. 
-#' calves.dateTime<-contact::datetime.append(calves, date = calves$date, 
-#'    time = calves$time) #add dateTime identifiers for location fixes.
+#' calves.dateTime<-datetime.append(calves, date = calves$date, time = calves$time) 
 #' head(calves.dateTime) #see now that a dateTime column exists.
 
 datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFormat = "mdy", dateFake = FALSE, startYear = 2000, tz.in = "UTC", tz.out = NULL, month = FALSE, day = FALSE, year = FALSE, hour = FALSE, minute = FALSE, second = FALSE, daySecond = FALSE, totalSecond = FALSE){

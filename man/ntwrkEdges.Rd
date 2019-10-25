@@ -19,15 +19,21 @@ pairs in output will be reported twice (i.e., nodes will be listed as
 both a to- and a from-node). If removeDuplicates == true, duplicated 
 edges are removed. Defaults to TRUE.}
 }
+\value{
+Output is a data frame with the following columns, and can easily 
+   be used as input for igraph functions. 
+
+   \item{from}{The "from" nodes in a contact network. Can also be considered
+   "tail" nodes.}
+   \item{to}{The "to" nodes in a contact network. Can also be considered
+   "head" nodes.}
+   \item{durations}{The duration of each contact reported in \code{x}.}
+   \item{block}{(if applicable) time block during which reported contacts 
+   occurred.}
+}
 \description{
 This function takes the output from contactDur.all or contactDur.area and 
    generates a data frame showing the list of edges in the contact network.
-}
-\details{
-Output dataframe will have 3 or 4 columns, depending on if 
-   importBlocks == TRUE. Columns report from-nodes, to-nodes, contact 
-   duration, and block (if applicable) associated with each edge. Output 
-   from this function can easily be used as input for igraph functions.
 }
 \examples{
 data("calves")
@@ -46,13 +52,10 @@ calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE,
 
 calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1,
    sec.threshold=10, blocking = FALSE, equidistant.time = FALSE,
-   parallel = FALSE, reportParameters = TRUE) #compile inter-calf contacts
-   #without blocking. Contacts are defined here as occurring when calves
-   #were within 1 m of one another.
+   parallel = FALSE, reportParameters = TRUE) 
 
 calves.edges1<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE,
-   removeDuplicates = TRUE) #creates an edgeset to easily be utilized with network-creation
-   #functions in igraph. 
+   removeDuplicates = TRUE)  
 
 head(calves.edges1)
 
@@ -62,12 +65,10 @@ calves.network1 <- igraph::graph_from_data_frame(d=calves.edges1,
 igraph::V(calves.network1)$color<- "orange1"
 igraph::V(calves.network1)$size <-13
 igraph::E(calves.network1)$width <- calves.edges1$duration
-   #edge width is proportional to contact frequency
 igraph::E(calves.network1)$color <- "black"
 igraph::plot.igraph(calves.network1, vertex.label.cex=0.4,
-   layout = igraph::layout.circle, main = "Inter-Calf Contacts")
-   #plot the network
-
+   layout = igraph::layout.circle, main = "Inter-Calf Contacts") #plot the network
+   
 }
 \keyword{contact}
 \keyword{data-processing}

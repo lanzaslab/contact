@@ -30,6 +30,12 @@ maintained. Defaults to TRUE.}
 
 \item{numRandomizations}{Description imminent}
 }
+\value{
+Output is \code{x} appended with columns described below. 
+   
+   \item{...shuff}{Randomized value of specified variables.}
+   \item{randomRep}{Randomization replicate.}
+}
 \description{
 This function randomizes the values in a given column (or set of columns 
    (i.e., c(colname(x)[1], colname(x)[2]))), identified by the "feature" 
@@ -45,10 +51,7 @@ data(calves)
 
 system.time(randomizedValues<-contact::randomizeFeature(x = calves, 
    feature = c("calftag", "date"), shuffle = TRUE, maintainDistr = TRUE, 
-   numRandomizations = 3)) #note: in this example, there's only one unique 
-   #"date" value, so there's no point in randomizing this vector. The "date"
-   #column was only included here to demonstrate that the feature argument 
-   #can be a vector of length >= 1.
+   numRandomizations = 3)) 
    
 randomizedFrame<-data.frame(randomizedValues[[1]])
 

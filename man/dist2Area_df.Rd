@@ -78,6 +78,21 @@ the number of vertices contained in each polygon described in x.
 Defaults to 4. Note: all polygons must contain the same number of 
 vertices.}
 }
+\value{
+Returns a data frame (or list of data frames if \code{x} is a 
+   list of data frames) with the following columns:
+   
+   \item{dateTime}{The unique date-time information corresponding to when
+   tracked individuals were observed in \code{x}.}
+   \item{totalIndividuals}{The total number of individuals observed at least
+   one time within \code{x}.}
+   \item{individualsAtTimestep}{The number of individuals in \code{x}  
+   observed at the timepoint described in the \code{dateTime} column.}    
+   \item{id}{The unique ID of a tracked individual for which we will 
+   evaluate distances to all other individuals observed in \code{x}.}
+   \item{dist.to...}{The observed distance between the individual 
+   described in the \code{id} column to every each polygon/fixed location}
+}
 \description{
 Calculate distances (either planar or great circle - see dist.all) between 
    each individual, reported in x, and a fixed point(s)/polygon(s), reported
@@ -92,10 +107,8 @@ Polygon coordinates (in both x and y inputs) must be arranged in the format
 This variant of dist2Area requires x and y inputs to be non-shapefile data.
 }
 \examples{
-#load the calves data set
 data(calves)
 
-#pre-process the data
 calves.dateTime<-datetime.append(calves, date = calves$date, 
   time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 
@@ -105,15 +118,10 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 
-#delineate the water trough polygon (showing where the water trough in the calves' 
-  #feedlot pen is)
 water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622),
-                  y = c(62.44815, 62.73341, 61.93864, 61.67411)) 
+                  y = c(62.44815, 62.73341, 61.93864, 61.67411)) #delineate water polygon
 
-#As noted in the dist2Area_df help documention, polygon-vertex coordinates 
-  #must be arranged in a particular way. Here we arrange them accordingly.
-
-water_poly<-data.frame(matrix(ncol = 8, nrow = 1)) #(ncol = number of vertices)*2
+water_poly<-data.frame(matrix(ncol = 8, nrow = 1)) #make coordinates to dist2Area specifications
 colnum = 0
 for(h in 1:nrow(water)){
  water_poly[1,colnum + h] <- water$x[h] #pull the x location for each vertex
@@ -121,13 +129,10 @@ for(h in 1:nrow(water)){
  colnum <- colnum + 1
 }
 
-#generate empirical time-ordered network edges.
 water_dist<-dist2Area_df(x = calves.agg, y = water_poly, 
   x.id = calves.agg$id, y.id = "water", dateTime = "dateTime", point.x = calves.agg$x, 
   point.y = calves.agg$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
-  lonlat = FALSE, numVertices = NULL) #note that the poly.xy and numVertices arguments 
-  #refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," 
-  #these arguments are irrelevant here.
+  lonlat = FALSE, numVertices = NULL) 
 }
 \keyword{GRC}
 \keyword{data-processing}

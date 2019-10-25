@@ -1,6 +1,6 @@
 #' Project Geographic Coordinates onto a Plane
 #'
-#' This function converts long/lat data (decimal degrees) from a geographic 
+#' This function converts lon/lat data (decimal degrees) from a geographic 
 #'    coordinate system to planar coordinates using a custom azimuthal 
 #'    equidistant projection, and appends these new coordinates to an input 
 #'    data frame (x). By default, the function assumes longitude and latitude 
@@ -12,16 +12,8 @@
 #'    values, however, the function calculates the centroid of the data and 
 #'    will use this as the origin point. 
 #' 
-#' The function will append five columns to x. 1.) planar.x - the planar x 
-#'    coordinate derived from longitude, 2.) planar.y - the planar y coordinate
-#'    derived from latitude, 3.) origin.lon - the longitude of the origin 
-#'    point, either user specified or the longitude of the data's centroid, 4.)
-#'    origin.lat - the latitude of the origin point, either user specified or 
-#'    the latitude of the data's centroid, 5.) origin.distance - linear 
-#'    distance (m) between every point and the origin point.
-#' 
 #' Note: this function does not allow any NA coordinate values in 
-#'    longitude/lattitude vectors. If NAs exist you will get the following 
+#'    longitude/latitude vectors. If NAs exist you will get the following 
 #'    error: "Error in .local(obj, ...) : NA values in coordinates." If NAs 
 #'    exist in your data, we suggest 1.) removing them, or 2.) smoothing data 
 #'    using contact::tempAggregate prior to running this function.
@@ -37,12 +29,24 @@
 #' @param origin.lon Numerical. Describes the longitude will be used as the 
 #'    origin-point longitude for the azimuthal-equidistant projection. If NULL,
 #'    defaults to the longitude of the data set's centroid. Defaults to NULL.
-#' @param origin.lat Numerical. Describes the lattitude will be used as the 
-#'    origin-point lattitude for the azimuthal-equidistant projection. If NULL,
-#'    defaults to the lattitude of the data set's centroid. Defaults to NULL.
+#' @param origin.lat Numerical. Describes the latitude will be used as the 
+#'    origin-point latitude for the azimuthal-equidistant projection. If NULL,
+#'    defaults to the latitude of the data set's centroid. Defaults to NULL.
 #' @param datum Character string describing the datum used to generate x.lon 
 #'    and x.lat. Defaults to "WGS84."
 #' @keywords data-processing point location planar GRC
+#' @return Output is \code{x} appended with the following columns:
+#' 
+#'    \item{planar.x}{Planar x-coordinate values derived from longitude 
+#'    observations.}
+#'    \item{planar.y}{Planar y-coordinate values derived from latitude 
+#'    observations.}
+#'    \item{origin.lon}{Longitude of the origin point, either user specified 
+#'    or the longitude of the data's centroid.}
+#'    \item{origin.lat}{Latitude of the origin point, either user specified 
+#'    or the latitude of the data's centroid.}
+#'    \item{origin.distance}{Linear distance (m) between every point and the 
+#'    origin point.}
 #' @export
 #' @examples
 #' 
@@ -57,8 +61,8 @@
 #' 
 #' baboons.naRM_planar <- makePlanar(x = baboons.naRM, 
 #'    x.lon = baboons.naRM$location.long, x.lat = baboons.naRM$location.lat, 
-#'    origin.lon = NULL, origin.lat = NULL, datum = "WGS84") #note that no 
-#'    #origin coordinates were specified.
+#'    origin.lon = NULL, origin.lat = NULL, datum = "WGS84") #note no specified origin coords
+#'    
 #' head(baboons.naRM_planar) #see that planar coordinates are reported
 
 makePlanar<-function(x = NULL, x.lon = NULL, x.lat = NULL, origin.lon = NULL, origin.lat = NULL, datum = "WGS84"){
