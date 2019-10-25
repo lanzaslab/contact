@@ -31,9 +31,9 @@
 #'    system-derived contact networks. Ecology and Evolution.
 #' @export
 #' @return Output is a named vector with 22 observations describing the mean, 
-#'    max, and upper 5%, 10%, 15%, 20%, 25%, 30%, 35%, 40%, 45%, 50%, 55%, 60%,
-#'    65%, 70%, 75%, 80%, 85%, 90%, 95%, and 99% CI values calculated from 
-#'    the contact-distance distribution.
+#'    max, and upper 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75,
+#'    80, 85, 90, 95, and 99-percent CI values calculated from the 
+#'    contact-distance distribution.
 #' @examples
 #' findDistThresh(n1 = 10, n2 = 10, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
 #'    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) 
