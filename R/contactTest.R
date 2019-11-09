@@ -31,8 +31,8 @@
 #'    "warning" column to the output which notifies users when the chisq.test 
 #'    function reported that results may be inaccurate. 
 #'    
-#'    Mantel test (abe::mantel.test): tests for similarity of the emp.input to 
-#'    rand.input. Please note that abe::mantel.test does not allow for missing
+#'    Mantel test (ape::mantel.test): tests for similarity of the emp.input to 
+#'    rand.input. Please note that ape::mantel.test does not allow for missing
 #'    values in matrices, so all NAs will be treated as 0. Output is a single
 #'    data frame describing the test results.
 #' 
@@ -203,7 +203,7 @@
 #'    importBlocks = FALSE, shuffle.type = 0)
 #'    }
 
-contactTest<-function(emp.input, rand.input, dist.input, test = "chisq", numPermutations = 5000, alternative.hyp = "two.sided", importBlocks = FALSE, shuffle.type = 0){
+contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", numPermutations = 5000, alternative.hyp = "two.sided", importBlocks = FALSE, shuffle.type = 0){
   
   block<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
   id2<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
