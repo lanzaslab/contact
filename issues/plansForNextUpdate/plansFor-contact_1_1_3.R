@@ -6,7 +6,7 @@
 #
 #  3.) Add a function for creating contact matrices from contactDur output. 
 #
-#
+#  4.) Update citation info (note: I'm not planning to update the package until the associated paper is accepted for publication).
 #
 #
 #
