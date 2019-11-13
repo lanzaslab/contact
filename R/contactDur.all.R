@@ -1,6 +1,6 @@
 #' Identify Inter-animal Contacts
 #'
-#' This function uses the output from dist.all to determine when and for how 
+#' This function uses the output from dist2All to determine when and for how 
 #'     long tracked individuals are in "contact" with one another. Individuals 
 #'     are said to be in a "contact" event if they are observed within a given 
 #'     distance (<= dist.threshold) at a given timestep. Contacts are broken 
@@ -15,7 +15,7 @@
 #'     
 #' The output of this function is a data frame containing a time-ordered 
 #'     contact edge set detailing inter-animal contacts.
-#' @param x Output from the dist.all function. Can be either a data frame or 
+#' @param x Output from the dist2All function. Can be either a data frame or 
 #'     non-data-frame list.
 #' @param dist.threshold Numeric. Radial distance (in meters) within which 
 #'     "contact" can be said to occur. Defaults to 1. Note: If you are 

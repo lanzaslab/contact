@@ -1,6 +1,6 @@
 #' Identify Environmental Contacts
 #'
-#' This function uses the output from distToArea to determine when tracked 
+#' This function uses the output from dist2Area to determine when tracked 
 #'    individuals are in "contact" with fixed locations. Individuals are said 
 #'    to be in a "contact" event (h) if they are observed within a given 
 #'    distance (<= dist.threshold) at a given timestep(i). Sec.threshold 
@@ -12,7 +12,7 @@
 #'    
 #' The output of this function is a data frame containing a time-ordered 
 #'    contact edge set detailing animal-environment contacts.
-#' @param x Output from the distToArea function (either df or sf variant). Can 
+#' @param x Output from the dist2Area function (either df or sf variant). Can 
 #'    be either a data frame or non-data-frame list.
 #' @param dist.threshold Numeric. Radial distance (in meters) within which 
 #'    "contact" can be said to occur. Defaults to 1. Note: If you are defining 
