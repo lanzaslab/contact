@@ -10,3 +10,4 @@
 #
 #  5.) Add a fourth shuffle.type to randomizePaths allowing for the Spiegle method to be used while maintaining all days of the empirical set (i.e., shuffle blocks with full replacement). Also, Change Details for randomizePath, as shuffle.type == 2 can also be used for the Spiegel Method. 
 #
+#
