@@ -8,5 +8,5 @@
 #
 #  4.) Update citation info (note: I'm not planning to update the package until the associated paper is accepted for publication).
 #
-#
+#  5.) Add a fourth shuffle.type to randomizePaths allowing for the Spiegle method to be used while maintaining all days of the empirical set (i.e., shuffle blocks with full replacement). 
 #
