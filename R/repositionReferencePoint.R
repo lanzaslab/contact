@@ -374,7 +374,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
     return(RepositionMatrix)
   }
   list.breaker<-function(x, y, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores){
-    input<- data.frame(y[unname(unlist(x[1]))])
+    input<- data.frame(y[[unname(unlist(x[1]))]])
     reposition<-reposition.generator(input,id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores)
     return(reposition)
   }

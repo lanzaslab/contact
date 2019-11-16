@@ -265,7 +265,7 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
   }
   
   list.breaker2<-function(x,y,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores){ 
-    input<- data.frame(y[unname(unlist(x[1]))])
+    input<- data.frame(y[[unname(unlist(x[1]))]])
     durationTable<-duration.generator1(input,dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores)
     return(durationTable)    
   }

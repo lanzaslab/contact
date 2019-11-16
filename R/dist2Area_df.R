@@ -125,7 +125,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
   }
   
   list.breaker4<-function(x, z, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores){
-    input<- data.frame(z[unname(unlist(x[1]))])
+    input<- data.frame(z[[unname(unlist(x[1]))]])
     dist.all<- dist.generator2(input, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores)
     return(dist.all)
   }

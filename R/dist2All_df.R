@@ -137,7 +137,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     return(dist)
   }
   list.breaker1<-function(x,y,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ #calculates dist.all or distToArea for randomized input
-    input<- data.frame(y[unname(unlist(x[1]))])
+    input<- data.frame(y[[unname(unlist(x[1]))]])
     dist.all<- dist.generator1(input,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores)
     return(dist.all)
   }

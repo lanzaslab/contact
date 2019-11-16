@@ -382,7 +382,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
     return(locTable)
   }
   list.breaker<-function(x,y,id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores){
-    input<- data.frame(y[unname(unlist(x[1]))])
+    input<- data.frame(y[[unname(unlist(x[1]))]])
     tempAgg<-Agg.generator(input, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores)
     return(tempAgg)
   }

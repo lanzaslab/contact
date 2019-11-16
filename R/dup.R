@@ -230,7 +230,7 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
     return(x)
   }
   list.breaker<-function(x,y,id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores){
-    input<- data.frame(y[unname(unlist(x[1]))])
+    input<- data.frame(y[[unname(unlist(x[1]))]])
     dup.filter<-filter1.func(input, id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores)
     return(dup.filter)
   }

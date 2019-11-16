@@ -421,7 +421,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
   }
 
   list.breaker<-function(x,y,id, dateTime, point.x, point.y, direction, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, parallel, modelOrientation, nCores){
-    input<- data.frame(y[unname(unlist(x[1]))])
+    input<- data.frame(y[[unname(unlist(x[1]))]])
     newPolygons<-poly.generator(input, id, dateTime, point.x, point.y, direction, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, parallel, modelOrientation, nCores)
     return(newPolygons)
   }
