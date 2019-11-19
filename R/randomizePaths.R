@@ -292,40 +292,40 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
         if(length(blockAbsence) == length(randVec1)){ #if all blocks were empty, then there's no need to go any further
           randomxy <-NULL
         }else{ #if there was at least one populated block
-        
-        rand.blockTab <- data.frame(randVec1)
-        rand <-apply(rand.blockTab,1,xy.assignShuff, idFrame, dataType, numVertices)
-        randCoord<- data.frame(data.table::rbindlist(rand))
-        
-        blockFrame.full<-subset(y, block <= blocksPerUnit)
-        
-        if(length(blockAbsence > 0)){ #So, if there is a missing block
-          timestep.per.block <- length(unique(blockFrame.full$dateTime))/length(unique(blockFrame.full$block)) #pulls the number of timesteps per block. In the event that randVec pulls a starting block(s) that does not exist for the individual, NAs will be returned. Assuming that all timesteps are equidistant (as they should be when shuffleType == 2), this can only be the case if a block is pulled from a time before the individual began reporting tracks.
-          for(a in blockAbsence){ #Put NAs into randCoord where needed
-            randCoord.brkPt <-timestep.per.block*(a-1) #Identifies the row immediately prior to where NAs will be placed
-            naBlock<-data.frame(x.rand<-rep(NA, timestep.per.block), y.rand<-rep(NA, timestep.per.block)) #add NAs to columns when applicable
-            if(randCoord.brkPt == 0){ #if the first block is missing
-              randCoord<-data.frame(data.table::rbindlist(list(naBlock, randCoord)))
-            }else{ #if a block other than the 1st block is missing
-              if(a < length(randVec1)){ #if the missing block is not the last recorded one
-                preNACoord<- randCoord[1:randCoord.brkPt,]
-                postNACoord<- randCoord[(randCoord.brkPt+1):ncol(randCoord),]
-                randCoord<-data.frame(data.table::rbindlist(list(preNACoord, naBlock, postNACoord)))
+          
+          rand.blockTab <- data.frame(randVec1)
+          rand <-apply(rand.blockTab,1,xy.assignShuff, idFrame, dataType, numVertices)
+          randCoord<- data.frame(data.table::rbindlist(rand))
+          
+          blockFrame.full<-subset(y, block <= blocksPerUnit)
+          
+          if(length(blockAbsence > 0)){ #So, if there is a missing block
+            timestep.per.block <- length(unique(blockFrame.full$dateTime))/length(unique(blockFrame.full$block)) #pulls the number of timesteps per block. In the event that randVec pulls a starting block(s) that does not exist for the individual, NAs will be returned. Assuming that all timesteps are equidistant (as they should be when shuffleType == 2), this can only be the case if a block is pulled from a time before the individual began reporting tracks.
+            for(a in blockAbsence){ #Put NAs into randCoord where needed
+              randCoord.brkPt <-timestep.per.block*(a-1) #Identifies the row immediately prior to where NAs will be placed
+              naBlock<-data.frame(x.rand<-rep(NA, timestep.per.block), y.rand<-rep(NA, timestep.per.block)) #add NAs to columns when applicable
+              if(randCoord.brkPt == 0){ #if the first block is missing
+                randCoord<-data.frame(data.table::rbindlist(list(naBlock, randCoord)))
+              }else{ #if a block other than the 1st block is missing
+                if(a < length(randVec1)){ #if the missing block is not the last recorded one
+                  preNACoord<- randCoord[1:randCoord.brkPt,]
+                  postNACoord<- randCoord[(randCoord.brkPt+1):ncol(randCoord),]
+                  randCoord<-data.frame(data.table::rbindlist(list(preNACoord, naBlock, postNACoord)))
+                }
+                if(a == length(randVec1)){ #if the missing block IS the last recorded one
+                  randCoord<-data.frame(data.table::rbindlist(list(randCoord, naBlock)))
+                }              
               }
-              if(a == length(randVec1)){ #if the missing block IS the last recorded one
-                randCoord<-data.frame(data.table::rbindlist(list(randCoord, naBlock)))
-              }              
             }
           }
-        }
-        #outTable<- idFrame[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
-        outTable<-data.frame(id = unname(unlist(x[1])), dateTime = unique(blockFrame.full$dateTime), blockLength = unique(blockFrame.full$blockLength)) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
-        outTable<- outTable[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
-        
-        #now we have to redefine block information for the single shuffleUnit (so that users can recall the block information they set)
-        bindlist <- list(outTable, randCoord)
-        randomxy <- do.call("cbind", bindlist)
-        randomxy<-randomxy[order(randomxy$id, randomxy$dateTime),]
+          #outTable<- idFrame[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
+          outTable<-data.frame(id = unname(unlist(x[1])), dateTime = unique(blockFrame.full$dateTime), blockLength = unique(blockFrame.full$blockLength)) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
+          outTable<- outTable[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
+          
+          #now we have to redefine block information for the single shuffleUnit (so that users can recall the block information they set)
+          bindlist <- list(outTable, randCoord)
+          randomxy <- do.call("cbind", bindlist)
+          randomxy<-randomxy[order(randomxy$id, randomxy$dateTime),]
         }
       }
     }else{ #if blocking == FALSE
@@ -363,16 +363,16 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(dataType == "Polygon" || dataType == "POLYGON" || dataType == "polygon"){
       xTab <-y[which(y$block == x[1]),c(seq(2,(numVertices*2),2))]
       yTab <-y[which(y$block == x[1]),c(seq(3,(numVertices*2)+1,2))]
-      polygon <-data.frame(NULL)
-      for(i in 1:numVertices){
+      polygon <- data.frame(xTab[,1], yTab[,1]) #start making the polygon by adding the first vertex
+      for(i in 2:numVertices){
         vert.x <-xTab[,i]
         vert.y <-yTab[,i]
         bindlist <-list(polygon,vert.x,vert.y)
         polygon<-do.call("cbind", bindlist)
       }
       xyrand <- data.frame(polygon)
-      colnames(xyrand)[c(seq(1,(numVertices*2)-1,2))]<-paste("point",seq(1,numVertices,1),".x",sep ="")
-      colnames(xyrand)[c(seq(2,(numVertices*2),2))]<-paste("point",seq(1,numVertices,1),".y",sep ="")
+      colnames(xyrand)[c(seq(1,(numVertices*2)-1,2))]<-paste("point",seq(1,numVertices,1),".x_rand",sep ="")
+      colnames(xyrand)[c(seq(2,(numVertices*2),2))]<-paste("point",seq(1,numVertices,1),".y_rand",sep ="")
     }
     return(xyrand)
   }
@@ -389,16 +389,16 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(dataType == "Polygon" || dataType == "POLYGON" || dataType == "polygon"){
       xTab <-blockFrame[randSeq,c(seq(2,(numVertices*2),2))]
       yTab <-blockFrame[randSeq,c(seq(3,(numVertices*2)+1,2))]
-      polygon <-data.frame(NULL)
-      for(i in 1:numVertices){
+      polygon <- data.frame(xTab[,1], yTab[,1]) #start making the polygon by adding the first vertex
+      for(i in 2:numVertices){
         vert.x <-xTab[,i]
         vert.y <-yTab[,i]
         bindlist <-list(polygon,vert.x,vert.y)
         polygon<-do.call("cbind", bindlist)
       }
       xyrand <- data.frame(polygon)
-      colnames(xyrand)[c(seq(1,(numVertices*2)-1,2))]<-paste("point",seq(1,numVertices,1),".x",sep ="")
-      colnames(xyrand)[c(seq(2,(numVertices*2),2))]<-paste("point",seq(1,numVertices,1),".y",sep ="")
+      colnames(xyrand)[c(seq(1,(numVertices*2)-1,2))]<-paste("point",seq(1,numVertices,1),".x_rand",sep ="")
+      colnames(xyrand)[c(seq(2,(numVertices*2),2))]<-paste("point",seq(1,numVertices,1),".y_rand",sep ="")
     }
     return(xyrand)
   }  		
@@ -424,7 +424,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
         x$id <- x[,match(id, names(x))]
       }else{ #if length(id) > 1
         x$id = id
-      }
+      } 
     }
     idVec1 <- x$id
     
@@ -449,7 +449,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
       
       if(length(poly.xy) > 0){
-        if(length(poly.xy) == (numVertices*2) & length(which(is.na(match(poly.xy, names(x)))) == TRUE) == 0){ 
+        if(length(as.matrix(poly.xy)) == (numVertices*2) && length(which(is.na(match(as.matrix(poly.xy), names(x)))) == TRUE) == 0){ 
           xyFrame1<-x[,match(poly.xy,names(x))] 
         }else{
           xyFrame1<- data.frame(poly.xy)
