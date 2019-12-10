@@ -40,7 +40,7 @@
 #'    steps in individuals' movement paths. If FALSE, all duplicated time 
 #'    steps are removed from the data set. 
 #' @param parallel Logical. If TRUE, sub-functions within the dup wrapper will 
-#'    be parallelized. Note that this can significantly speed up processing of 
+#'    be parallelized. This is only relevant if avg == TRUE. Note that this can significantly speed up processing of 
 #'    relatively small data sets, but may cause R to crash due to lack of 
 #'    available memory when attempting to process large datasets. Defaults to 
 #'    FALSE.
@@ -146,48 +146,45 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
 
     rownames(x) <-seq(1,nrow(x),1)
     x$indiv_dateTimes = paste(x$idVec1, x$dateTimeVec1, sep = " ")
-    originTab = x
     a=duplicated(x$indiv_dateTimes)
     duplicates = which(a == TRUE)
 
     if(length(duplicates) > 0){ #This if statement prevents an error from occurring due to the lack of duplicated timepoints
-      dupFrame = data.frame(unique(x$indiv_dateTimes[duplicates]))
-      dupFixer1<-function(x,y){
-        removeVec = which(y$indiv_dateTimes == x[1])
-        return(removeVec)
-      }
 
-      dupFixer2<-function(x,y){
-        oldX = y$xVec1[which(y$indiv_dateTimes == x[1])]
-        oldY = y$yVec1[which(y$indiv_dateTimes == x[1])]
-        newX = (sum(oldX)/length(oldX)) #calculates the average x location and adds it to the replacement row
-        newY = (sum(oldY)/length(oldY)) #calculates the average y location and adds it to the replacement row
-        newCoord = c(newX,newY)
-        return(newCoord)
-      }
+      dupRemove <- unique(c((duplicates - 1), duplicates)) #compiles a vector of rows that are duplicated
 
       if(filterOutput == TRUE){
 
-        if(parallel == TRUE){
-          cl<-parallel::makeCluster(nCores)
-          dupRemove = unlist(parallel::parApply(cl,dupFrame,1,dupFixer1, originTab))
-          if(avg == TRUE){
-            dupReplace = unlist(parallel::parApply(cl,dupFrame,1,dupFixer2, originTab))
+        if(avg == TRUE){ 
+          
+          dupFixer2<-function(x,y){
+            oldX = y$xVec1[which(y$indiv_dateTimes == x[1])]
+            oldY = y$yVec1[which(y$indiv_dateTimes == x[1])]
+            newX = (sum(oldX)/length(oldX)) #calculates the average x location and adds it to the replacement row
+            newY = (sum(oldY)/length(oldY)) #calculates the average y location and adds it to the replacement row
+            newCoord = c(newX,newY)
+            return(newCoord)
           }
-          parallel::stopCluster(cl)
-        }else{ #if parallel == FALSE
-          dupRemove = unlist(apply(dupFrame,1,dupFixer1, originTab)) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point travelled to reach it from the subsequent point.
-          if(avg == TRUE){
+          
+          dupFrame = data.frame(unique(x$indiv_dateTimes[duplicates]))
+          originTab = x
+          
+          if(parallel == TRUE){
+            cl<-parallel::makeCluster(nCores)
+            dupReplace = unlist(parallel::parApply(cl,dupFrame,1,dupFixer2, originTab))
+            parallel::stopCluster(cl)
+          }else{ #if parallel == FALSE
             dupReplace = unlist(apply(dupFrame,1,dupFixer2, originTab))
           }
-        }
-        if(avg == TRUE){
+
           replaceTab = x[duplicates,] #This creates a dataframe with all the relevant data included (e.g., id, dateTime,etc.). We just need to adjust the x and y coordinates in the table.
           newXYMat = matrix(dupReplace, nrow = (nrow(replaceTab)), ncol = 2, byrow = TRUE)
           replaceTab$xVec1 = newXYMat[,1]
           replaceTab$yVec1 = newXYMat[,2]
         }
-        x = x[-dupRemove,]
+        
+        x = droplevels(x[-dupRemove,])
+        
         if(avg == TRUE){
           x = data.frame(data.table::rbindlist(list(x,replaceTab)))
 
@@ -205,13 +202,6 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
 
       }else{ #i.e., if filterOutput == FALSE
 
-        if(parallel == TRUE){
-          cl<-parallel::makeCluster(nCores)
-          dupRemove = unlist(parallel::parApply(cl,dupFrame,1,dupFixer1, originTab)) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point travelled to reach it from the subsequent point.
-          parallel::stopCluster(cl)
-        }else{
-          dupRemove = unlist(apply(dupFrame,1,dupFixer1, originTab)) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point travelled to reach it from the subsequent point.
-        }
         x$duplicated = 0
         x$duplicated[dupRemove] = 1
       }
