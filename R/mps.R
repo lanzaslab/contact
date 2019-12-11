@@ -226,7 +226,7 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     return(x)
   }
   list.breaker<-function(x,y,id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores){
-    input<- data.frame(y[unname(unlist(x[1]))])
+    input<- data.frame(y[[unname(unlist(x[1]))]])
     mps.filter<-filter3.func(input, id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores)
     return(mps.filter)
   }

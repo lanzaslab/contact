@@ -11,8 +11,7 @@
 #'    functions.
 #' @param x data frame containing time data. If NULL at least dateTime must be 
 #'    defined. Defaults to NULL.
-#' @param id Vector of length nrow(data.frame(x)) or singular character data, 
-#'    detailing the relevant colname in x, that denotes what unique ids for 
+#' @param id Vector of length nrow(data.frame(x)) that denotes what unique ids for 
 #'    tracked individuals will be used. If argument == NULL, the function 
 #'    assumes a column with the colname "id" exists in x. Defaults to NULL.
 #' @param dateTime1 Vector of length nrow(data.frame(x)) or singular 
