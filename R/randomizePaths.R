@@ -29,8 +29,8 @@
 #'    Therefore, blocklength-units may never exceed 1 shuffleUnit 
 #'    (e.g., 25-hour blocks cannot be shuffled using shuffleUnit == "Days," 
 #'    but 1:24-hour blocks work just fine). Points within blocks are not 
-#'    redistributed. This particular shuffle.type (i.e., 2) is based off of 
-#'    the methodology described by Spiegel et al. 2016.
+#'    redistributed. Shuffle.types 1 & 2 are both variants of the randomization
+#'    methodology described by Spiegel et al. 2016.
 #' 
 #' Note that, if shuffle.type == 2, all dateTime values in individuals movement
 #'    paths described in x must be equidistant (e.g., relocations for 
