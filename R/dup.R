@@ -38,7 +38,8 @@
 #' @param avg Logical. If TRUE, point.x and point.y values for duplicated 
 #'    time steps will be averaged, producing a singular point for all time 
 #'    steps in individuals' movement paths. If FALSE, all duplicated time 
-#'    steps are removed from the data set. 
+#'    steps wherein individuals were observed in different locations 
+#'    concurrently are removed from the data set. 
 #' @param parallel Logical. If TRUE, sub-functions within the dup wrapper will 
 #'    be parallelized. This is only relevant if avg == TRUE. Note that this can significantly speed up processing of 
 #'    relatively small data sets, but may cause R to crash due to lack of 
@@ -150,40 +151,53 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
     duplicates = which(a == TRUE)
 
     if(length(duplicates) > 0){ #This if statement prevents an error from occurring due to the lack of duplicated timepoints
+      
+      fullVector <- paste(x$idVec1, x$dateTimeVec1, xVec1, yVec1, sep = " ") #create a vector of all inputs
+      exactDuplicates <- which(duplicated(fullVector) == TRUE) #identify which rows represent complete duplicates (i.e., all inputs are duplicated). 
 
-      dupRemove <- unique(c((duplicates - 1), duplicates)) #compiles a vector of rows that are duplicated
+      if(length(exactDuplicates) > 0){ #if there are exact duplicates, they will simply be removed later on. There's no need to calculate the average (if avg == TRUE).
+        exactDup.values <- droplevels(x[exactDuplicates,]) #pull a data frame of exactDuplicates (will only be relevant if filter.output == FALSE)
+        x <- droplevels(x[-exactDuplicates,]) #remove exact duplicates from x
+        duplicates.adjusted<- which(duplicated(x$indiv_dateTimes) == TRUE) #re-evaluate duplicates
+      }else{
+        duplicates.adjusted<- duplicates #if there were no exact duplicates, then this vector need not change
+      }
+      
+      if(length(duplicates.adjusted) > 0){
+      
+        dupRemove <- unique(c((duplicates.adjusted - 1), duplicates.adjusted)) #compiles a vector of rows that are duplicated
 
-      if(filterOutput == TRUE){
+        if(filterOutput == TRUE){
 
-        if(avg == TRUE){ 
+          if(avg == TRUE){ 
           
-          dupFixer2<-function(x,y){
-            oldX = y$xVec1[which(y$indiv_dateTimes == x[1])]
-            oldY = y$yVec1[which(y$indiv_dateTimes == x[1])]
-            newX = (sum(oldX)/length(oldX)) #calculates the average x location and adds it to the replacement row
-            newY = (sum(oldY)/length(oldY)) #calculates the average y location and adds it to the replacement row
-            newCoord = c(newX,newY)
-            return(newCoord)
+            dupFixer2<-function(x,y){
+              oldX = y$xVec1[which(y$indiv_dateTimes == x[1])]
+              oldY = y$yVec1[which(y$indiv_dateTimes == x[1])]
+              newX = (sum(oldX)/length(oldX)) #calculates the average x location and adds it to the replacement row
+              newY = (sum(oldY)/length(oldY)) #calculates the average y location and adds it to the replacement row
+              newCoord = c(newX,newY)
+              return(newCoord)
+            }
+          
+            dupFrame = data.frame(unique(x$indiv_dateTimes[duplicates.adjusted]))
+            originTab = x
+          
+            if(parallel == TRUE){
+              cl<-parallel::makeCluster(nCores)
+              dupReplace = unlist(parallel::parApply(cl,dupFrame,1,dupFixer2, originTab))
+              parallel::stopCluster(cl)
+            }else{ #if parallel == FALSE
+              dupReplace = unlist(apply(dupFrame,1,dupFixer2, originTab))
+            }
+
+            replaceTab = x[duplicates.adjusted,] #This creates a dataframe with all the relevant data included (e.g., id, dateTime,etc.). We just need to adjust the x and y coordinates in the table.
+            newXYMat = matrix(dupReplace, nrow = (nrow(replaceTab)), ncol = 2, byrow = TRUE)
+            replaceTab$xVec1 = newXYMat[,1]
+            replaceTab$yVec1 = newXYMat[,2]
           }
-          
-          dupFrame = data.frame(unique(x$indiv_dateTimes[duplicates]))
-          originTab = x
-          
-          if(parallel == TRUE){
-            cl<-parallel::makeCluster(nCores)
-            dupReplace = unlist(parallel::parApply(cl,dupFrame,1,dupFixer2, originTab))
-            parallel::stopCluster(cl)
-          }else{ #if parallel == FALSE
-            dupReplace = unlist(apply(dupFrame,1,dupFixer2, originTab))
-          }
-
-          replaceTab = x[duplicates,] #This creates a dataframe with all the relevant data included (e.g., id, dateTime,etc.). We just need to adjust the x and y coordinates in the table.
-          newXYMat = matrix(dupReplace, nrow = (nrow(replaceTab)), ncol = 2, byrow = TRUE)
-          replaceTab$xVec1 = newXYMat[,1]
-          replaceTab$yVec1 = newXYMat[,2]
-        }
         
-        x = droplevels(x[-dupRemove,])
+          x <- droplevels(x[-dupRemove,]) 
         
         if(avg == TRUE){
           x = data.frame(data.table::rbindlist(list(x,replaceTab)))
@@ -204,13 +218,28 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
 
         x$duplicated = 0
         x$duplicated[dupRemove] = 1
+        if(length(exactDuplicates) > 0){ #if there were exact duplicates, then they are indicated as well.
+          exactDup.values$duplicated <- 1
+          x <- data.frame(data.table::rbindlist(list(x, exactDup.values))) #bind x and exactDup.values
+          x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
+          x$duplicated[exactDuplicates -1] <- 1
+        }
       }
-
-      if(nrow(x) > 0){
-        rownames(x) <-seq(1,nrow(x),1)
+      }else{ #if duplicates.adjusted == 0
+        if(filterOutput == FALSE){ #in this case ALL duplicates were exact duplicates
+          x$duplicated = 0
+          exactDup.values$duplicated <- 1
+          x <- data.frame(data.table::rbindlist(list(x, exactDup.values))) #bind x and exactDup.values
+          x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
+          x$duplicated[exactDuplicates -1] <- 1
+        }
       }
     }
 
+    if(nrow(x) > 0){
+      rownames(x) <-seq(1,nrow(x),1)
+    }
+    
     x <- x[,-match("indiv_dateTimes",names(x))]
     x <- x[,-match("idVec1",names(x))]
     x <- x[,-match("dateTimeVec1",names(x))]
