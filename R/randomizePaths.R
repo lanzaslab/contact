@@ -107,9 +107,9 @@
 #'    location distribution). Defaults to TRUE.
 #' @param numRandomizations Integer. The number of replicate data frames 
 #'    produced in output. Defaults to 1.
-#' @param reduceOutput Logical. If TRUE only "id," "x.rand," "y.rand," 
-#'    "dateTime," and "rand.rep" columns will be included in function output
-#'    to reduce output size.
+#' @param reduceOutput Logical. If TRUE, to reduce output size, only "id," 
+#'    "x.rand," "y.rand," "dateTime," and "rand.rep" columns will be included 
+#'    in function output. Defaults to FALSE.
 #' @keywords data-processing contact
 #' @return If reduceOutput == FALSE, output is \code{x} appended with columns 
 #'    described below.
