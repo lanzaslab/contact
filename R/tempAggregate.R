@@ -156,7 +156,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
     dayIDVec = NULL
     dayIDseq = seq(1,(length(dates)),1)
     for(b in dayIDseq){
-      dayID = rep(b,length(which(originTab$date == dates[which(dayIDseq == b)])))
+      dayID = rep(b,length(which(originTab$date == dates[b])))
       dayIDVec = c(dayIDVec, dayID)
     }
 
@@ -275,7 +275,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
     locmatrix <- NULL
     start.brk <- NULL
     locTable <- NULL
-    dateSeq <- unique(originTab$date)
+    dateSeq <- dates #just rename for the same of convenience
     indivSeq <- unique(originTab$id)
 
     for(i in indivSeq){ #This loop determines the rows in the dataset where each individual's path begins.
