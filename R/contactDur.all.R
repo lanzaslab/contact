@@ -204,6 +204,7 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
   durFinder.noblock<-function(x,parallel, dist.threshold, sec.threshold, equidistant.time, nCores){
     dist.all<-x[order(x$id, x$dateTime),]
     idVec1 = unique(dist.all$id)
+    if(length(idVec1) > 1){
     dist.all.reduced <-dist.all[-which(dist.all$id == idVec1[length(idVec1)]),] #there's no need to process contacts associated with the last id values, because if they contacted any other individuals, the contacts would already be processed earlier on.
     
     if(equidistant.time == TRUE){ #added 02/04/2019 to make the dt calculations a toggleable parameter that users may turn off if all data points in their data set are temporally equidistant. This saves a large amount of time (approx. 3.5 mins/day)
@@ -235,11 +236,16 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
       duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all.reduced)	
     }
     durationTable = data.frame(data.table::rbindlist(duration))
+    }else{
+      durationTable<-NULL #if there's only one individual in the data set then the durationTable is empty
+    }
+    
     return(durationTable)
   }
   durFinder.block.List<-function(x,dist.threshold, sec.threshold, equidistant.time){
     dist.all<-x[order(x$id, x$dateTime),]
     idVec1 = unique(dist.all$id)
+    if(length(idVec1) > 1){
     dist.all.reduced <-dist.all[-which(dist.all$id == idVec1[length(idVec1)]),] #there's no need to process contacts associated with the last id values, because if they contacted any other individuals, the contacts would already be processed earlier on.
     
     if(equidistant.time == TRUE){ #added 02/04/2019 to make the dt calculations a toggleable parameter that users may turn off if all data points in their data set are temporally equidistant. This saves a large amount of time (approx. 3.5 mins/day)
@@ -264,6 +270,9 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
     }else{
       durationTable <- NULL
     }
+  }else{
+    durationTable <- NULL
+  }
     return(durationTable)
   }
   
@@ -325,7 +334,6 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
           blockL1<- list(x[which(block == blockVec[j]),])
           blockList<- c(blockList, blockL1)
         }
-        
       }else{ #if(length(x$block) > 0)
         block = x$block
         blockVec<-unique(block)
