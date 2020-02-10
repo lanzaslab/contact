@@ -123,11 +123,14 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
     dateseq = unique(lub.dates)
     dayIDList = NULL
     dayIDseq = seq(1,(length(dateseq)),1)
+    
+    dayDiffSeq<-NULL
+    
     for(b in dayIDseq){
-      ID = rep(b,length(which(lub.dates == dateseq[which(dayIDseq == b)])))
-      dayIDList = c(dayIDList, ID)
+      dayDiff<- rep(difftime(timevec[b] ,timevec[1] , units = c("days")), length(which(lub.dates == dateseq[which(dayIDseq == b)])))
+      dayDiffSeq<-c(dayDiffSeq, dayDiff)
     } 
-    x$totalSecond = ((dayIDList - min(dayIDList))*86400) + daySecondList #This calculates the total second (the cumulative second across the span of the study's timeframe)
+    x$totalSecond = (dayDiffSeq*86400) + daySecondList #This calculates the total second (the cumulative second across the span of the study's timeframe)
     
     return(x)
   }
@@ -323,7 +326,7 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
           blockList<- c(blockList, blockL1)
         }
         
-      }else{ #if importBlocks == TRUE and length(x$block > 0)
+      }else{ #if(length(x$block) > 0)
         block = x$block
         blockVec<-unique(block)
         blockList<-list()

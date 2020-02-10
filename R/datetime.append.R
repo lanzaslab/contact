@@ -219,17 +219,16 @@ datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFo
       timevec <-timevec[order(timevec)]
       lub.dates = lubridate::date(timevec)
       dateseq = unique(lub.dates)
-      dayIDVec = NULL
-      dayIDseq = seq(startID,(length(dateseq) + startID - 1),1)
+      dayIDseq = seq(1,(length(dateseq)),1)
+      dayDiffSeq<-NULL
       for(b in dayIDseq){
-        ID = rep(b,length(which(lub.dates == dateseq[which(dayIDseq == b)])))
-        dayIDVec = c(dayIDVec, ID)
+        dayDiff<- rep(difftime(timevec[b] ,timevec[1] , units = c("days")), length(which(lub.dates == dateseq[which(dayIDseq == b)])))
+        dayDiffSeq<-c(dayDiffSeq, dayDiff)
       } #This part of the function takes awhile (especially for large datasets), but may be useful in the future for subsetting and viewing data.
-    }
-
-    if(totalSecond == TRUE){ #assumes dayIDs are sequential
-      cbindTab$totalSecond = ((dayIDVec - min(dayIDVec))*86400) + daySecondVec #This calculates the total second (the cumulative second across the span of the study's timeframe)
-    }
+      cbindTab$totalSecond = (dayDiffSeq*86400) + daySecondVec #This calculates the total second (the cumulative second across the span of the study's timeframe)
+      
+      }
+    
     bindlist<-list(x,cbindTab)
     appendedTab<-do.call("cbind", bindlist)
     return(appendedTab)
