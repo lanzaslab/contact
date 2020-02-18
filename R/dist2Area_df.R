@@ -204,8 +204,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
     }
     if(length(idVec1)== 0) {  idVec1 <- originTab$id} #added to use idVec1 if not created above 
     idVec2=unique(originTab$id)                      #Added in the case x is not supplied
-    #idVec2<-unique(idVec1)
-    
+
     originTab$integ.ID<-NA
     
     for(a in 1:length(idVec2)){
@@ -230,11 +229,35 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         if(cols.needed > 0){ #so, if the polygon needs more vertices to match the maximum number detected.
           expanded.x[,(ncol(expanded.x) + 1):(ncol(expanded.x) + cols.needed)] <- expanded.x[,1:cols.needed] #this loops the polygon around the first recorded vertices. 
         }
+        
         if(length(area.id) >0){ #if there was an id column
           cbindlist<-list(area.id,expanded.x)
           output<-do.call("cbind", cbindlist)
+          colnames(output)[1]<- "id"
+          
+          for(h in 2:ncol(output)){ #ensure consistent column names across all polygon data frames
+            vertex.num <- floor(h/2)
+            
+            if((h %% 2) == 0){ #if h is even
+              colnames(output)[h] <- paste("vertex", vertex.num, ".x", sep = "")
+            }else{ #if h is odd
+              colnames(output)[h] <- paste("vertex", vertex.num, ".y", sep = "")
+            }
+          }
+          
         }else{ #if there was no id column
           output <- expanded.x
+
+          for(h in 1:ncol(output)){ #ensure consistent column names across all polygon data frames. Note the difference here is that there is not an additional "id" column in the front of the data frame, so commands are reversed.
+            vertex.num <- ceiling(h/2)
+            
+            if((h %% 2) == 0){ #if h is even
+              colnames(output)[h] <- paste("vertex", vertex.num, ".y", sep = "")
+            }else{ #if h is odd
+              colnames(output)[h] <- paste("vertex", vertex.num, ".x", sep = "")
+            }
+          }
+          
         }
         return(output)
       }
@@ -258,7 +281,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       #Now we have the areas list, which we can input into the growPoly function.
       vertex.colnum<-max(colLengths) #the maximum number of columns (representative of the number of vertices) in the area set.
       new.y<-lapply(areas, growPoly, vertex.colnum)
-      y <- data.frame(data.table::rbindlist(new.y)) #here we remake y as a dataframe containing polygons all with the same number of vertices. After this step, the function can move forward as if y was not a list. 
+      y <- data.frame(data.table::rbindlist(new.y, use.names = FALSE)) #here we remake y as a dataframe containing polygons all with the same number of vertices. After this step, the function can move forward as if y was not a list. 
     }
     
     ycols = ncol(y)
