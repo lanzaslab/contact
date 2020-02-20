@@ -104,6 +104,7 @@
 
 dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", lonlat = FALSE, numVertices = 4){
 
+  #browser()
   create.distFrame<- function(x,distMat, indivSeq, idSeq, timestepIndivSeq,time){
 
     dist = data.frame(matrix(ncol = (length(indivSeq) + 4), nrow = 1))
@@ -347,6 +348,8 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     }
     return(dist.all)
   }
+  
+  envCall <- environment() #pulls the environment of the dist2All_df main function
 
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
     breakFrame<- data.frame(seq(1,length(x),1))
@@ -354,6 +357,35 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     return(list.dist)
 
   }else{ #if(is.list(x) == FALSE)
+    
+    date_hourSub.func<-function(x, data){ #added 02/20/2020 #This function will be used to break down data sets into hourly time blocks prior to further processing to increase speed. Admittedly, this is not a pretty fix for increasing efficiency of processing large data sets, but it's a working fix nonetheless. 
+      date_hour <- droplevels(subset(data, date_hour == unname(unlist(x[1])))) #subset data
+      return(date_hour)
+    }
+    
+    data.dates<-lubridate::date(data$dateTime)
+    
+    data$date_hour <- paste(data.dates, lubridate::hour(data$dateTime), sep = "_") #create a tag for each unique date_hour combination in the data set
+    date_hour.vec <- unique(data$date_hour)
+    date.vec <- unique(data.dates)
+    data.list <- apply(data.frame(date_hour.vec), 1, date_hourSub.func, data)
+    names(data.list)<-date_hour.vec #add names to list to pull for date lists below
+    
+    rm(list =  c("x", "data.dates", "date_hour.vec", "date.vec")) #remove the unneeded objects to free up memory
+    
+    day_listDistance <- function(x, data, envCall){ #Because this function slows down when trying to process large data frames AND large list sets, we must concattenate both here. We did so to the former by breaking the data frame into hourly lists, and the latter by breaking these lists into daily subsets with this function.
+      
+      #envCall1<- environment() #pulls the environment of this particular sub function
+      
+      #`environment<-`(envCall1, envCall) #sets the environment as the main function environment
+      
+      day_lists <- data[grep(unname(unlist(x[1])), names(data))] #pulls the hour lists within a given day
+      names(day_lists)<-NULL #ensure that list names do not mess up column names
+      breakFrame<- data.frame(seq(1,length(day_lists),1))
+      list.dist <- apply(breakFrame, 1, list.breaker1,y = day_lists,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
+    }
+
+    
 
     frame.dist<- dist.generator1(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores)
 
