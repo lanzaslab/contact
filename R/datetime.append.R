@@ -212,20 +212,12 @@ datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFo
       }
     }
     if(totalSecond == TRUE){ 
-      startID <- 1
-      x<-x[order(timevec),] #Just in case the data wasn't already ordered in this way.
-      cbindTab<-cbindTab[order(timevec),]
-      daySecondVec <-daySecondVec[order(timevec)] 
-      timevec <-timevec[order(timevec)]
+      
       lub.dates = lubridate::date(timevec)
-      dateseq = unique(lub.dates)
-      dayIDseq = seq(1,(length(dateseq)),1)
-      dayDiffSeq<-NULL
-      for(b in dayIDseq){
-        dayDiff<- rep(difftime(timevec[b] ,timevec[1] , units = c("days")), length(which(lub.dates == dateseq[which(dayIDseq == b)])))
-        dayDiffSeq<-c(dayDiffSeq, dayDiff)
-      } #This part of the function takes awhile (especially for large datasets), but may be useful in the future for subsetting and viewing data.
-      cbindTab$totalSecond = (dayDiffSeq*86400) + daySecondVec #This calculates the total second (the cumulative second across the span of the study's timeframe)
+      x<-x[order(lub.dates, daySecondVec),] #Just in case the data wasn't already ordered in this way.
+      cbindTab<-cbindTab[order(lub.dates, daySecondVec),]
+      timevec <-timevec[order(lub.dates, daySecondVec)]
+      cbindTab$totalSecond<- difftime(timevec ,timevec[1] , units = c("secs")) #adds the total second column to the dataframe
       
       }
     

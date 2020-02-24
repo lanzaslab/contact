@@ -40,26 +40,6 @@
 #' head(calves.block) #see that block information has been appended.
 
 timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 10, blockUnit = "mins"){
-
-  datetime.append1 = function(x){
-    
-    timevec = x$dateTime
-    daySecondList = lubridate::hour(timevec) * 3600 + lubridate::minute(timevec) * 60 + lubridate::second(timevec) #This calculates a day-second
-    lub.dates = lubridate::date(x$dateTime)
-    dateseq = unique(lub.dates)
-    dayIDList = NULL
-    dayIDseq = seq(1,(length(dateseq)),1)
-    
-    dayDiffSeq<-NULL
-    
-    for(b in dayIDseq){
-      dayDiff<- rep(difftime(timevec[b] ,timevec[1] , units = c("days")), length(which(lub.dates == dateseq[which(dayIDseq == b)])))
-      dayDiffSeq<-c(dayDiffSeq, dayDiff)
-    } 
-    x$totalSecond = (dayDiffSeq*86400) + daySecondList #This calculates the total second (the cumulative second across the span of the study's timeframe)
-    
-    return(x)
-  }
   
   if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){
     blockLength1 <- blockLength
@@ -88,8 +68,13 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 10, blockUni
       }
     }
   }
-  x<-x[order(x$dateTime),] #Just in case the data wasn't already ordered in this way.
-  x<-datetime.append1(x) #adds the total second column to the dataframe
+
+  daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+  lub.dates = lubridate::date(x$dateTime)
+  x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
+  rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+  x$totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #adds the total second column to the dataframe
+
   studySecond <- (x$totalSecond -min(x$totalSecond)) + 1
   x<-x[,-match("totalSecond", names(x))]
   numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
