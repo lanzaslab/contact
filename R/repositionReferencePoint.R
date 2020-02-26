@@ -113,8 +113,8 @@
 #'    cause R to crash due to lack of available memory when attempting to 
 #'    process large datasets. Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    parallel processes. Defaults to half of the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
 #' @param modelOrientation Numerical. Describes the relative orientation (in 
 #'   degrees) of a planar model (see vignette or Farthing et al. in Review 
 #'   (note: when this manuscript is officially published, we will update this 
@@ -177,7 +177,7 @@
 #'    modelOrientation = 90)
 #'    }
 
-repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, repositionAngle = 0, repositionDist = 1, immobThreshold = 0, parallel = FALSE, nCores = parallel::detectCores(), modelOrientation = 90){
+repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, repositionAngle = 0, repositionDist = 1, immobThreshold = 0, parallel = FALSE, nCores = (parallel::detectCores()/2), modelOrientation = 90){
 
   reposition.generator<-function(x, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores){
     euc=function(x) {

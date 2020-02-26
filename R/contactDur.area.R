@@ -39,8 +39,8 @@
 #'    lack of available memory when attempting to process large datasets. 
 #'    Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    parallel processes. Defaults to half of the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
 #' @param reportParameters Logical. If TRUE, function argument values will be 
 #'    appended to output data frame(s). Defaults to TRUE.
 #' @keywords data-processing contact
@@ -111,7 +111,7 @@
 #'   equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
 #'   
 
-contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10, equidistant.time = FALSE, parallel = FALSE, nCores = parallel::detectCores(), reportParameters = TRUE){ 
+contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockUnit = "mins", blockLength = 10, equidistant.time = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), reportParameters = TRUE){ 
   
   timeDifference = function(x){
     t1 = unlist(unname(x[1]))

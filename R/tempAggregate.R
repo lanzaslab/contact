@@ -61,8 +61,8 @@
 #'    to lack of available memory when attempting to process large datasets. 
 #'    Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    parallel processes. Defaults to half of the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
 #' @param na.rm Logical. If TRUE, all unknown locations (i.e., xy-coordinate 
 #'    pairs reported as NAs) will be removed from the output. Defaults to TRUE.
 #'    Note that if na.rm == FALSE, all aggregated location fixes will be 
@@ -99,7 +99,7 @@
 #'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 #'    
 
-tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "full", parallel = FALSE, nCores = parallel::detectCores(), na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
+tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "full", parallel = FALSE, nCores = (parallel::detectCores()/2), na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
 
   Agg.generator<-function(x, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores){
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.

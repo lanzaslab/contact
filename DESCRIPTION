@@ -25,6 +25,8 @@ Depends: R (>= 3.6.0)
 Imports:
     ape (>= 5.3),
     data.table (>= 1.12.2),
+    doParallel (>= 1.0.15),
+    foreach (>= 1.4.8),
     geosphere (>= 1.5-10),
     igraph (>= 1.2.4.1),
     lubridate (>= 1.7.4),

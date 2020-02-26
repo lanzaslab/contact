@@ -51,8 +51,8 @@
 #'    lack of available memory when attempting to process large datasets. 
 #'    Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    parallel processes. Defaults to half og the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
 #' @param dataType Character string refering to the type of real-time-location 
 #'    data presented in x, taking values of "Point" or "Polygon." If 
 #'    argument == "Point," individuals' locations are drawn from point.x and 
@@ -108,7 +108,7 @@
 #'   point.y = calves.agg$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", 
 #'   lonlat = FALSE, numVertices = NULL) 
 
-dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", lonlat = FALSE, numVertices = 4){
+dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = (parallel::detectCores()/2), dataType = "Point", lonlat = FALSE, numVertices = 4){
   create.distFrame<- function(x,distMat, indivSeq, timestepIndivSeq,time, origin.y){
     dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1))
     colnames(dist) = c("dateTime","totalIndividuals","individualsAtTimestep","id", paste("dist.to.", origin.y[,1], sep = ""))

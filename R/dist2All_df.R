@@ -57,8 +57,8 @@
 #'    to lack of available memory when attempting to process large datasets. 
 #'    Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    parallel processes. Defaults to half of the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
 #' @param dataType Character string refering to the type of real-time-location 
 #'    data presented in x, taking values of "Point" or "Polygon." If 
 #'    argument == "Point," individuals' locations are drawn from point.x and 
@@ -102,7 +102,7 @@
 #'    lonlat = FALSE) #calculate distance between all individuals at each timepoint.
 #' 
 
-dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", lonlat = FALSE, numVertices = 4){
+dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = (parallel::detectCores()/2), dataType = "Point", lonlat = FALSE, numVertices = 4){
 
   ##In the hastagged section below I am considering using the attach function to make this function more efficeint in terms of memory requirements. For now though, I've decided not to follow through with that plan of action and adress the problem somewhat crudely through other methods.
   
