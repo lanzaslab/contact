@@ -260,9 +260,9 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
     distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)])
     if(parallel == TRUE){ #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
       cl<-parallel::makeCluster(nCores)
+      on.exit(parallel::stopCluster(cl))
       dist = parallel::parApply(cl, distCoordinates,1,euc)
       dist = c(dist, NA) #to make dist the same length as nrow(x)
-      parallel::stopCluster(cl)
     }else{
       dist = apply(distCoordinates,1,euc)
       dist = c(dist, NA) #to make dist the same length as nrow(x)
@@ -273,10 +273,8 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
     
     timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
     if(parallel == TRUE){
-      cl<-parallel::makeCluster(nCores)
-      dt = parallel::parApply(cl, timesFrame, 1, timeDifference)
+      dt = parallel::parApply(cl, timesFrame, 1, timeDifference) #see that cl was created above
       dt = c(dt, NA) #to make dt the same length as nrow(x)
-      parallel::stopCluster(cl)
     }else{
       dt = apply(timesFrame, 1, timeDifference)
       dt = c(dt, NA) #to make dt the same length as nrow(x)
@@ -342,9 +340,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       standlistFrame = data.frame(immob = standlist)
 
       if(parallel == TRUE){
-        cl<-parallel::makeCluster(nCores)
-        immobFrame = data.frame(data.table::rbindlist(parallel::parApply(cl, standlistFrame, 1, immobAdjustment.point, locMatrix = RepositionMatrix, immobVec)))
-        parallel::stopCluster(cl)
+        immobFrame = data.frame(data.table::rbindlist(parallel::parApply(cl, standlistFrame, 1, immobAdjustment.point, locMatrix = RepositionMatrix, immobVec))) #see that cl was created above
       }else{
         immobFrame = data.frame(data.table::rbindlist(apply(standlistFrame, 1, immobAdjustment.point, locMatrix = RepositionMatrix, immobVec)))
       }
@@ -357,9 +353,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
     newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)])
 
     if(parallel == TRUE){ #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
-      cl<-parallel::makeCluster(nCores)
-      newDist = parallel::parApply(cl, newDistCoordinates,1,euc); newDist = c(newDist, NA)
-      parallel::stopCluster(cl)
+      newDist = parallel::parApply(cl, newDistCoordinates,1,euc); newDist = c(newDist, NA) #see that cl was created above
     }else{
       newDist = apply(newDistCoordinates,1,euc); newDist = c(newDist, NA)
     }

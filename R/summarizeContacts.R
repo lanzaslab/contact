@@ -79,7 +79,6 @@
 
 summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
   
-  
   summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs (i.e., only applicable if avg == TRUE)
     sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
     blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
@@ -267,6 +266,8 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
              
         cl <- parallel::makeCluster(nCores)
         doParallel::registerDoParallel(cl)
+        on.exit(parallel::stopCluster(cl))
+        
         summary.block<- foreach::foreach(i = unique(as.character(x$block))) %dopar% blockSum(i, x, indivSeq, areaSeq)
              
       }else{ #if parallel == FALSE

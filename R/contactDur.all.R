@@ -198,9 +198,9 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
         timesFrame = data.frame(dist.all.reduced$dateTime[1:(nrow(dist.all.reduced) - 1)], dist.all.reduced$dateTime[2:nrow(dist.all.reduced)])
         if (parallel == TRUE){
           cl<-parallel::makeCluster(nCores)
+          on.exit(parallel::stopCluster(cl))
           timedif<-parallel::parApply(cl, timesFrame, 1, timeDifference)
           dist.all.reduced$dt = c(0, timedif) #timedif represents the time it takes to move from location i-1 to location i	
-          parallel::stopCluster(cl)
         }else{
           timedif = apply(timesFrame, 1, timeDifference) 
           dist.all.reduced$dt = c(0, timedif) 
@@ -210,9 +210,7 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
     comboFrame = data.frame(unique(dist.all.reduced$id),dist.threshold,sec.threshold)
     
     if (parallel == TRUE){
-      cl<-parallel::makeCluster(nCores)
-      duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all.reduced)
-      parallel::stopCluster(cl)
+      duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all.reduced) #note that cl is defined above
     }else{
       duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all.reduced)	
     }

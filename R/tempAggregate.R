@@ -288,8 +288,8 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
 
     if (parallel == TRUE){
       cl<-parallel::makeCluster(nCores)
+      on.exit(parallel::stopCluster(cl))
       locmatrix<-parallel::parApply(cl, brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type, secondAgg) ##Note, this procedure produces a table that in which the first half is the x axis, and the second is the y axis. You have to merge (see code below)
-      parallel::stopCluster(cl)
     }else{locmatrix<-apply(brk.point, 1, Processing_and_Aggregation_Procedures, originTab, leftExtrap, rightExtrap, resolutionLevel, smooth.type, secondAgg)}
 
     #The code below breaks the table into the x and y coordinates that we'd expect here.

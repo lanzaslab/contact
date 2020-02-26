@@ -339,8 +339,8 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       
       if (parallel == TRUE){
         cl<-parallel::makeCluster(nCores)
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.point, originTab, indivSeq, dist.measurement, origin.y, numVertices.y)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.point, originTab, indivSeq, dist.measurement, origin.y, numVertices.y)	
       }
@@ -412,8 +412,8 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       
       if (parallel == TRUE){
         cl<-parallel::makeCluster(nCores)
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.poly, originTab, indivSeq, origin.y, numVertices, numVertices.y)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.poly, originTab, indivSeq, origin.y, numVertices, numVertices.y)	
       }
@@ -486,8 +486,8 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       
       if (parallel == TRUE){
         cl<-parallel::makeCluster(nCores)
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.point, originTab, indivSeq, dist.measurement, origin.y, numVertices.y)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.point, originTab, indivSeq, dist.measurement, origin.y, numVertices.y)	
       }
@@ -560,8 +560,8 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       
       if (parallel == TRUE){
         cl<-parallel::makeCluster(nCores)
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.poly, originTab, indivSeq, origin.y, numVertices, numVertices.y)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.poly, originTab, indivSeq, origin.y, numVertices, numVertices.y)	
       }

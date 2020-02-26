@@ -66,8 +66,8 @@
 #'    to lack of available memory when attempting to process large datasets. 
 #'    Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    parallel processes. Defaults to half of the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
 #' @param dataType Character string refering to the type of real-time-location 
 #'    data presented in x, taking values of "Point" or "Polygon." If 
 #'    dataType == "Point," individuals' locations are drawn from point.x and 
@@ -167,7 +167,7 @@
 #'    indivPaths = TRUE, numRandomizations = 1) 
 #'    
 
-randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = parallel::detectCores(), dataType = "Point", numVertices = 4, blocking = TRUE, blockUnit = "hours", blockLength = 1, shuffle.type = 0, shuffleUnit = "days", indivPaths = TRUE, numRandomizations = 1, reduceOutput = FALSE){
+randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = (parallel::detectCores()/2), dataType = "Point", numVertices = 4, blocking = TRUE, blockUnit = "hours", blockLength = 1, shuffle.type = 0, shuffleUnit = "days", indivPaths = TRUE, numRandomizations = 1, reduceOutput = FALSE){
   
   datetime.append1 = function(x){
     timevec = x$dateTime
@@ -551,8 +551,8 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     
     if(parallel == TRUE){
       cl<-parallel::makeCluster(nCores)
+      on.exit(parallel::stopCluster(cl))
       randomness<-parallel::parApply(cl, repeatTab, 1, randomization, originTab)
-      parallel::stopCluster(cl)
     }else{
       randomness <- apply(repeatTab, 1, randomization, originTab)
     }
@@ -569,8 +569,8 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     
     if(parallel == TRUE){
       cl<-parallel::makeCluster(nCores)
+      on.exit(parallel::stopCluster(cl))
       randomness<-parallel::parApply(cl, idTab,1,datasub.func, originTab, numids,blocking, shuffle.type, dataType, shuffleUnit, blockUnit, blockLength)
-      parallel::stopCluster(cl)
     }else{
       randomness <- apply(idTab,1,datasub.func, originTab, numids,blocking, shuffle.type, dataType, shuffleUnit, blockUnit, blockLength)
     }

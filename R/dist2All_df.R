@@ -104,20 +104,6 @@
 
 dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = (parallel::detectCores()/2), dataType = "Point", lonlat = FALSE, numVertices = 4){
 
-  ##In the hastagged section below I am considering using the attach function to make this function more efficeint in terms of memory requirements. For now though, I've decided not to follow through with that plan of action and adress the problem somewhat crudely through other methods.
-  
-  ###functionArgs <- list(x, id, dateTime, point.x, point.y, poly.xy, elev, parallel, nCores, dataType, lonlat, numVertices) #for efficiency we will attach these arguments to the R search path, then remove them to free up memory. This allows processing of large data sets without taking up too much memory by just replicating arguments in sub-function environments.
-  ###names(functionArgs)<- c("x", "id", "dateTime", "point.x", "point.y", "poly.xy", "elev", "parallel", "nCores", "dataType", "lonlat", "numVertices")
-  ###
-  ###rm(list = c("x", "id", "dateTime", "point.x", "point.y", "poly.xy", "elev", "parallel", "nCores", "dataType", "lonlat", "numVertices")) #remove arguments to free up memory
-  ###
-  ###attach(functionArgs) #readin
-  ###on.exit(detach("functionArgs"))
-  ###
-  ###rm(functionArgs)
-  
-  #browser()
-
   dist.generator1<-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){
     
     create.distFrame<- function(x,distMat, indivSeq, idSeq, timestepIndivSeq,time){
@@ -293,9 +279,9 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
 
 
       if (parallel == TRUE){
-        cl<-parallel::makeCluster(nCores)
+        cl<-parallel::makeCluster(nCores) 
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.point, originTab, indivSeq,idSeq, dist.measurement, elev.calc)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.point, originTab, indivSeq,idSeq, dist.measurement, elev.calc)
       }
@@ -351,8 +337,8 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
 
       if (parallel == TRUE){
         cl<-parallel::makeCluster(nCores)
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.poly, originTab, indivSeq, idSeq, numVertices, elev.calc)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.poly, originTab, indivSeq, idSeq, numVertices, elev.calc)
       }
@@ -360,6 +346,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     }
     return(dist.all)
   }
+  
   
   dist.generator2<-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ #this is the same as dist.generator1 except that 
     
@@ -432,8 +419,8 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       
       if (parallel == TRUE){
         cl<-parallel::makeCluster(nCores)
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.point, y = x, indivSeq,idSeq, dist.measurement, elev.calc)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.point, y = x, indivSeq,idSeq, dist.measurement, elev.calc)
       }
@@ -489,8 +476,8 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       
       if (parallel == TRUE){
         cl<-parallel::makeCluster(nCores)
+        on.exit(parallel::stopCluster(cl))
         distTab<-parallel::parApply(cl, dateTimeFrame, 1, dist.process.poly, y =x, indivSeq, idSeq, numVertices, elev.calc)
-        parallel::stopCluster(cl)
       }else{
         distTab = apply(dateTimeFrame, 1, dist.process.poly, y = x, indivSeq, idSeq, numVertices, elev.calc)
       }
