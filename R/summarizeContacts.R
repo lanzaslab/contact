@@ -19,12 +19,9 @@
 #'    in x will be averaged together. Output will produce an extra data frame 
 #'    containing the mean column values for each id (per block if 
 #'    importBlocks == TRUE). Defaults to FALSE.
-#' @param parallel Logical. If TRUE, sub-functions within the summarizeContacts 
-#'    wrapper will be parallelized. Note that this can significantly speed up 
-#'    processing of relatively small data sets, but may cause R to crash due 
-#'    to lack of available memory when attempting to process large datasets. 
-#'    Defaults to FALSE. Further note, that the only sub-function parallelized
-#'    here is called ONLY when importBlocks == TRUE.
+#' @param parallel Logical. If TRUE, sub-functions within the summarizeContacts
+#'    wrapper will be parallelized. Note that the only sub-function 
+#'    parallelized here is called ONLY when importBlocks == TRUE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).

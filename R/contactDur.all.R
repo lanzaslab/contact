@@ -27,9 +27,9 @@
 #' @param blocking Logical. If TRUE, contacts will be evaluated for temporal 
 #'     blocks spanning blockLength blockUnit (e.g., 6 hours) within the data 
 #'     set. Defaults to FALSE.
-#' @param blockUnit Numerical. Describes the number blockUnits within each 
+#' @param blockLength Integer. Describes the number blockUnits within each 
 #'     temporal block. Defaults to 1.
-#' @param blockLength Character string taking the values, "secs," "mins," 
+#' @param blockUnit Character string taking the values, "secs," "mins," 
 #'     "hours," "days," or "weeks." Describes the temporal unit associated with
 #'     each block. Defaults to "hours."
 #' @param equidistant.time Logical. If TRUE, location fixes in individuals' 
@@ -39,10 +39,7 @@
 #'     location fix. If all fix intervals in an individuals' path are 
 #'     identical, it saves a lot of time.
 #' @param parallel Logical. If TRUE, sub-functions within the contactDur.all 
-#'     wrapper will be parallelized. Note that this can significantly speed up 
-#'     processing of relatively small data sets, but may cause R to crash due 
-#'     to lack of available memory when attempting to process large datasets. 
-#'     Defaults to FALSE.
+#'     wrapper will be parallelized. Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'     parallel processes. Defaults to half of the maximum number of cores 
 #'     available (i.e., (parallel::detectCores()/2)).
@@ -107,7 +104,7 @@
 #'     sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1,
 #'     equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
 
-contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockUnit = "hours", blockLength = 1, equidistant.time = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), reportParameters = TRUE){ 
+contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockLength = 1, blockUnit = "hours", equidistant.time = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), reportParameters = TRUE){ 
   
   timeDifference = function(x){
     t1 = unname(unlist(x[1]))
@@ -265,6 +262,8 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
       
       if(length(x$block) == 0 ){ #If there's no "block" column in dist.all output, then we need to define blocks here. Note here that, if individuals wanted to append block information to the dist.all file (for whatever reason), they may do so using the timeblock.append function. If users did this, there's no need to waste time remaking blocks here. 
         
+        #the code below comes from the contact::timeBlock.append function. We just refrain from calling it here to prevent the inputs being cloned within the function, and thus save memory.
+        
         if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){
           blockLength1 <- blockLength
         }
@@ -284,10 +283,12 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
         daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
         lub.dates = lubridate::date(x$dateTime)
         x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
-        rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
-        x$totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #adds the total second column to the dataframe
         
-        studySecond <- (x$totalSecond -min(x$totalSecond)) + 1
+        #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
+        totSecond <- rep(0, length(which(dist.input$dateTime == dist.input$dateTime[1])))
+        totSecond2<-as.integer(difftime(dist.input$dateTime[(length(totSecond) +1): nrow(dist.input)] ,dist.input$dateTime[1] , units = c("secs")))
+        studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1)
+        
         numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
         block <-rep(0,length(studySecond))
         for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
@@ -296,21 +297,17 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
         if(length(which(block == 0)) > 0){ #identifies the last block
           block[which(block == 0)] = numblocks
         }
-        blockVec<-unique(block)
-        dateTimeVec2<-x$dateTime
-        minBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the minimum timepoint in each block.
-        maxBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the maximum timepoint in each block.
-        for(f in 1:length(blockVec)){
-          minBlockTime<-as.character(dateTimeVec2[min(which(block == blockVec[f]))])
-          minBlockTimeSeq[which(block == blockVec[f])] <- minBlockTime
-          maxBlockTime<-as.character(dateTimeVec2[max(which(block == blockVec[f]))])
-          maxBlockTimeSeq[which(block == blockVec[f])] <- maxBlockTime
-        }
+        
+        block.start<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
+        block.end<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+        
         x$block <- block
-        x$block.start <- minBlockTimeSeq
-        x$block.end <- maxBlockTimeSeq
-        x$numBlocks <- max(blockVec) #the contactTest function will require thus information (i.e. the number of blocks in the dataset)
-
+        x$block.start <- block.start
+        x$block.end <- block.end
+        x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
+        
+        rm(list = c("daySecondList", "lub.dates", "totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
+        
         blockList<-list()
         
         for(j in 1:length(blockVec)){

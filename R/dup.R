@@ -41,13 +41,11 @@
 #'    steps wherein individuals were observed in different locations 
 #'    concurrently are removed from the data set. 
 #' @param parallel Logical. If TRUE, sub-functions within the dup wrapper will 
-#'    be parallelized. This is only relevant if avg == TRUE. Note that this can significantly speed up processing of 
-#'    relatively small data sets, but may cause R to crash due to lack of 
-#'    available memory when attempting to process large datasets. Defaults to 
+#'    be parallelized. This is only relevant if avg == TRUE. Defaults to 
 #'    FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    (i.e., (parallel::detectCores()/2)).
 #' @param filterOutput Logical. If TRUE, output will be a data frame 
 #'    containing only movement paths with non-duplicated timesteps. If FALSE, 
 #'    no observations are removed and a "duplicated" column is appended to x, 
@@ -70,7 +68,7 @@
 #'    dateTime = calves2018$dateTime, avg = FALSE, parallel = FALSE, 
 #'    filterOutput = TRUE) #there were no duplicates to remove in the first place.
 
-dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, avg = TRUE, parallel = FALSE, nCores = parallel::detectCores(), filterOutput = TRUE){
+dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, avg = TRUE, parallel = FALSE, nCores = (parallel::detectCores()/2), filterOutput = TRUE){
   filter1.func<-function(x, id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores){
 
     idVec <- NULL
@@ -185,8 +183,8 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
           
             if(parallel == TRUE){
               cl<-parallel::makeCluster(nCores)
+              on.exit(parallel::stopCluster(cl))
               dupReplace = unlist(parallel::parApply(cl,dupFrame,1,dupFixer2, originTab))
-              parallel::stopCluster(cl)
             }else{ #if parallel == FALSE
               dupReplace = unlist(apply(dupFrame,1,dupFixer2, originTab))
             }

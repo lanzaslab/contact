@@ -119,10 +119,7 @@
 #'    movements so miniscule that the majority of animals’ physical-space 
 #'    usage is likely unaffected (e.g., head shaking). Defaults to 0.
 #' @param parallel Logical. If TRUE, sub-functions within the 
-#'    referencePoint2Polygon wrapper will be parallelized. Note that this can 
-#'    significantly speed up processing of relatively small data sets, but may 
-#'    cause R to crash due to lack of available memory when attempting to 
-#'    process large datasets. Defaults to FALSE.
+#'    referencePoint2Polygon wrapper will be parallelized. Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).

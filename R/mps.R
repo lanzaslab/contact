@@ -47,13 +47,10 @@
 #'    coordinates (i.e., longitude and lattitude). If FALSE, point.x and 
 #'    point.y contain planar coordinates. Defaults to FALSE.
 #' @param parallel Logical. If TRUE, sub-functions within the mps wrapper will 
-#'    be parallelized. Note that this can significantly speed up processing of 
-#'    relatively small data sets, but may cause R to crash due to lack of 
-#'    available memory when attempting to process large datasets. Defaults to 
-#'    FALSE.
+#'    be parallelized. Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'    parallel processes. Defaults to the maximum number of cores available
-#'    (i.e., parallel::detectCores()).
+#'    parallel processes. Defaults to half of the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
 #' @param filterOutput Logical. If TRUE, output will be a data frame or list of
 #'    data frames (depending on whether or not x is a data frame or not) 
 #'    containing only points that adhere to the mpsThreshold rule. If FALSE, no
@@ -79,7 +76,7 @@
 #'    dateTime = calves.dateTime$dateTime, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, 
 #'    filterOutput = TRUE) 
 #'
-mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, nCores = parallel::detectCores(), filterOutput = TRUE){
+mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), filterOutput = TRUE){
 
   filter3.func<-function(x, id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores){
     idVec <- NULL
@@ -190,8 +187,8 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     indivSeqFrame=data.frame(unique(x$idVec1)) #The list of individual IDs.
     if(parallel == TRUE){
       cl<-parallel::makeCluster(nCores)
+      on.exit(parallel::stopCluster(cl))
       distance = parallel::parApply(cl,indivSeqFrame,1,indivDist, y = x, dist.measurement) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point travelled to reach it from the subsequent point.
-      parallel::stopCluster(cl)
     }else{
       distance = apply(indivSeqFrame,1,indivDist, y = x, dist.measurement) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point travelled to reach it from the subsequent point.
     }

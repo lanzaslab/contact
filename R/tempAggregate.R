@@ -56,10 +56,7 @@
 #'    exist over any secondAgg time block, NAs will be produced for the time 
 #'    blocks of interest. Defaults to "full."
 #' @param parallel Logical. If TRUE, sub-functions within the tempAggregate 
-#'    wrapper will be parallelized. Note that this can significantly speed up 
-#'    processing of relatively small data sets, but may cause R to crash due 
-#'    to lack of available memory when attempting to process large datasets. 
-#'    Defaults to FALSE.
+#'    wrapper will be parallelized. Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).

@@ -16,8 +16,8 @@
 #'    column with the colname "dateTime" exists in x. Defaults to NULL.
 #' @param blockUnit Character string taking the values, "secs," "mins," 
 #'    "hours," "days," or "weeks." Defaults to "hours."
-#' @param blockLength Numerical. Describes the number blockUnits within each 
-#'    temporal block. Defaults to 10.
+#' @param blockLength Integer. Describes the number blockUnits within each 
+#'    temporal block. Defaults to 1.
 #' @keywords data-processing sub-function
 #' @return Appends the following columns to \code{x}.
 #'    
@@ -39,7 +39,7 @@
 #'     blockUnit = "mins")
 #' head(calves.block) #see that block information has been appended.
 
-timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 10, blockUnit = "mins"){
+timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit = "hours"){
   
   if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){
     blockLength1 <- blockLength
@@ -73,10 +73,16 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 10, blockUni
   lub.dates = lubridate::date(x$dateTime)
   x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
   rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
-  x$totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #adds the total second column to the dataframe
-
-  studySecond <- (x$totalSecond -min(x$totalSecond)) + 1
-  x<-x[,-match("totalSecond", names(x))]
+  
+  ##totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #calculate total seconds
+  ##studySecond <- (totalSecond -min(totalSecond)) + 1
+  
+  
+  #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
+  totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
+  totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
+  studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1)
+  
   numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
   block <-rep(0,length(studySecond))
   for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
@@ -85,19 +91,14 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 10, blockUni
   if(length(which(block == 0)) > 0){ #identifies the last block
     block[which(block == 0)] = numblocks
   }
-  blockVec<-unique(block)
-  dateTimeVec2<-x$dateTime #dateTime after x is sorted
-  minBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the minimum timepoint in each block.
-  maxBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the maximum timepoint in each block.
-  for(f in 1:length(blockVec)){
-    minBlockTime<-as.character(dateTimeVec2[min(which(block == blockVec[f]))])
-    minBlockTimeSeq[which(block == blockVec[f])] <- minBlockTime
-    maxBlockTime<-as.character(dateTimeVec2[max(which(block == blockVec[f]))])
-    maxBlockTimeSeq[which(block == blockVec[f])] <- maxBlockTime
-  }
+
+  block.start<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
+  block.end<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+  
   x$block <- block
-  x$block.start <- minBlockTimeSeq
-  x$block.end <- maxBlockTimeSeq
-  x$numBlocks <- max(blockVec) #the contactTest function will require thus information (i.e. the number of blocks in the dataset)
+  x$block.start <- block.start
+  x$block.end <- block.end
+  x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
+  
   return(x)
 }
