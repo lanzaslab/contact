@@ -79,7 +79,7 @@
 #'    observed at the timepoint described in the \code{dateTime} column.}    
 #'    \item{id}{The unique ID of a tracked individual for which we will 
 #'    evaluate distances to all other individuals observed in \code{x}.}
-#'    \item{dist.to.indiv...}{The observed distance between the individual 
+#'    \item{dist.to.indiv_...}{The observed distance between the individual 
 #'    described in the \code{id} column to every other individual observed 
 #'    at specific timepoints.}
 #' @export
