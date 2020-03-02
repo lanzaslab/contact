@@ -153,6 +153,7 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       
       eval(expr = { 
         blockSub <- droplevels(x[which(x$block == breakBlock),]) #subset the data set by block
+      
         
         if(parallel == TRUE){
           
@@ -179,14 +180,15 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
             
             outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
             outputFrame$id <- j #define the id
-            outputFrame$block <- unique(idSub$block) #define block info
-            outputFrame$block.start <- unique(idSub$block.start) #define block info
-            outputFrame$block.end <- unique(idSub$block.end) #define block info
             return(outputFrame)
             
           }
           
           potentialDurationsBlock<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
+          
+          potentialDurationsBlock$block <- unique(blockSub$block) #define block info
+          potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
+          potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
           
         }else{ #if parallel == FALSE
           
@@ -209,14 +211,15 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
             
             outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
             outputFrame$id <- j #define the id
-            outputFrame$block <- unique(idSub$block) #define block info
-            outputFrame$block.start <- unique(idSub$block.start) #define block info
-            outputFrame$block.end <- unique(idSub$block.end) #define block info
             return(outputFrame)
             
           }
           
           potentialDurationsBlock<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
+          
+          potentialDurationsBlock$block <- unique(blockSub$block) #define block info
+          potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
+          potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
         }
       }, envir = environmentTag)
       
@@ -397,15 +400,16 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
               
               outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
               outputFrame$id <- j #define the id
-              outputFrame$block <- unique(idSub$block) #define block info
-              outputFrame$block.start <- unique(idSub$block.start) #define block info
-              outputFrame$block.end <- unique(idSub$block.end) #define block info
               return(outputFrame)
               
             }
             
             potentialDurationsBlock<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
-
+            
+            potentialDurationsBlock$block <- unique(blockSub$block) #define block info
+            potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
+            potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
+            
           }else{ #if parallel == FALSE
             
             fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %do% {
@@ -427,14 +431,16 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
               
               outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
               outputFrame$id <- j #define the id
-              outputFrame$block <- unique(idSub$block) #define block info
-              outputFrame$block.start <- unique(idSub$block.start) #define block info
-              outputFrame$block.end <- unique(idSub$block.end) #define block info
               return(outputFrame)
               
             }
             
             potentialDurationsBlock<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
+            
+            potentialDurationsBlock$block <- unique(blockSub$block) #define block info
+            potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
+            potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
+            
           }
         }, envir = environmentTag)
         
