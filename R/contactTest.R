@@ -863,36 +863,10 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
         
         #here we prep the potentialDuration files for use
         
-        
-        if(is.list(emp.PotentialDurations) == TRUE & is.data.frame(emp.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
+        blockTest1<- is.na(match("block", colnames(emp.PotentialDurations))) #check to see if there is a block column in the data set
+        if(blockTest1 == TRUE){ #there Should be block column in the input if importBlocks == TRUE
+          stop("No blocks in emp.PotentialDurations input")
           
-          summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs (i.e., only applicable if avg == TRUE)
-            sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
-            
-            if(nrow(sumTab) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
-            
-              }else{
-              
-              blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-              blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-              sumTable.redac<-sumTable[,-c(match("id", names(sumTable)),match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-              contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-              output = sumTable[1,]
-              output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-              output[1,match("block", names(sumTable))] = unname(unlist(x[2])) #add this information back into the table
-              output[1,match("block.start", names(sumTable))] = blockStart #add this information back into the table
-              output[1,match("block.end", names(sumTable))] = blockEnd #add this information back into the table
-              output[1,match(names(sumTable.redac), names(output))] = contact.mean
-            
-            }
-            return(output)
-          }
-          
-          emp.PotentialDurations.agg<- data.frame(data.table::rbindlist(emp.PotentialDurations, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
-          blockSeq<-unique(emp.PotentialDurations.agg$block)
-          aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq))
-          sumTab <- apply(aggTab, 1, summaryAgg.block, y = emp.PotentialDurations.agg) #Note that block information MUST be included in the emp.PotentialDurations file AND must be identical to the block info of emp.input
-          emp.PotentialDurations <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
         }
         
         if(is.list(rand.PotentialDurations) == TRUE & is.data.frame(rand.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
@@ -900,7 +874,7 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
           summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs (i.e., only applicable if avg == TRUE)
             sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
             
-            if(nrow(sumTab) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
+            if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
             
             }else{
               
@@ -920,11 +894,25 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
           }
           
           rand.PotentialDurations.agg<- data.frame(data.table::rbindlist(rand.PotentialDurations, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
+          
+          blockTest2<- is.na(match("block", colnames(rand.PotentialDurations.agg))) #check to see if there is a block column in the data set
+          if(blockTest2 == TRUE){ #there Should be block column in the input if importBlocks == TRUE
+            stop("No blocks in rand.PotentialDurations input")
+          }
+          
           blockSeq<-unique(rand.PotentialDurations.agg$block)
           aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq))
           sumTab <- apply(aggTab, 1, summaryAgg.block, y = rand.PotentialDurations.agg) #Note that block information MUST be included in the rand.PotentialDurations file AND must be identical to the block info of rand.input
           rand.PotentialDurations <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
+        }else{ #if rand.PotentialDurations is a single data frame
+          
+          blockTest2<- is.na(match("block", colnames(rand.PotentialDurations))) #check to see if there is a block column in the data set 
+          if(blockTest2 == TRUE){ #there Should be block column in the input if importBlocks == TRUE
+            stop("No blocks in rand.PotentialDurations input")
+          }
+          
         }
+
         
       }else{ #if no block information exists in x, we move forward as if importBlocks == FALSE
         warning("No block information detected in emp.input, proceeding as if importBlocks == 'FALSE.'", call. = FALSE)
@@ -939,43 +927,19 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
       
       testFrame1 <- expand.grid(idSeq, empColnames)
       
-      if(is.list(emp.PotentialDurations) == TRUE & is.data.frame(emp.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
+      blockTest1<- is.na(match("block", colnames(emp.PotentialDurations))) #check to see if there is a block column in the data set (i.e., if a previous block check above failed, this data set might contain block information)
+      if(blockTest1 == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
+        stop("blocked emp.PotentialDurations input")
         
-        summaryAgg.NoBlock<-function(x,y){
-          sumTable<-y[which(y$id == unname(unlist(x[1]))),]
-          
-          if(nrow(sumTab) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
-          
-          }else{
-            
-            sumTable.redac<-sumTable[,-match("id", names(sumTable))] #Remove the columns that cannot/shoud not be averaged.
-            contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-            output = sumTable[1,]
-            output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-            output[1,match(names(sumTable.redac), names(output))] = contact.mean
-          }
-          return(output)
-        }
-        
-        emp.PotentialDurations.agg<- data.frame(data.table::rbindlist(emp.PotentialDurations, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
-        
-        blockTest<- is.na(match("block", colnames(emp.PotentialDurations.agg))) #check to see if there is a block column in the data set (i.e., if a previous block check above failed, this data set might contain block information)
-        if(blockTest == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
-          stop("blocked emp.PotentialDurations input")
-          
-        }
-        
-        aggTab<- data.frame(as.character(idSeq), stringsAsFactors = TRUE)
-        sumTab <- apply(aggTab, 1, summaryAgg.NoBlock, y = emp.PotentialDurations.agg) 
-        emp.PotentialDurations <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
       }
+      
       
       if(is.list(rand.PotentialDurations) == TRUE & is.data.frame(rand.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
         
         summaryAgg.NoBlock<-function(x,y){
           sumTable<-y[which(y$id == unname(unlist(x[1]))),]
           
-          if(nrow(sumTab) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
+          if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
           
           }else{
           
@@ -990,8 +954,8 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
         
         rand.PotentialDurations.agg<- data.frame(data.table::rbindlist(rand.PotentialDurations, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
         
-        blockTest<- is.na(match("block", colnames(rand.PotentialDurations.agg))) #check to see if there is a block column in the data set (i.e., if a previous block check above failed, this data set might contain block information)
-        if(blockTest == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
+        blockTest2<- is.na(match("block", colnames(rand.PotentialDurations.agg))) #check to see if there is a block column in the data set 
+        if(blockTest2 == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
           stop("blocked rand.PotentialDurations input")
           
         }
@@ -999,6 +963,14 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
         aggTab<- data.frame(as.character(idSeq), stringsAsFactors = TRUE)
         sumTab <- apply(aggTab, 1, summaryAgg.NoBlock, y = rand.PotentialDurations.agg) #Note that block information MUST be included in the rand.PotentialDurations file AND must be identical to the block info of rand.input
         rand.PotentialDurations <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
+      }else{ #if rand.PotentialDurations is a single data frame
+        
+        blockTest2<- is.na(match("block", colnames(rand.PotentialDurations))) #check to see if there is a block column in the data set 
+        if(blockTest2 == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
+          stop("blocked rand.PotentialDurations input")
+          
+        }
+        
       }
       
       
