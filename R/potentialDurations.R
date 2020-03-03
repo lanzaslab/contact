@@ -18,11 +18,6 @@
 #' @param blockUnit Character string taking the values, "secs," "mins," 
 #'     "hours," "days," or "weeks." Describes the temporal unit associated with
 #'     each block. Defaults to "hours."
-#' @param parallel Logical. If TRUE, sub-functions within the contactDur.all 
-#'     wrapper will be parallelized. Defaults to FALSE.
-#' @param nCores Integer. Describes the number of cores to be dedicated to 
-#'     parallel processes. Defaults to half of the maximum number of cores 
-#'     available (i.e., (parallel::detectCores()/2)).
 #' @keywords data-processing contact
 #' @return Returns a data frame (or list of data frames if \code{x} is a 
 #'    list of data frames) with the following columns:
@@ -64,10 +59,9 @@
 #' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
 #'     lonlat = FALSE) #calculate distance between all individuals at each timepoint
 #'     
-#' calves.potentialContacts<-potentialDurations(x = calves.dist, blocking = FALSE, 
-#'     parallel = FALSE)
+#' calves.potentialContacts<-potentialDurations(x = calves.dist, blocking = FALSE)
 
-potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "hours",  parallel = FALSE, nCores = (parallel::detectCores()/2)){ 
+potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "hours"){ 
   
   #browser()
   
@@ -153,44 +147,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       
       eval(expr = { 
         blockSub <- droplevels(x[which(x$block == breakBlock),]) #subset the data set by block
-      
-        
-        if(parallel == TRUE){
-          
-          cl <- parallel::makeCluster(nCores)
-          doParallel::registerDoParallel(cl)
-          on.exit(parallel::stopCluster(cl))
-          
-          fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %dopar% {
-            
-            idSub <- droplevels(blockSub[which(blockSub$id == j),]) #subset dist.input to only contain the id-value of interest
-            outputMat<- matrix(nrow = 1, ncol = (3 + length(grep("dist.to.", colnames(blockSub))))) #set up the empty matrix to hold the output data.
-            colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", columnNames, sep =""))  
-            
-            #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-            potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-            potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
-            if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
-              potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
-            }
-            if(nrow(idSub) == 0){
-              potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
-            }
-            outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
-            
-            outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
-            outputFrame$id <- j #define the id
-            return(outputFrame)
-            
-          }
-          
-          potentialDurationsBlock<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
-          
-          potentialDurationsBlock$block <- unique(blockSub$block) #define block info
-          potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
-          potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
-          
-        }else{ #if parallel == FALSE
           
           fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %do% {
             
@@ -220,7 +176,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
           potentialDurationsBlock$block <- unique(blockSub$block) #define block info
           potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
           potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
-        }
       }, envir = environmentTag)
       
       return(potentialDurationsBlock) #note that all the other processes took place in the master-function frame, so we can just return NULL here.
@@ -234,40 +189,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
     idSeq<- unique(x$id)
     dist.colnames <-substring(colnames(x)[grep("dist.to.", colnames(x))],9) #Note specific id in "dist.to." colnames start at character 9. This will be different depending on if dist2all or dist2area was used
     dist.colnames_modified <- gsub("indiv_","",dist.colnames) #remove "indiv_" from dist2all output
-    
-    if(parallel == TRUE){
-      
-      cl <- parallel::makeCluster(nCores)
-      doParallel::registerDoParallel(cl)
-      on.exit(parallel::stopCluster(cl))
-      
-      fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %dopar% {
-        
-        idSub <- droplevels(x[which(x$id == j),]) #subset dist.input to only contain the id-value of interest
-        outputMat<- matrix(nrow = 1, ncol = (3 + length(grep("dist.to.", colnames(x))))) #set up the empty matrix to hold the output data.
-        colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", dist.colnames_modified, sep =""))  
-        
-        #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-        potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-        potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
-        if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
-          potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
-        }
-        if(nrow(idSub) == 0){
-          potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
-        }
-        outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
-        
-        outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
-        outputFrame$id <- j #define the id
-        return(outputFrame)
-        
-      }
-      
-      potentialDurationsFrame<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
-      rm(fe1) #remove to free up memory
-     
-    }else{ #if parallel == FALSE
       
       fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %do% {
         
@@ -294,7 +215,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       
       potentialDurationsFrame<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
       rm(fe1) #remove to free up memory
-    }
     
         }
         
@@ -374,43 +294,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
         
         eval(expr = { 
           blockSub <- droplevels(x[which(x$block == breakBlock),]) #subset the data set by block
-          
-          if(parallel == TRUE){
-            
-            cl <- parallel::makeCluster(nCores)
-            doParallel::registerDoParallel(cl)
-            on.exit(parallel::stopCluster(cl))
-            
-            fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %dopar% {
-              
-              idSub <- droplevels(blockSub[which(blockSub$id == j),]) #subset dist.input to only contain the id-value of interest
-              outputMat<- matrix(nrow = 1, ncol = (3 + length(grep("dist.to.", colnames(blockSub))))) #set up the empty matrix to hold the output data.
-              colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", columnNames, sep =""))  
-              
-              #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-              potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-              potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
-              if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
-                potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
-              }
-              if(nrow(idSub) == 0){
-                potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
-              }
-              outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
-              
-              outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
-              outputFrame$id <- j #define the id
-              return(outputFrame)
-              
-            }
-            
-            potentialDurationsBlock<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
-            
-            potentialDurationsBlock$block <- unique(blockSub$block) #define block info
-            potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
-            potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
-            
-          }else{ #if parallel == FALSE
             
             fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %do% {
               
@@ -441,7 +324,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
             potentialDurationsBlock$block.start <- unique(blockSub$block.start) #define block info
             potentialDurationsBlock$block.end <- unique(blockSub$block.end) #define block info
             
-          }
         }, envir = environmentTag)
         
         return(potentialDurationsBlock) #note that all the other processes took place in the master-function frame, so we can just return NULL here.
@@ -456,40 +338,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       idSeq<- unique(x$id)
       dist.colnames <-substring(colnames(x)[grep("dist.to.", colnames(x))],9) #Note specific id in "dist.to." colnames start at character 9. This will be different depending on if dist2all or dist2area was used
       dist.colnames_modified <- gsub("indiv_","",dist.colnames) #remove "indiv_" from dist2all output
-      
-      if(parallel == TRUE){
-        
-        cl <- parallel::makeCluster(nCores)
-        doParallel::registerDoParallel(cl)
-        on.exit(parallel::stopCluster(cl))
-        
-        fe1 <- foreach::foreach(j = idSeq, .noexport = c("idSub", "outputMat")) %dopar% {
-          
-          idSub <- droplevels(x[which(x$id == j),]) #subset dist.input to only contain the id-value of interest
-          outputMat<- matrix(nrow = 1, ncol = (3 + length(grep("dist.to.", colnames(x))))) #set up the empty matrix to hold the output data.
-          colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", dist.colnames_modified, sep =""))  
-          
-          #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-          potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-          potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
-          if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
-            potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
-          }
-          if(nrow(idSub) == 0){
-            potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
-          }
-          outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
-          
-          outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
-          outputFrame$id <- j #define the id
-          return(outputFrame)
-          
-        }
-        
-        potentialDurationsFrame<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
-        rm(fe1) #remove to free up memory
-        
-      }else{ #if parallel == FALSE
         
         fe1 <- foreach::foreach(j = idSeq) %do% {
           
@@ -514,7 +362,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
         
         potentialDurationsFrame<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
         rm(fe1) #remove to free up memory
-      }
       
     }
     return(potentialDurationsFrame)
