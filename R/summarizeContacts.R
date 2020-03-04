@@ -76,31 +76,27 @@
 
 summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
   
-  summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs (i.e., only applicable if avg == TRUE)
-    sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
-    blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-    blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-    blockNum<- unique(sumTable$numBlocks) #added 02/05/2019 - had to keep track of this new information
-    sumTable.redac<-sumTable[,-c(match("id", names(sumTable)),match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-    contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-    output = sumTable[1,]
-    output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-    output[1,match("block", names(sumTable))] = unname(unlist(x[2])) #add this information back into the table
-    output[1,match("block.start", names(sumTable))] = blockStart #add this information back into the table
-    output[1,match("block.end", names(sumTable))] = blockEnd #add this information back into the table
-    output[1,match("numBlocks", names(sumTable))] = blockNum #add this information back into the table
-    output[1,match(names(sumTable.redac), names(output))] = contact.mean
+  summaryAgg.block<-function(x,y){ #calculates the mean potential contacts by id and block. Using this apply function is faster than simply aggregating the data set by id and block
+    sumTable<-y[which(y$block == unname(unlist(x[1]))),]
+    
+    if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
+    
+    }else{
+      
+      blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+      blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+      blockNum<- unique(sumTable$numBlocks)
+      sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
+      output<-aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+      output$block = unname(unlist(x[1])) #add this information back into the table
+      output$block.start = blockStart #add this information back into the table
+      output$block.end = blockEnd #add this information back into the table
+      output$numBlocks = blockNum #add this information back into the table
+      
+    }
     return(output)
   }
-  summaryAgg.NoBlock<-function(x,y){
-    sumTable<-y[which(y$id == unname(unlist(x[1]))),]
-    sumTable.redac<-sumTable[,-match("id", names(sumTable))] #Remove the columns that cannot/shoud not be averaged.
-    contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-    output = sumTable[1,]
-    output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-    output[1,match(names(sumTable.redac), names(output))] = contact.mean
-    return(output)
-  }
+  
   summary.generator<-function(x, importBlocks, parallel, nCores){
     
     blockSum <-function(x,y, indivSeq, areaSeq){
@@ -306,13 +302,11 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
       idSeq<-unique(full.summary$id)
       if(importBlocks == TRUE){
         blockSeq<-unique(full.summary$block)
-        aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq))
-        sumTab <- apply(aggTab, 1, summaryAgg.block, y = full.summary)
+        sumTab <- apply(data.frame(blockSeq), 1, summaryAgg.block, y = full.summary)
+        sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
       }else{ #if importBlocks == FALSE
-        aggTab<-data.frame(idSeq)
-        sumTab <- apply(aggTab, 1, summaryAgg.NoBlock, y = full.summary)
+        sumTab.agg<-aggregate(full.summary[,-match("id", colnames(full.summary))], list(id = full.summary$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
       }
-      sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
       summary.output<-list(sumTab.agg, summaryList)
       names(summary.output)<-c("avg.","contactSummaries.")
     }else{ #if avg == FALSE

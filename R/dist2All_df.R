@@ -182,7 +182,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
               }
             }
             
-            distTab <- foreach::foreach(i = unique(x$dateTime), .packages = 'foreach') %do% dist.process.point(i, y = x, indivSeq,idSeq, dist.measurement, elev.calc)
+            distTab <- foreach::foreach(i = unique(x$dateTime)) %do% dist.process.point(i, y = x, indivSeq,idSeq, dist.measurement, elev.calc)
             
             dist.all = data.frame(data.table::rbindlist(distTab))
           }
@@ -233,7 +233,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
               }
             }
             
-            distTab <- foreach::foreach(i = unique(x$dateTime), .packages = 'foreach') %do% dist.process.poly(i, y = x, indivSeq, idSeq, numVertices, elev.calc)
+            distTab <- foreach::foreach(i = unique(x$dateTime)) %do% dist.process.poly(i, y = x, indivSeq, idSeq, numVertices, elev.calc)
             
             dist.all = data.frame(data.table::rbindlist(distTab))
           }
@@ -370,7 +370,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
         date_hour.vec <- unique(originTab$date_hour)
         date.vec <- unique(data.dates)
         
-        data.list <- foreach::foreach(i = date_hour.vec, .packages = 'foreach') %do% date_hourSub.func(i, originTab)
+        data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
         
         names(data.list)<-date_hour.vec #add names to list to pull for date lists below
         
@@ -661,7 +661,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     date_hour.vec <- unique(originTab$date_hour)
     date.vec <- unique(data.dates)
     
-    data.list <- foreach::foreach(i = date_hour.vec, .packages = 'foreach') %do% date_hourSub.func(i, originTab)
+    data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
     
     names(data.list)<-date_hour.vec #add names to list to pull for date lists below
     

@@ -77,7 +77,6 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
   ##totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #calculate total seconds
   ##studySecond <- (totalSecond -min(totalSecond)) + 1
   
-  
   #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
   totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
   totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
