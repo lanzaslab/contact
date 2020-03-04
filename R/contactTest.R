@@ -222,31 +222,27 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
    
   summarizeContacts<- function(x, importBlocks, avg, parallel, nCores){
     
-    summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs (i.e., only applicable if avg == TRUE)
-      sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
-      blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-      blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-      blockNum<- unique(sumTable$numBlocks) #added 02/05/2019 - had to keep track of this new information
-      sumTable.redac<-sumTable[,-c(match("id", names(sumTable)),match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-      contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-      output = sumTable[1,]
-      output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-      output[1,match("block", names(sumTable))] = unname(unlist(x[2])) #add this information back into the table
-      output[1,match("block.start", names(sumTable))] = blockStart #add this information back into the table
-      output[1,match("block.end", names(sumTable))] = blockEnd #add this information back into the table
-      output[1,match("numBlocks", names(sumTable))] = blockNum #add this information back into the table
-      output[1,match(names(sumTable.redac), names(output))] = contact.mean
+    summaryAgg.block<-function(x,y){ #calculates the mean potential contacts by id and block. Using this apply function is faster than simply aggregating the data set by id and block
+      sumTable<-y[which(y$block == unname(unlist(x[1]))),]
+      
+      if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
+      
+      }else{
+        
+        blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+        blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+        blockNum<- unique(sumTable$numBlocks)
+        sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
+        output<-aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+        output$block = unname(unlist(x[1])) #add this information back into the table
+        output$block.start = blockStart #add this information back into the table
+        output$block.end = blockEnd #add this information back into the table
+        output$numBlocks = blockNum #add this information back into the table
+        
+      }
       return(output)
     }
-    summaryAgg.NoBlock<-function(x,y){
-      sumTable<-y[which(y$id == unname(unlist(x[1]))),]
-      sumTable.redac<-sumTable[,-match("id", names(sumTable))] #Remove the columns that cannot/shoud not be averaged.
-      contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-      output = sumTable[1,]
-      output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-      output[1,match(names(sumTable.redac), names(output))] = contact.mean
-      return(output)
-    }
+    
     summary.generator<-function(x, importBlocks, parallel, nCores){
       
       blockSum <-function(x,y, indivSeq, areaSeq){
@@ -452,13 +448,11 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
         idSeq<-unique(full.summary$id)
         if(importBlocks == TRUE){
           blockSeq<-unique(full.summary$block)
-          aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq))
-          sumTab <- apply(aggTab, 1, summaryAgg.block, y = full.summary)
+          sumTab <- apply(data.frame(blockSeq), 1, summaryAgg.block, y = full.summary)
+          sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
         }else{ #if importBlocks == FALSE
-          aggTab<-data.frame(idSeq)
-          sumTab <- apply(aggTab, 1, summaryAgg.NoBlock, y = full.summary)
+          sumTab.agg<-aggregate(full.summary[,-match("id", colnames(full.summary))], list(id = full.summary$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
         }
-        sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
         summary.output<-list(sumTab.agg, summaryList)
         names(summary.output)<-c("avg.","contactSummaries.")
       }else{ #if avg == FALSE
@@ -871,8 +865,8 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
         
         if(is.list(rand.PotentialDurations) == TRUE & is.data.frame(rand.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
           
-          summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs (i.e., only applicable if avg == TRUE)
-            sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
+          summaryAgg.block<-function(x,y){ #calculates the mean potential contacts by id and block. Using this apply function is faster than simply aggregating the data set by id and block
+            sumTable<-y[which(y$block == unname(unlist(x[1]))),]
             
             if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
             
@@ -880,15 +874,12 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
               
               blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
               blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-              sumTable.redac<-sumTable[,-c(match("id", names(sumTable)),match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-              contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-              output = sumTable[1,]
-              output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-              output[1,match("block", names(sumTable))] = unname(unlist(x[2])) #add this information back into the table
-              output[1,match("block.start", names(sumTable))] = blockStart #add this information back into the table
-              output[1,match("block.end", names(sumTable))] = blockEnd #add this information back into the table
-              output[1,match(names(sumTable.redac), names(output))] = contact.mean
-              
+              sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
+              output<-aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+              output$block = unname(unlist(x[1])) #add this information back into the table
+              output$block.start = blockStart #add this information back into the table
+              output$block.end = blockEnd #add this information back into the table
+
             }
             return(output)
           }
@@ -900,9 +891,8 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
             stop("No blocks in rand.PotentialDurations input")
           }
           
-          blockSeq<-unique(rand.PotentialDurations.agg$block)
-          aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq))
-          sumTab <- apply(aggTab, 1, summaryAgg.block, y = rand.PotentialDurations.agg) #Note that block information MUST be included in the rand.PotentialDurations file AND must be identical to the block info of rand.input
+          blockSeq1<-unique(rand.PotentialDurations.agg$block) #there may be differences in blocks containing contact info between the empirical and randomized data sets
+          sumTab <- apply(data.frame(blockSeq1), 1, summaryAgg.block, y = rand.PotentialDurations.agg) #Note that block information MUST be included in the rand.PotentialDurations file AND must be identical to the block info of rand.input
           rand.PotentialDurations <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
         }else{ #if rand.PotentialDurations is a single data frame
           
@@ -936,22 +926,6 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
       
       if(is.list(rand.PotentialDurations) == TRUE & is.data.frame(rand.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
         
-        summaryAgg.NoBlock<-function(x,y){
-          sumTable<-y[which(y$id == unname(unlist(x[1]))),]
-          
-          if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
-          
-          }else{
-          
-            sumTable.redac<-sumTable[,-match("id", names(sumTable))] #Remove the columns that cannot/shoud not be averaged.
-            contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-            output = sumTable[1,]
-            output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-            output[1,match(names(sumTable.redac), names(output))] = contact.mean
-          }
-          return(output)
-        }
-        
         rand.PotentialDurations.agg<- data.frame(data.table::rbindlist(rand.PotentialDurations, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
         
         blockTest2<- is.na(match("block", colnames(rand.PotentialDurations.agg))) #check to see if there is a block column in the data set 
@@ -960,9 +934,8 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
           
         }
         
-        aggTab<- data.frame(as.character(idSeq), stringsAsFactors = TRUE)
-        sumTab <- apply(aggTab, 1, summaryAgg.NoBlock, y = rand.PotentialDurations.agg) #Note that block information MUST be included in the rand.PotentialDurations file AND must be identical to the block info of rand.input
-        rand.PotentialDurations <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
+        rand.PotentialDurations<-aggregate(rand.PotentialDurations.agg[,-match("id", colnames(rand.PotentialDurations.agg))], list(id = rand.PotentialDurations.agg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+
       }else{ #if rand.PotentialDurations is a single data frame
         
         blockTest2<- is.na(match("block", colnames(rand.PotentialDurations))) #check to see if there is a block column in the data set 
