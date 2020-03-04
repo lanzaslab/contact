@@ -203,7 +203,7 @@
 #'    importBlocks = FALSE, shuffle.type = 0)
 #'    }
 
-contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", numPermutations = 5000, alternative.hyp = "two.sided", importBlocks = FALSE, shuffle.type = 0){
+contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, nCores = (parallel::detectCores()/2), emp.PotentialDurations = NULL, rand.PotentialDurations = NULL, numPermutations = 5000, alternative.hyp = "two.sided", importBlocks = FALSE, shuffle.type = 0){
   
   block<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
   id2<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
@@ -220,169 +220,169 @@ contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", 
          warning = W)
   }
    
-  summarizeContacts<- function(x, importBlocks, avg){
+  summarizeContacts<- function(x, importBlocks, avg, parallel, nCores){
     
-    distributeContacts1<- function(x,y, me){
-      if(unname(unlist(x[1])) == me){
-        spec.durations = 0
+    summaryAgg.block<-function(x,y){ #calculates the mean potential contacts by id and block. Using this apply function is faster than simply aggregating the data set by id and block
+      sumTable<-y[which(y$block == unname(unlist(x[1]))),]
+      
+      if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
+      
       }else{
-        contact1 <- y[c(which(as.character(y$dyadMember1) == unname(unlist(x[1])))),]
-        contact2 <- y[c(which(as.character(y$dyadMember2) == unname(unlist(x[1])))),]
-        if((nrow(contact1) >= 1) & (nrow(contact2) >= 1)){
-          contact.full <- data.frame(data.table::rbindlist(list(contact1,contact2)))
-        }
-        if((nrow(contact1) >= 1) & (nrow(contact2) == 0)){
-          contact.full <- contact1
-        }
-        if((nrow(contact2) >= 1) & (nrow(contact1) == 0)){
-          contact.full <- contact2
-        }
-        if((nrow(contact2) == 0) & (nrow(contact1) == 0)){
-          contact.full <- contact1 #if neither contact1 or contact2 have any rows, contact.full won't have any rows either.
-        }
-        spec.durations <- ifelse(nrow(contact.full) >= 1, sum(contact.full$contactDuration),0)
+        
+        blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+        blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+        blockNum<- unique(sumTable$numBlocks)
+        sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
+        output<-aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+        output$block = unname(unlist(x[1])) #add this information back into the table
+        output$block.start = blockStart #add this information back into the table
+        output$block.end = blockEnd #add this information back into the table
+        output$numBlocks = blockNum #add this information back into the table
+        
       }
-      return(spec.durations)
+      return(output)
     }
-    distributeContacts2<- function(x,y){
-      contact.full <- y[c(which(y$area.id == unname(unlist(x[1])))),]
-      spec.durations <- ifelse(nrow(contact.full) >= 1, sum(contact.full$contactDuration),0)
-      return(spec.durations)
-    }
-    contSum <-function(x,y, indivSeq, areaSeq){
-      me = (unname(unlist(x[1])))
-      if(length(y$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
-        indivContact1 <- y[c(which(as.character(y$dyadMember1) == me)),] #had to make this as.character b/c "me" is a factor with levels that may be different than y$dyadMember1
-        indivContact2 <- y[c(which(as.character(y$dyadMember2) == me)),] #had to make this as.character b/c "me" is a factor with levels that may be different than y$dyadMember2
-      }else{
-        indivContact1 <- y[c(which(as.character(y$indiv.id) == me)),] 
-        indivContact2 <- matrix(nrow=0,ncol=0)
+    
+    summary.generator<-function(x, importBlocks, parallel, nCores){
+      
+      blockSum <-function(x,y, indivSeq, areaSeq){
+        blockDurFrame<-y[which(y$block == unname(unlist(x[1]))),]
+        indivSeqFrame <- data.frame(indivSeq)
+        summary.contacts<-apply(indivSeqFrame, 1, contSum, blockDurFrame, indivSeq, areaSeq)
+        indivSum.full<- data.frame(data.table::rbindlist(summary.contacts))
+        indivSum.full$block <- unname(unlist(x[1]))
+        
+        #added 02/05/2019 - to maintain this new information created in the newest version of the contactDur functions.
+        indivSum.full$block.start <- unique(lubridate::as_datetime(blockDurFrame$block.start)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+        indivSum.full$block.end <- unique(lubridate::as_datetime(blockDurFrame$block.end)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+        indivSum.full$numBlocks <- unique(blockDurFrame$numBlocks)
+        return(indivSum.full)
       }
       
-      #Here identify the number of contact durations individuals had with others. How we do this is determined by the number of times individuals appear in y's dyadMember1 and dyadMember2 columns. Note that the only option if the function input originated from contactDur.area is (nrow(indivContact1) >= 1) & (nrow(indivContact2) == 0)
-      if((nrow(indivContact1) >= 1) & (nrow(indivContact2) >= 1)){
-        indivContact.full <- data.frame(data.table::rbindlist(list(indivContact1,indivContact2)))
-        specIndivSeq = unique(c(as.character(indivContact.full$dyadMember1),as.character(indivContact.full$dyadMember2))) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
-        specIndivSeq1 = specIndivSeq[-which(specIndivSeq == me)]
-      }
-      if((nrow(indivContact1) >= 1) & (nrow(indivContact2) == 0)){
-        indivContact.full <- indivContact1
+      contSum <-function(x,y, indivSeq, areaSeq){
+        me = (unname(unlist(x[1])))
         if(length(y$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
+          indivContact1 <- y[c(which(as.character(y$dyadMember1) == me)),] #had to make this as.character b/c "me" is a factor with levels that may be different than y$dyadMember1
+          indivContact2 <- y[c(which(as.character(y$dyadMember2) == me)),] #had to make this as.character b/c "me" is a factor with levels that may be different than y$dyadMember2
+        }else{
+          indivContact1 <- y[c(which(as.character(y$indiv.id) == me)),] 
+          indivContact2 <- matrix(nrow=0,ncol=0)
+        }
+        
+        #Here identify the number of contact durations individuals had with others. How we do this is determined by the number of times individuals appear in y's dyadMember1 and dyadMember2 columns. Note that the only option if the function input originated from contactDur.area is (nrow(indivContact1) >= 1) & (nrow(indivContact2) == 0)
+        if((nrow(indivContact1) >= 1) & (nrow(indivContact2) >= 1)){
+          indivContact.full <- data.frame(data.table::rbindlist(list(indivContact1,indivContact2)))
           specIndivSeq = unique(c(as.character(indivContact.full$dyadMember1),as.character(indivContact.full$dyadMember2))) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
           specIndivSeq1 = specIndivSeq[-which(specIndivSeq == me)]
-        }else{
-          specIndivSeq1 = unique(as.character(indivContact.full$area.id)) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
         }
-      }
-      if((nrow(indivContact2) >= 1) & (nrow(indivContact1) == 0)){
-        indivContact.full <- indivContact2
-        specIndivSeq = unique(c(as.character(indivContact.full$dyadMember1),as.character(indivContact.full$dyadMember2))) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
-        specIndivSeq1 = specIndivSeq[-which(specIndivSeq == me)]
-      }
-      if((nrow(indivContact2) == 0) & (nrow(indivContact1) == 0)){
-        indivContact.full <- indivContact1 #if neither indivContact1 or indivContact2 have any rows, indivContact.full won't have any rows either.
-        specIndivSeq1 = 0
-      }
-      if(length(y$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
-        if(nrow(indivContact.full) > 1){
-          indivSeqFrame1 <-data.frame(indivSeq)
-          contactSum<-apply(indivSeqFrame1, 1, distributeContacts1, indivContact.full, me)
-          sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
-          colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
-          sumTable$id = me
-          sumTable$totalDegree <- length(specIndivSeq1)
-          sumTable$totalContactDurations = sum(indivContact.full$contactDuration)
-          sumTable[1,4:ncol(sumTable)] <- contactSum
-          sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
-        }else{ #if nrow !>0
-          if(nrow(indivContact.full) == 1){
+        if((nrow(indivContact1) >= 1) & (nrow(indivContact2) == 0)){
+          indivContact.full <- indivContact1
+          if(length(y$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
+            specIndivSeq = unique(c(as.character(indivContact.full$dyadMember1),as.character(indivContact.full$dyadMember2))) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
+            specIndivSeq1 = specIndivSeq[-which(specIndivSeq == me)]
+          }else{
+            specIndivSeq1 = unique(as.character(indivContact.full$area.id)) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
+          }
+        }
+        if((nrow(indivContact2) >= 1) & (nrow(indivContact1) == 0)){
+          indivContact.full <- indivContact2
+          specIndivSeq = unique(c(as.character(indivContact.full$dyadMember1),as.character(indivContact.full$dyadMember2))) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
+          specIndivSeq1 = specIndivSeq[-which(specIndivSeq == me)]
+        }
+        if((nrow(indivContact2) == 0) & (nrow(indivContact1) == 0)){
+          indivContact.full <- indivContact1 #if neither indivContact1 or indivContact2 have any rows, indivContact.full won't have any rows either.
+          specIndivSeq1 = 0
+        }
+        if(length(y$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
+          if(nrow(indivContact.full) > 1){
+            indivSeqFrame1 <-data.frame(indivSeq)
+            contactSum<-apply(indivSeqFrame1, 1, distributeContacts1, indivContact.full, me)
             sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
             colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
             sumTable$id = me
-            sumTable$totalDegree <- 1
-            sumTable$totalContactDurations = indivContact.full$contactDuration
-            sumTable[1,4:ncol(sumTable)] <- 0
-            sumTable[,match(paste("contactDuration_Indiv",specIndivSeq1, sep = ""), names(sumTable))] = indivContact.full$contactDuration
+            sumTable$totalDegree <- length(specIndivSeq1)
+            sumTable$totalContactDurations = sum(indivContact.full$contactDuration)
+            sumTable[1,4:ncol(sumTable)] <- contactSum
             sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
+          }else{ #if nrow !>0
+            if(nrow(indivContact.full) == 1){
+              sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+              colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
+              sumTable$id = me
+              sumTable$totalDegree <- 1
+              sumTable$totalContactDurations = indivContact.full$contactDuration
+              sumTable[1,4:ncol(sumTable)] <- 0
+              sumTable[,match(paste("contactDuration_Indiv",specIndivSeq1, sep = ""), names(sumTable))] = indivContact.full$contactDuration
+              sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
+            }
+            if(nrow(indivContact.full) == 0){
+              sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+              colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
+              sumTable$id = me
+              sumTable[1,2:ncol(sumTable)] <- 0
+              sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
+            }
           }
-          if(nrow(indivContact.full) == 0){
-            sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
-            colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
+        }else{ # length(y$dyadMember1) == 0
+          if(nrow(indivContact.full) > 1){
+            areaSeqFrame <- data.frame(areaSeq)
+            contactSum<-apply(areaSeqFrame, 1, distributeContacts2, indivContact.full)
+            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+            colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
             sumTable$id = me
-            sumTable[1,2:ncol(sumTable)] <- 0
-            sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
-          }
+            sumTable$totalDegree <- length(specIndivSeq1)
+            sumTable$totalContactDurations = sum(indivContact.full$contactDuration)
+            sumTable[1,4:ncol(sumTable)] <- contactSum
+          }else{ #if nrow !>1
+            if(nrow(indivContact.full) == 1){
+              areaVec <- unique(y$area.id)
+              sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+              colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
+              sumTable$id = me
+              sumTable$totalDegree <- 1
+              sumTable$totalContactDurations = indivContact.full$contactDuration
+              sumTable[1,4:ncol(sumTable)] <- 0
+              sumTable[,match(paste("contactDuration_Area_",areaVec, sep = ""), names(sumTable))] = indivContact.full$contactDuration
+            }
+            if(nrow(indivContact.full) == 0){
+              sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+              colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
+              sumTable$id = me
+              sumTable[1,2:ncol(sumTable)] <- 0
+            }
+          }			
         }
-      }else{ # length(y$dyadMember1) == 0
-        if(nrow(indivContact.full) > 1){
-          areaSeqFrame <- data.frame(areaSeq)
-          contactSum<-apply(areaSeqFrame, 1, distributeContacts2, indivContact.full)
-          sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
-          colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
-          sumTable$id = me
-          sumTable$totalDegree <- length(specIndivSeq1)
-          sumTable$totalContactDurations = sum(indivContact.full$contactDuration)
-          sumTable[1,4:ncol(sumTable)] <- contactSum
-        }else{ #if nrow !>1
-          if(nrow(indivContact.full) == 1){
-            areaVec <- unique(y$area.id)
-            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
-            colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
-            sumTable$id = me
-            sumTable$totalDegree <- 1
-            sumTable$totalContactDurations = indivContact.full$contactDuration
-            sumTable[1,4:ncol(sumTable)] <- 0
-            sumTable[,match(paste("contactDuration_Area_",areaVec, sep = ""), names(sumTable))] = indivContact.full$contactDuration
-          }
-          if(nrow(indivContact.full) == 0){
-            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
-            colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
-            sumTable$id = me
-            sumTable[1,2:ncol(sumTable)] <- 0
-          }
-        }			
+        return(sumTable)
       }
-      return(sumTable)
-    }
-    blockSum <-function(x,y, indivSeq, areaSeq){
-      blockDurFrame<-y[which(y$block == unname(unlist(x[1]))),]
-      indivSeqFrame <- data.frame(indivSeq)
-      summary.contacts<-apply(indivSeqFrame, 1, contSum, blockDurFrame, indivSeq, areaSeq)
-      indivSum.full<- data.frame(data.table::rbindlist(summary.contacts))
-      indivSum.full$block <- unname(unlist(x[1]))
       
-      #added 02/05/2019 - to maintain this new information created in the newest version of the contactDur functions.
-      indivSum.full$block.start <- unique(lubridate::as_datetime(blockDurFrame$block.start)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-      indivSum.full$block.end <- unique(lubridate::as_datetime(blockDurFrame$block.end)) # updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-      indivSum.full$numBlocks <- unique(blockDurFrame$numBlocks)
-      return(indivSum.full)
-    }
-    summaryAgg.block<-function(x,y){ #calculates the mean contacts from multiple summarizeContacts outputs
-      sumTable<-y[which(y$id == unname(unlist(x[1])) & y$block == unname(unlist(x[2]))),]
-      blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-      blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
-      blockNum<- unique(sumTable$numBlocks) #added 02/05/2019 - had to keep track of this new information
-      sumTable.redac<-sumTable[,-c(match("id", names(sumTable)),match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-      contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-      output = sumTable[1,]
-      output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-      output[1,match("block", names(sumTable))] = unname(unlist(x[2])) #add this information back into the table
-      output[1,match("block.start", names(sumTable))] = blockStart #add this information back into the table
-      output[1,match("block.end", names(sumTable))] = blockEnd #add this information back into the table
-      output[1,match("numBlocks", names(sumTable))] = blockNum #add this information back into the table
-      output[1,match(names(sumTable.redac), names(output))] = contact.mean
-      return(output)
-    }
-    summaryAgg.NoBlock<-function(x,y){
-      sumTable<-y[which(y$id == unname(unlist(x[1]))),]
-      sumTable.redac<-sumTable[,-match("id", names(sumTable))] #Remove the columns that cannot/shoud not be averaged.
-      contact.mean <- apply(sumTable.redac,2,mean, na.rm = TRUE)
-      output = sumTable[1,]
-      output[1,match("id", names(sumTable))] = unname(unlist(x[1])) #add this information back into the table
-      output[1,match(names(sumTable.redac), names(output))] = contact.mean
-      return(output)
-    }
-    summary.generator<-function(x, importBlocks){
+      distributeContacts1<- function(x,y, me){
+        if(unname(unlist(x[1])) == me){
+          spec.durations = 0
+        }else{
+          contact1 <- y[c(which(as.character(y$dyadMember1) == unname(unlist(x[1])))),]
+          contact2 <- y[c(which(as.character(y$dyadMember2) == unname(unlist(x[1])))),]
+          if((nrow(contact1) >= 1) & (nrow(contact2) >= 1)){
+            contact.full <- data.frame(data.table::rbindlist(list(contact1,contact2)))
+          }
+          if((nrow(contact1) >= 1) & (nrow(contact2) == 0)){
+            contact.full <- contact1
+          }
+          if((nrow(contact2) >= 1) & (nrow(contact1) == 0)){
+            contact.full <- contact2
+          }
+          if((nrow(contact2) == 0) & (nrow(contact1) == 0)){
+            contact.full <- contact1 #if neither contact1 or contact2 have any rows, contact.full won't have any rows either.
+          }
+          spec.durations <- ifelse(nrow(contact.full) >= 1, sum(contact.full$contactDuration),0)
+        }
+        return(spec.durations)
+      }
+      
+      distributeContacts2<- function(x,y){
+        contact.full <- y[c(which(y$area.id == unname(unlist(x[1])))),]
+        spec.durations <- ifelse(nrow(contact.full) >= 1, sum(contact.full$contactDuration),0)
+        return(spec.durations)
+      }
       
       if(importBlocks == TRUE){
         
@@ -400,8 +400,20 @@ contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", 
         indivSeq <- unique(indivVec)
         indivSeq<-indivSeq[order(indivSeq)]
         indivSeq<-as.character(indivSeq) #forces the data type to become character so that there will be no issues with apply functions later.
-        blockVecFrame <- data.frame(unique(as.character(x$block)))
-        summary.block <- apply(blockVecFrame, 1, blockSum, x, indivSeq, areaSeq) #according to Dan, this apply function is faster than parApply, so I've removed the parApply option 1/17
+        
+        if(parallel == TRUE){
+          
+          cl <- parallel::makeCluster(nCores)
+          doParallel::registerDoParallel(cl)
+          on.exit(parallel::stopCluster(cl))
+          
+          summary.block<- foreach::foreach(i = unique(as.character(x$block))) %dopar% blockSum(i, x, indivSeq, areaSeq)
+          
+        }else{ #if parallel == FALSE
+          blockVecFrame <- data.frame(unique(as.character(x$block)))
+          summary.block <- apply(blockVecFrame, 1, blockSum, x, indivSeq, areaSeq) #according to Dan, this apply function is faster than parApply, so I've removed the parApply option 1/17
+        }      
+        
         summaryTable<- data.frame(data.table::rbindlist(summary.block))
         summaryTable<-summaryTable[order(as.numeric(as.character(summaryTable$block)),summaryTable$id),]
         
@@ -429,95 +441,30 @@ contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", 
     }
     
     if(is.data.frame(x) == FALSE & is.list(x) == TRUE){
-      summaryList<-lapply(x, summary.generator, importBlocks) #changed to lapply 02/02/2019
+      summaryList<-lapply(x, summary.generator, importBlocks, parallel, nCores) #changed to lapply 02/02/2019
       
       if(avg == TRUE){
         full.summary<- data.frame(data.table::rbindlist(summaryList, fill = TRUE)) #Now we need to average the number of contacts by id and block
         idSeq<-unique(full.summary$id)
         if(importBlocks == TRUE){
           blockSeq<-unique(full.summary$block)
-          aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq))
-          sumTab <- apply(aggTab, 1, summaryAgg.block, y = full.summary)
+          sumTab <- apply(data.frame(blockSeq), 1, summaryAgg.block, y = full.summary)
+          sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
         }else{ #if importBlocks == FALSE
-          aggTab<-data.frame(idSeq)
-          sumTab <- apply(aggTab, 1, summaryAgg.NoBlock, y = full.summary)
+          sumTab.agg<-aggregate(full.summary[,-match("id", colnames(full.summary))], list(id = full.summary$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
         }
-        sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
         summary.output<-list(sumTab.agg, summaryList)
         names(summary.output)<-c("avg.","contactSummaries.")
       }else{ #if avg == FALSE
         summary.output<- summaryList
       }
     }else{ #if x is NOT a list
-      summary.output <- summary.generator(x, importBlocks)
+      summary.output <- summary.generator(x, importBlocks, parallel, nCores)
     }
     return(summary.output)
   }
-  
-  timeBlock.append<-function(x, dateTime = NULL, blockLength, blockUnit){
-    
-    if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){
-      blockLength1 <- blockLength
-    }
-    if(blockUnit == "Mins" || blockUnit == "MINS" || blockUnit == "mins"){
-      blockLength1 <- blockLength*60 #num seconds in a minute
-    }
-    if(blockUnit == "Hours" || blockUnit == "HOURS" || blockUnit == "hours"){
-      blockLength1 <- blockLength*60*60 #num seconds in an hour
-    }
-    if(blockUnit == "Days" || blockUnit == "DAYS" || blockUnit == "days"){
-      blockLength1 <- blockLength*60*60*24 #num seconds in a day
-    }
-    if(blockUnit == "Weeks" || blockUnit == "WEEKS" || blockUnit == "weeks"){
-      blockLength1 <- blockLength*60*60*24*7 #num seconds in a week
-    }
-    
-    if(length(x) == 0){ #if there is no x input (i.e., x == NULL), #assumes that if x == NULL, dateTime does not.
-      x<- data.frame(dateTime = dateTime)
-    }else{ # length(x) > 0
-      if(length(dateTime) > 0){ #dateTime == NULL, the function assumes that there is a "dateTime" column in x.
-        if(length(dateTime) == 1 && is.na(match(dateTime[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
-          x$dateTime <- x[,match(dateTime, names(x))]
-        }else{ #if length(dateTime) > 1
-          x$dateTime = dateTime
-        }
-      }
-    }
-    daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
-    lub.dates = lubridate::date(x$dateTime)
-    x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
-    rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
-    x$totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #adds the total second column to the dataframe
-    
-    studySecond <- (x$totalSecond -min(x$totalSecond)) + 1
-    x<-x[,-match("totalSecond", names(x))]
-    numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
-    block <-rep(0,length(studySecond))
-    for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
-      block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
-    }
-    if(length(which(block == 0)) > 0){ #identifies the last block
-      block[which(block == 0)] = numblocks
-    }
-    blockVec<-unique(block)
-    dateTimeVec2<-x$dateTime #dateTime after x is sorted
-    minBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the minimum timepoint in each block.
-    maxBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the maximum timepoint in each block.
-    for(f in 1:length(blockVec)){
-      minBlockTime<-as.character(dateTimeVec2[min(which(block == blockVec[f]))])
-      minBlockTimeSeq[which(block == blockVec[f])] <- minBlockTime
-      maxBlockTime<-as.character(dateTimeVec2[max(which(block == blockVec[f]))])
-      maxBlockTimeSeq[which(block == blockVec[f])] <- maxBlockTime
-    }
-    x$block <- block
-    x$block.start <- minBlockTimeSeq
-    x$block.end <- maxBlockTimeSeq
-    x$numBlocks <- max(blockVec) #the contactTest function will require thus information (i.e. the number of blocks in the dataset)
-    return(x)
-  }
-  
 
-  chisq.forLoop<-function(x, empirical = x, randomized = y, dist = dist.input, x.blocking, y.blocking, listStatus.x){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work.
+  chisq.forLoop<-function(x, empirical = x, randomized = y, emp.Potential = emp.PotentialDurations, rand.Potential = rand.PotentialDurations, x.blocking, y.blocking, listStatus.x){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work.
     
     id<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
     
@@ -713,7 +660,10 @@ contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", 
   }
   if(is.data.frame(emp.input) == FALSE & is.list(emp.input) == TRUE){ #if the emp.input is a list (not a data frame), the function assumes only the first list entry is relevant to our purposes.
     listStatus.x <- 1 #if x is a list, set listStatus.x to 1
-    emp.avg<- summarizeContacts(emp.input, importBlocks, avg = TRUE) #summarize the contacts in empirical input. Note: avg == TRUE because there are multiple entries 
+    if(is.data.frame(emp.PotentialDurations) == TRUE){ #check to see if emp.PotentialDurations is a list of data frames too
+      warning("emp.input is a list of data frames, but emp.PotentialDurations is a single data frame. This function will assume that the emp.PotentialDurations data frame is relevant to all entries in emp.input.")
+    }
+    emp.avg<- summarizeContacts(emp.input, importBlocks, avg = TRUE, parallel, nCores) #summarize the contacts in empirical input. Note: avg == TRUE because there are multiple entries 
     x <- data.frame(emp.avg[[1]]) #the first entry in emp.avg is the average summary report 
     #if x represents the average summary report, all colnames will be preceded by "avg..". This code block removes that tag from all relevant columns.
     x.colnameSubstring<- substring(names(x),1,5) 
@@ -724,23 +674,28 @@ contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", 
   }
   if(is.data.frame(emp.input) == TRUE){ #if empirical input is a data frame
     listStatus.x <- 0 #if x is NOT a list, set listStatus.x to 0
-    x<- summarizeContacts(emp.input, importBlocks, avg = FALSE) #summarize the contacts in empirical input. Note: avg == FALSE because there's only one entry
+    if(is.list(emp.PotentialDurations) == TRUE & is.data.frame(emp.PotentialDurations) == FALSE){ #check to see if emp.PotentialDurations is a single data frame too
+      warning("emp.input is a single data frame, but emp.PotentialDurations is a list of data frames. This function will assume on the first entry in emp.PotenialDurations is relevant to emp.input")
+      emp.PotentialDurations<-emp.PotentialDurations[[1]] #redirect emp.PotentialDurations to only the first object in the list
+    }
+    x<- summarizeContacts(emp.input, importBlocks, avg = FALSE, parallel, nCores) #summarize the contacts in empirical input. Note: avg == FALSE because there's only one entry
   }
+  rm(emp.input) #remove emp.input to free up memory
   
 #now summarize the random input
   if(is.data.frame(rand.input) == FALSE & is.list(rand.input) == TRUE){ #if the rand.input is a list (not a data frame),
     rand.frame<-data.frame(rand.input[[1]])#we need to know if a "block" column exists in the data frames compiled into the rand.input list.
     
     if(x.blocking == TRUE & length(rand.frame$block) > 0){ #if blocking is true and there are blocks denoted in rand.input
-      y<- summarizeContacts(rand.input, importBlocks = TRUE, avg = TRUE)
+      y<- summarizeContacts(rand.input, importBlocks = TRUE, avg = TRUE, parallel, nCores)
       y.blocking <-TRUE
     }
     if(x.blocking == TRUE & length(rand.frame$block) == 0){#if blocking is true, but there are no blocks in rand.input
-      y<- summarizeContacts(rand.input, importBlocks = FALSE, avg = TRUE)
+      y<- summarizeContacts(rand.input, importBlocks = FALSE, avg = TRUE, parallel, nCores)
       y.blocking <-FALSE
     }
     if(x.blocking == FALSE){#if blocking is false
-      y<- summarizeContacts(rand.input, importBlocks = FALSE, avg = TRUE)
+      y<- summarizeContacts(rand.input, importBlocks = FALSE, avg = TRUE, parallel, nCores)
       y.blocking <-FALSE
     }
   }else{ #if rand.input is a data frame
@@ -753,7 +708,7 @@ contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", 
       y.blocking <-FALSE
     }
     if(x.blocking == FALSE){#if blocking is false
-      y<- summarizeContacts(rand.input, importBlocks = FALSE, avg = FALSE)
+      y<- summarizeContacts(rand.input, importBlocks = FALSE, avg = FALSE, parallel, nCores)
       y.blocking <- FALSE
     }
   }
@@ -890,26 +845,114 @@ contactTest<-function(emp.input, rand.input, dist.input = NULL, test = "chisq", 
     idSeq <- unique(c(x$id, y$id)) #pulls the unique ids for each individual
     empColnames<- c("totalDegree", "totalContactDurations", substring(names(x[,4:max(grep("contactDuration_", names(x)))]), 22, 1000000)) #identifies which object each column relates to
 
-    if(x.blocking == TRUE){
+    if(importBlocks == TRUE){
       
       #Because we need to know the maximum number of potential blocks, we pull this information from the empirical numBlocks column
-      blockSeq <- seq(1,as.numeric(as.character(unique(x$numBlocks))),1)
-      #We also need to know how large each block is (e.g., how many seconds are in each block)
-      blockLength<-round(as.numeric(difftime(time1 = unique(x$block.start)[2], time2 = unique(x$block.start)[1], units = "secs"))) #calculates the number of seconds in the first block of the empirical data set. Because all blocks are the same length, we know 
       
-      #We need to use the dist.input file to determine the number of timesteps individuals were actually observed in each block (if individuals were not present, then by definition no contact could have occurred).
-      #So, we need to ensure that timeblocks are appended to the dist.input file.
-      dist.input <- timeBlock.append(dist.input, dateTime = NULL, blockLength, blockUnit = "secs") #dateTime = NULL assumes a dateTime column exists in dist.input
-    }
-
-      if(x.blocking == TRUE){
-          testFrame1 <- expand.grid(idSeq, empColnames, blockSeq)
-        }else{
-          testFrame1 <- expand.grid(idSeq, empColnames)
-        }
-        testFrame1$shuffle.type <-shuffle.type
+      if(length(x$numBlocks) > 0){ #if importBlocks == TRUE, the first thing we need to assess is if block information exists in x. If it does, we can move on accordingly.
         
-      testResultsFrame.indiv<- chisq.forLoop(testFrame1, empirical = x, randomized = y, dist = dist.input, x.blocking, y.blocking, listStatus.x)
+        blockSeq <- seq(1,as.integer(as.character(unique(x$numBlocks))),1)
+        
+        testFrame1 <- expand.grid(idSeq, empColnames, blockSeq)
+        
+        #here we prep the potentialDuration files for use
+        
+        blockTest1<- is.na(match("block", colnames(emp.PotentialDurations))) #check to see if there is a block column in the data set
+        if(blockTest1 == TRUE){ #there Should be block column in the input if importBlocks == TRUE
+          stop("No blocks in emp.PotentialDurations input")
+          
+        }
+        
+        if(is.list(rand.PotentialDurations) == TRUE & is.data.frame(rand.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
+          
+          summaryAgg.block<-function(x,y){ #calculates the mean potential contacts by id and block. Using this apply function is faster than simply aggregating the data set by id and block
+            sumTable<-y[which(y$block == unname(unlist(x[1]))),]
+            
+            if(nrow(sumTable) == 0){output <- NULL #if there's nothing in the subset, the function will not proceed any further.
+            
+            }else{
+              
+              blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+              blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
+              sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
+              output<-aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+              output$block = unname(unlist(x[1])) #add this information back into the table
+              output$block.start = blockStart #add this information back into the table
+              output$block.end = blockEnd #add this information back into the table
+
+            }
+            return(output)
+          }
+          
+          rand.PotentialDurations.agg<- data.frame(data.table::rbindlist(rand.PotentialDurations, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
+          
+          blockTest2<- is.na(match("block", colnames(rand.PotentialDurations.agg))) #check to see if there is a block column in the data set
+          if(blockTest2 == TRUE){ #there Should be block column in the input if importBlocks == TRUE
+            stop("No blocks in rand.PotentialDurations input")
+          }
+          
+          blockSeq1<-unique(rand.PotentialDurations.agg$block) #there may be differences in blocks containing contact info between the empirical and randomized data sets
+          sumTab <- apply(data.frame(blockSeq1), 1, summaryAgg.block, y = rand.PotentialDurations.agg) #Note that block information MUST be included in the rand.PotentialDurations file AND must be identical to the block info of rand.input
+          rand.PotentialDurations <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
+        }else{ #if rand.PotentialDurations is a single data frame
+          
+          blockTest2<- is.na(match("block", colnames(rand.PotentialDurations))) #check to see if there is a block column in the data set 
+          if(blockTest2 == TRUE){ #there Should be block column in the input if importBlocks == TRUE
+            stop("No blocks in rand.PotentialDurations input")
+          }
+          
+        }
+
+        
+      }else{ #if no block information exists in x, we move forward as if importBlocks == FALSE
+        warning("No block information detected in emp.input, proceeding as if importBlocks == 'FALSE.'", call. = FALSE)
+        importBlocks = FALSE
+        x.blocking = FALSE
+      }
+      
+    }
+      
+      
+    if(importBlocks == FALSE){
+      
+      testFrame1 <- expand.grid(idSeq, empColnames)
+      
+      blockTest1<- is.na(match("block", colnames(emp.PotentialDurations))) #check to see if there is a block column in the data set (i.e., if a previous block check above failed, this data set might contain block information)
+      if(blockTest1 == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
+        stop("blocked emp.PotentialDurations input")
+        
+      }
+      
+      
+      if(is.list(rand.PotentialDurations) == TRUE & is.data.frame(rand.PotentialDurations) == FALSE){ #if the potentialDurationFile is a list of data frames, we need to average out their values
+        
+        rand.PotentialDurations.agg<- data.frame(data.table::rbindlist(rand.PotentialDurations, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
+        
+        blockTest2<- is.na(match("block", colnames(rand.PotentialDurations.agg))) #check to see if there is a block column in the data set 
+        if(blockTest2 == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
+          stop("blocked rand.PotentialDurations input")
+          
+        }
+        
+        rand.PotentialDurations<-aggregate(rand.PotentialDurations.agg[,-match("id", colnames(rand.PotentialDurations.agg))], list(id = rand.PotentialDurations.agg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+
+      }else{ #if rand.PotentialDurations is a single data frame
+        
+        blockTest2<- is.na(match("block", colnames(rand.PotentialDurations))) #check to see if there is a block column in the data set 
+        if(blockTest2 == FALSE){ #there should NOT be any block column in the input if importBlocks == FALSE
+          stop("blocked rand.PotentialDurations input")
+          
+        }
+        
+      }
+      
+      
+    }  
+    
+
+      testFrame1$shuffle.type <-shuffle.type
+        
+      testResultsFrame.indiv<- chisq.forLoop(testFrame1, empirical = x, randomized = y, emp.Potential = emp.PotentialDurations, rand.Potential = rand.PotentialDurations, x.blocking, y.blocking, listStatus.x)
     
   #}
   degree_and_durations<-droplevels(subset(testResultsFrame.indiv, id2 == "totalDegree" | id2 == "totalContactDurations"))
