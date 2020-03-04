@@ -22,7 +22,7 @@
 #'    data (i.e., 432 blocks). During the randomization, because blocks 
 #'    maintain their relative locations in shuffleUnits (e.g., Days), block 1 
 #'    in the random set will be determined by sampling from a distribution of 
-#'    blocks 1,145,and 289, which each representing the first block of a given 
+#'    blocks 1,145,and 289, which each represent the first block of a given 
 #'    shuffleUnit (e.g., Day 1, Day 2, Day 3). All blocks in the randomized set
 #'    are decided in this fashion (e.g., block 2 of the randomized set is 
 #'    identified by sampling from a distribution of blocks 2, 146, and 290). 
@@ -61,10 +61,7 @@
 #'    coordinates must be arranged in the format of those in 
 #'    referencePointToPolygon output. Defaults to NULL.
 #' @param parallel Logical. If TRUE, sub-functions within the randomizePaths 
-#'    wrapper will be parallelized. Note that this can significantly speed up 
-#'    processing of relatively small data sets, but may cause R to crash due 
-#'    to lack of available memory when attempting to process large datasets. 
-#'    Defaults to FALSE.
+#'    wrapper will be parallelized. Defaults to FALSE.
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).
@@ -169,20 +166,6 @@
 
 randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = (parallel::detectCores()/2), dataType = "Point", numVertices = 4, blocking = TRUE, blockUnit = "hours", blockLength = 1, shuffle.type = 0, shuffleUnit = "days", indivPaths = TRUE, numRandomizations = 1, reduceOutput = FALSE){
   
-  datetime.append1 = function(x){
-    timevec = x$dateTime
-    daySecondList = lubridate::hour(timevec) * 3600 + lubridate::minute(timevec) * 60 + lubridate::second(timevec) #This calculates a day-second
-    lub.dates = lubridate::date(x$dateTime)
-    dateseq = unique(lub.dates)
-    dayIDList = NULL
-    dayIDseq = seq(1,(length(dateseq)),1)
-    for(b in dayIDseq){
-      ID = rep(b,length(which(lub.dates == dateseq[which(dayIDseq == b)])))
-      dayIDList = c(dayIDList, ID)
-    } 
-    x$totalSecond = ((dayIDList - min(dayIDList))*86400) + daySecondList #This calculates the total second (the cumulative second across the span of the study's timeframe)
-    return(x)
-  }
   randomization<-function(x,y){
     
     dataType = unlist(unname(x[2]))
@@ -507,10 +490,17 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(blockUnit == "Weeks" || blockUnit == "WEEKS" || blockUnit == "weeks"){
       blockLength1 <- blockLength*60*60*24*7 #num seconds in a week
     }
-    originTab<-originTab[order(originTab$dateTime),] #Just in case the data wasn't already ordered in this way.
-    originTab<-datetime.append1(originTab) #adds the total second column to the dataframe
-    studySecond <- (originTab$totalSecond -min(originTab$totalSecond)) + 1
-    originTab<-originTab[,-match("totalSecond", names(originTab))]
+    
+    daySecondList = lubridate::hour(originTab$dateTime) * 3600 + lubridate::minute(originTab$dateTime) * 60 + lubridate::second(originTab$dateTime) #This calculates a day-second
+    lub.dates = lubridate::date(originTab$dateTime)
+    originTab<-originTab[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
+    rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+    
+    #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
+    totSecond <- rep(0, length(which(originTab$dateTime == originTab$dateTime[1])))
+    totSecond2<-as.integer(difftime(originTab$dateTime[(length(totSecond) +1): nrow(originTab)] ,originTab$dateTime[1] , units = c("secs")))
+    studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1)
+    
     numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
     block <-rep(0,length(studySecond))
     for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
@@ -519,21 +509,15 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(length(which(block == 0)) > 0){ #identifies the last block
       block[which(block == 0)] = numblocks
     }
-    blockVec<-unique(block)
-    dateTimeVec2<-originTab$dateTime
-    minBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the minimum timepoint in each block.
-    maxBlockTimeSeq <- rep(0, length(block)) #Added 2/4/2019. This vector will identify the maximum timepoint in each block.
-    for(f in 1:length(blockVec)){
-      minBlockTime<-dateTimeVec2[min(which(block == blockVec[f]))]
-      minBlockTimeSeq[which(block == blockVec[f])] <- minBlockTime
-      maxBlockTime<-dateTimeVec2[max(which(block == blockVec[f]))]
-      maxBlockTimeSeq[which(block == blockVec[f])] <- maxBlockTime
-    }
+    
+    block.start<-as.character(as.POSIXct(originTab$dateTime[1]) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
+    block.end<-as.character(as.POSIXct(originTab$dateTime[1]) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+    
     originTab$block <- block
-    originTab$block.start <- minBlockTimeSeq
-    originTab$block.end <- maxBlockTimeSeq
-    originTab$numBlocks <- max(blockVec) 
-    originTab$blockLength <- paste(blockLength, blockUnit, sep = " ")
+    originTab$block.start <- block.start
+    originTab$block.end <- block.end
+    originTab$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
+    
   }
   originTab <- originTab[order(originTab$id, originTab$dateTime),] #order by id, then dateTime
   
