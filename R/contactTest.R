@@ -1,8 +1,8 @@
 #' Determine if Observed Contacts are More or Less Frequent than in a Random
-#'    Distribution
+#'    Distribution (Defunct)
 #'
-#' This function is used to determine if tracked individuals in an empirical 
-#'    dataset had more or fewer contacts with other tracked 
+#' This DEFUNCT function is used to determine if tracked individuals in an 
+#'    empirical dataset had more or fewer contacts with other tracked 
 #'    individuals/specified locations than would be expected at random. The 
 #'    function works by comparing an empirically-based contactDur.all or 
 #'    contactDur.area function output (emp.input) to the contactDur.all or 
@@ -203,8 +203,10 @@
 #'    importBlocks = FALSE, shuffle.type = 0)
 #'    }
 
-contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, nCores = (parallel::detectCores()/2), emp.PotentialDurations = NULL, rand.PotentialDurations = NULL, numPermutations = 5000, alternative.hyp = "two.sided", importBlocks = FALSE, shuffle.type = 0){
+contactTest<-function(...){
   
+  .Defunct(msg = "'contactTest' is deprecated and will be removed in the next version. Please consider using another contact-comparison function instead (e.g., contactCompare_chisq, contactCompare_mantel, etc.)")
+
   block<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
   id2<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
  
@@ -470,6 +472,8 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
     
     output<-NULL
    
+    indivSummaryTest<- ifelse(length(grep("contactDuration_Indiv", colnames(empirical))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+    
     #vectorize the input
     ids<-x[,1]
     cols<-x[,2]
@@ -479,27 +483,46 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
       blocks<-x[,3]
       for(i in 1:nrow(x)){
         
-        empDurations<- empirical[which(empirical$id == unlist(unname(ids[i])) & empirical$block == unlist(unname(blocks[i]))), 
-                                 grep(unlist(unname(cols[i])),colnames(empirical))] #pull the value of a given column for a specific id in a specific block
+        if(grep(unlist(unname(cols[i])),colnames(empirical))[1] >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+        
+            if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+        
+            empDurations<- empirical[which(empirical$id == unlist(unname(ids[i])) & empirical$block == unlist(unname(blocks[i]))), 
+                                 match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(empirical))] #pull the value of a given column for a specific id in a specific block
+        
+            }
+        
+            if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+          
+              empDurations<- empirical[which(empirical$id == unlist(unname(ids[i])) & empirical$block == unlist(unname(blocks[i]))), 
+                                   match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(empirical))] #pull the value of a given column for a specific id in a specific block
+          
+            }
+        }else{ #i.e., x[2] == empirical[,2] or empirical[,3]
+          
+          empDurations<- empirical[which(empirical$id == unlist(unname(ids[i])) & empirical$block == unlist(unname(blocks[i]))), 
+                                   grep(unlist(unname(cols[i])),colnames(empirical))] #pull the value of a given column for a specific id in a specific block
+          
+        }
+        
+        
         empDurations<-empDurations[is.na(empDurations) == FALSE] #remove the NAs
         summaryFrame<-NULL
         
         if(length(empDurations) > 0){ #if there is no entry OR is.na == TRUE, nothing will happen
           
           block <- unlist(unname(blocks[i]))
-          #warn = ""
-          if(grep(unlist(unname(cols[i])),colnames(empirical)) >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the dist.input.
+          
+          if(grep(unlist(unname(cols[i])),colnames(empirical))[1] >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
 
-            distSub <- droplevels(subset(dist, id == unlist(unname(ids[i])) & block == block)) #subset dist to only contain the id-value of interest
-            maxDurations =length(which(is.na(distSub[,grep(unlist(unname(cols[i])), colnames(distSub))]) == FALSE)) #This means the the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
+            maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i])) & emp.potential$block == unlist(unname(blocks[i]))), match(paste("potenContactDurations_", unlist(unname(cols[i])), sep = ""), names(emp.potential))]
             
-            #maxDurations = length(which(dist$id == unlist(unname(ids[i])) & is.na(dist[,(grep(unlist(unname(cols[i])),colnames(empirical)) + 1)]) == FALSE & dist$block == unlist(unname(blocks[i])))) #This means the the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. For example, if one of the individuals disappears because we have no recorded time points for them at a given time, we can't say that they have the potential to be in contact with others during this period. Also, note that the "+1" here is because column 4 in empirical refers to contacts with indiv1, but in the dist data, column 5 (i.e., 4 + 1) refers to distance to indiv1, while column 4 is individuals' "id."
           }else{ #i.e., x[2] == 2 or 3
-            if(grep(unlist(unname(cols[i])),colnames(empirical)) == 2){ #if cols = totalDegree, the maximum degree possible would be the number of individuals observed during the time period
-              maxDurations<- max(dist[which(dist$id == unlist(unname(ids[i])) & dist$block == unlist(unname(blocks[i]))), match("individualsAtTimestep", names(dist))])
+            if(grep(unlist(unname(cols[i])),colnames(empirical))[1] == 2){ #if cols = totalDegree, the maximum degree possible would be the number of individuals observed during the time period (i.e., potenDegree in emp.potential)
+              maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i])) & emp.potential$block == unlist(unname(blocks[i]))), match("potenDegree", names(emp.potential))]
             }
-            if(grep(unlist(unname(cols[i])),colnames(empirical)) == 3){ #if cols = totalcontactDurations, the maximum possible number of contacts would be would be the sum of all individuals observed at each time step during the time period, excluding individual i (hence the "-1" below).
-              maxDurations<- sum((dist[which(dist$id == unlist(unname(ids[i])) & dist$block == unlist(unname(blocks[i]))), match("individualsAtTimestep", names(dist))] - 1))
+            if(grep(unlist(unname(cols[i])),colnames(empirical))[1] == 3){ #if cols = totalcontactDurations, the maximum possible number of contacts would be would be the sum of all individuals observed at each time step during the time period, excluding individual i (i.e., potenTotalContactDurations in emp.potential).
+              maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i])) & emp.potential$block == unlist(unname(blocks[i]))), match("potenTotalContactDurations", names(emp.potential))]
             }
           }
           
@@ -515,14 +538,84 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
           
               if(shuffle.type == 2){ #recall that shuffle.type 2 (from the randomizeLocations function) produces only 1 shuffle.unit's worth of data, rather than a dataset with the same length of x. As such, there may be a different number of blocks in y compared to x. Here we assume that the mean randomized durations per block, are representative of mean randomized durations per block across each shuffle unit (e.g., day)
                 if(unlist(unname(blocks[i])) > max(randomized$blocks)){
-                  block = unlist(unname(blocks[i])) - (ceiling((unlist(unname(blocks[i])) - max(randomized$blocks)) /max(randomized$blocks))*max(randomized$blocks))
-                  randDurations<-randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == block), grep(unlist(unname(cols[i])),colnames(randomized))]
+                  block = unlist(unname(blocks[i])) - (ceiling((unlist(unname(blocks[i])) - max(randomized$block)) /max(randomized$block))*max(randomized$block))
+
+                  if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+                    
+                  
+                      if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+                    
+                        randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == block), 
+                                             match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                    
+                      }
+                  
+                      if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+                    
+                        randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == block), 
+                                             match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                    
+                      }
+                      }else{ #i.e., x[2] == randomized[,2] or randomized[,3]
+                  
+                      randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == block), 
+                                           grep(unlist(unname(cols[i])),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                  
+                      }
+                  
                 }
               }else{ #if there is any other shuffle type than 2
-                randDurations<-randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == unlist(unname(blocks[i]))), grep(unlist(unname(cols[i])),colnames(randomized))]
+
+                if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+                  
+                  
+                  if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+                    
+                    randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == unlist(unname(blocks[i]))), 
+                                               match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                    
+                  }
+                  
+                  if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+                    
+                    randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == unlist(unname(blocks[i]))), 
+                                               match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                    
+                  }
+                }else{ #i.e., x[2] == randomized[,2] or randomized[,3]
+                  
+                  randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == unlist(unname(blocks[i]))), 
+                                             grep(unlist(unname(cols[i])),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                  
+                }
+                
               }
+              
+              
             }else{ #if y.blocking == FALSE (i.e., if there are no blocks in the randomized input)
-              randDurations<-randomized[which(randomized$id == unlist(unname(ids[i]))), grep(unlist(unname(cols[i])),colnames(randomized))]
+
+              if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+                
+                
+                if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+                  
+                  randDurations<- randomized[which(randomized$id == unlist(unname(ids[i]))), 
+                                             match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                  
+                }
+                
+                if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+                  
+                  randDurations<- randomized[which(randomized$id == unlist(unname(ids[i]))), 
+                                             match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                  
+                }
+              }else{ #i.e., x[2] == randomized[,2] or randomized[,3]
+                
+                randDurations<- randomized[which(randomized$id == unlist(unname(ids[i]))), 
+                                           grep(unlist(unname(cols[i])),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                
+              }
             }
           }
           
@@ -531,8 +624,21 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
             randDurations <- 0
           }
           
+          if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+            
+            maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i])) & rand.potential$block == unlist(unname(blocks[i]))), match(paste("potenContactDurations_", unlist(unname(cols[i])), sep = ""), names(rand.potential))]
+            
+          }else{ #i.e., x[2] == 2 or 3
+            if(grep(unlist(unname(cols[i])),colnames(randomized))[1] == 2){ #if cols = totalDegree, the maximum degree possible would be the number of individuals observed during the time period (i.e., potenDegree in rand.potential)
+              maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i])) & rand.potential$block == unlist(unname(blocks[i]))), match("potenDegree", names(rand.potential))]
+            }
+            if(grep(unlist(unname(cols[i])),colnames(randomized))[1] == 3){ #if cols = totalcontactDurations, the maximum possible number of contacts would be would be the sum of all individuals observed at each time step during the time period, excluding individual i (i.e., potenTotalContactDurations in rand.potential).
+              maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i])) & rand.potential$block == unlist(unname(blocks[i]))), match("potenTotalContactDurations", names(rand.potential))]
+            }
+          }
+          
           observedVec <- c(sum(empDurations), maxDurations-sum(empDurations)) #create a vector describing observed counts
-          expectedProb <- c((sum(randDurations)/maxDurations), ((maxDurations-sum(randDurations))/maxDurations)) #convert the observed random durations to probabilities.
+          expectedProb <- c((sum(randDurations)/maxDurations.rand), ((maxDurations.rand-sum(randDurations))/maxDurations.rand)) #convert the observed random durations to probabilities.
           
           assign("last.warning", NULL, envir = baseenv()) #clears the warnings
           
@@ -843,15 +949,21 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
   if(test == "chisq" || test == "CHISQ" || test == "Chisq" || test == "chisquare" || test == "CHISQUARE" || test == "Chisquare" || test == "chi-square" || test == "CHI-SQUARE" || test == "Chi-square"){
     
     idSeq <- unique(c(x$id, y$id)) #pulls the unique ids for each individual
-    empColnames<- c("totalDegree", "totalContactDurations", substring(names(x[,4:max(grep("contactDuration_", names(x)))]), 22, 1000000)) #identifies which object each column relates to
+    empColnames<- c("totalDegree", "totalContactDurations", substring(names(x[,4:max(grep("contactDuration_", names(x)))]), 22)) #identifies which object each column relates to
 
+    if(is.null(rand.PotentialDurations) == TRUE){ #if there was no rand.potential input, the function assumes that emp.potential is relevant to the random set as well. This is a completely fair assumption whenever there is no blocking or when the shuffleUnit == 0. In cases when teh shuffle unit is 1 or 2, however, this can lead to erroneous results and/or errors in the function.
+      
+      rand.PotentialDurations<-emp.PotentialDurations
+      
+    }
+    
     if(importBlocks == TRUE){
       
       #Because we need to know the maximum number of potential blocks, we pull this information from the empirical numBlocks column
       
-      if(length(x$numBlocks) > 0){ #if importBlocks == TRUE, the first thing we need to assess is if block information exists in x. If it does, we can move on accordingly.
+      if(length(x$block) > 0){ #if importBlocks == TRUE, the first thing we need to assess is if block information exists in x. If it does, we can move on accordingly.
         
-        blockSeq <- seq(1,as.integer(as.character(unique(x$numBlocks))),1)
+        blockSeq <- as.integer(as.character(unique(x$block)))
         
         testFrame1 <- expand.grid(idSeq, empColnames, blockSeq)
         
@@ -946,14 +1058,10 @@ contactTest<-function(emp.input, rand.input, test = "chisq", parallel = FALSE, n
         
       }
       
-      
     }  
-    
-
       testFrame1$shuffle.type <-shuffle.type
         
       testResultsFrame.indiv<- chisq.forLoop(testFrame1, empirical = x, randomized = y, emp.Potential = emp.PotentialDurations, rand.Potential = rand.PotentialDurations, x.blocking, y.blocking, listStatus.x)
-    
   #}
   degree_and_durations<-droplevels(subset(testResultsFrame.indiv, id2 == "totalDegree" | id2 == "totalContactDurations"))
   specific_contacts <- droplevels(subset(testResultsFrame.indiv, id2 != "totalDegree" & id2 != "totalContactDurations"))
