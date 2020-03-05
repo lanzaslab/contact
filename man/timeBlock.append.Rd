@@ -4,8 +4,8 @@
 \alias{timeBlock.append}
 \title{Append TimeBlock Information to a Data Frame}
 \usage{
-timeBlock.append(x = NULL, dateTime = NULL, blockLength = 10,
-  blockUnit = "mins")
+timeBlock.append(x = NULL, dateTime = NULL, blockLength = 1,
+  blockUnit = "hours")
 }
 \arguments{
 \item{x}{Data frame containing dateTime information, and to which block 
@@ -17,8 +17,8 @@ detailing the relevant colname in x, that denotes what dateTime
 information will be used. If argument == NULL, the function assumes a 
 column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{blockLength}{Numerical. Describes the number blockUnits within each 
-temporal block. Defaults to 10.}
+\item{blockLength}{Integer. Describes the number blockUnits within each 
+temporal block. Defaults to 1.}
 
 \item{blockUnit}{Character string taking the values, "secs," "mins," 
 "hours," "days," or "weeks." Defaults to "hours."}

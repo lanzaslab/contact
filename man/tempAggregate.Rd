@@ -7,8 +7,8 @@
 tempAggregate(x = NULL, id = NULL, point.x = NULL, point.y = NULL,
   dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE,
   extrapolate.right = FALSE, resolutionLevel = "full",
-  parallel = FALSE, nCores = parallel::detectCores(), na.rm = TRUE,
-  smooth.type = 1)
+  parallel = FALSE, nCores = (parallel::detectCores()/2),
+  na.rm = TRUE, smooth.type = 1)
 }
 \arguments{
 \item{x}{Data frame or list of data frames containing real-time-location 
@@ -57,14 +57,11 @@ exist over any secondAgg time block, NAs will be produced for the time
 blocks of interest. Defaults to "full."}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the tempAggregate 
-wrapper will be parallelized. Note that this can significantly speed up 
-processing of relatively small data sets, but may cause R to crash due 
-to lack of available memory when attempting to process large datasets. 
-Defaults to FALSE.}
+wrapper will be parallelized. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{na.rm}{Logical. If TRUE, all unknown locations (i.e., xy-coordinate 
 pairs reported as NAs) will be removed from the output. Defaults to TRUE.

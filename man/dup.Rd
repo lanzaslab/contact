@@ -5,7 +5,7 @@
 \title{Identify and Remove Duplicated Data Points}
 \usage{
 dup(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL,
-  avg = TRUE, parallel = FALSE, nCores = parallel::detectCores(),
+  avg = TRUE, parallel = FALSE, nCores = (parallel::detectCores()/2),
   filterOutput = TRUE)
 }
 \arguments{
@@ -36,17 +36,16 @@ column with the colname "dateTime" exists in x. Defaults to NULL.}
 \item{avg}{Logical. If TRUE, point.x and point.y values for duplicated 
 time steps will be averaged, producing a singular point for all time 
 steps in individuals' movement paths. If FALSE, all duplicated time 
-steps are removed from the data set.}
+steps wherein individuals were observed in different locations 
+concurrently are removed from the data set.}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the dup wrapper will 
-be parallelized. Note that this can significantly speed up processing of 
-relatively small data sets, but may cause R to crash due to lack of 
-available memory when attempting to process large datasets. Defaults to 
+be parallelized. This is only relevant if avg == TRUE. Defaults to 
 FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
 parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+(i.e., (parallel::detectCores()/2)).}
 
 \item{filterOutput}{Logical. If TRUE, output will be a data frame 
 containing only movement paths with non-duplicated timesteps. If FALSE, 

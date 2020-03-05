@@ -3,11 +3,9 @@
 \name{contactTest}
 \alias{contactTest}
 \title{Determine if Observed Contacts are More or Less Frequent than in a Random
-   Distribution}
+   Distribution (Defunct)}
 \usage{
-contactTest(emp.input, rand.input, dist.input, test = "chisq",
-  numPermutations = 5000, alternative.hyp = "two.sided",
-  importBlocks = FALSE, shuffle.type = 0)
+contactTest(...)
 }
 \arguments{
 \item{emp.input}{List or data frame containing contactDur.all or 
@@ -100,8 +98,8 @@ Output format is dependent on \code{test} value.
    \item{warning}{Denotes if any specific warning occurred during analysis.}
 }
 \description{
-This function is used to determine if tracked individuals in an empirical 
-   dataset had more or fewer contacts with other tracked 
+This DEFUNCT function is used to determine if tracked individuals in an 
+   empirical dataset had more or fewer contacts with other tracked 
    individuals/specified locations than would be expected at random. The 
    function works by comparing an empirically-based contactDur.all or 
    contactDur.area function output (emp.input) to the contactDur.all or 
@@ -131,8 +129,8 @@ Note: The current functionality is limited to comparisons using the
    "warning" column to the output which notifies users when the chisq.test 
    function reported that results may be inaccurate. 
    
-   Mantel test (abe::mantel.test): tests for similarity of the emp.input to 
-   rand.input. Please note that abe::mantel.test does not allow for missing
+   Mantel test (ape::mantel.test): tests for similarity of the emp.input to 
+   rand.input. Please note that ape::mantel.test does not allow for missing
    values in matrices, so all NAs will be treated as 0. Output is a single
    data frame describing the test results.
 

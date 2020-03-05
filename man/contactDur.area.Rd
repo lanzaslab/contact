@@ -5,12 +5,12 @@
 \title{Identify Environmental Contacts}
 \usage{
 contactDur.area(x, dist.threshold = 1, sec.threshold = 10,
-  blocking = FALSE, blockUnit = "mins", blockLength = 10,
+  blocking = FALSE, blockLength = 1, blockUnit = "hours",
   equidistant.time = FALSE, parallel = FALSE,
-  nCores = parallel::detectCores(), reportParameters = TRUE)
+  nCores = (parallel::detectCores()/2), reportParameters = TRUE)
 }
 \arguments{
-\item{x}{Output from the distToArea function (either df or sf variant). Can 
+\item{x}{Output from the dist2Area function (either df or sf variant). Can 
 be either a data frame or non-data-frame list.}
 
 \item{dist.threshold}{Numeric. Radial distance (in meters) within which 
@@ -25,10 +25,10 @@ unbroken. Defaults to 10.}
 blocks spanning blockLength blockUnit (e.g., 6 hours) within the data 
 set. Defaults to FALSE.}
 
-\item{blockUnit}{Numerical. Describes the number blockUnits within each 
+\item{blockLength}{Integer. Describes the number blockUnits within each 
 temporal block. Defaults to 1.}
 
-\item{blockLength}{Character string taking the values, "secs," "mins," 
+\item{blockUnit}{Character string taking the values, "secs," "mins," 
 "hours," "days," or "weeks." Describes the temporal unit associated with 
 each block. Defaults to "hours."}
 
@@ -39,14 +39,11 @@ sub-function here calculates the time difference (dt) between each
 location fix. If all fix intervals are identical, it saves a lot of time.}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the contactDur.all 
-wrapper will be parallelized. Note that this can significantly speed up 
-processing of relatively small data sets, but may cause R to crash due to
-lack of available memory when attempting to process large datasets. 
-Defaults to FALSE.}
+wrapper will be parallelized. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{reportParameters}{Logical. If TRUE, function argument values will be 
 appended to output data frame(s). Defaults to TRUE.}
@@ -87,7 +84,7 @@ Returns a data frame (or list of data frames if \code{x} is a
    output data frame.
 }
 \description{
-This function uses the output from distToArea to determine when tracked 
+This function uses the output from dist2Area to determine when tracked 
    individuals are in "contact" with fixed locations. Individuals are said 
    to be in a "contact" event (h) if they are observed within a given 
    distance (<= dist.threshold) at a given timestep(i). Sec.threshold 

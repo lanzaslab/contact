@@ -6,7 +6,7 @@
 \usage{
 mps(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL,
   mpsThreshold = 10, lonlat = FALSE, parallel = FALSE,
-  nCores = parallel::detectCores(), filterOutput = TRUE)
+  nCores = (parallel::detectCores()/2), filterOutput = TRUE)
 }
 \arguments{
 \item{x}{List or data frame containing real-time location data that will be 
@@ -42,14 +42,11 @@ coordinates (i.e., longitude and lattitude). If FALSE, point.x and
 point.y contain planar coordinates. Defaults to FALSE.}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the mps wrapper will 
-be parallelized. Note that this can significantly speed up processing of 
-relatively small data sets, but may cause R to crash due to lack of 
-available memory when attempting to process large datasets. Defaults to 
-FALSE.}
+be parallelized. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{filterOutput}{Logical. If TRUE, output will be a data frame or list of
 data frames (depending on whether or not x is a data frame or not) 

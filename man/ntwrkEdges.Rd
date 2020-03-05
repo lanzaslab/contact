@@ -4,7 +4,8 @@
 \alias{ntwrkEdges}
 \title{Compile List of Network Edges from a Contact Table}
 \usage{
-ntwrkEdges(x, importBlocks = FALSE, removeDuplicates = TRUE)
+ntwrkEdges(x, importBlocks = FALSE, removeDuplicates = TRUE,
+  parallel = FALSE, nCores = (parallel::detectCores()/2))
 }
 \arguments{
 \item{x}{Output from the contactDur.all or contactDur.area functions. Can be
@@ -18,6 +19,14 @@ Defaults to FALSE.}
 pairs in output will be reported twice (i.e., nodes will be listed as 
 both a to- and a from-node). If removeDuplicates == true, duplicated 
 edges are removed. Defaults to TRUE.}
+
+\item{parallel}{Logical. If TRUE, sub-functions within the ntwrkEdges
+wrapper will be parallelized. Note that the only sub-function 
+parallelized here is called ONLY when importBlocks == TRUE.}
+
+\item{nCores}{Integer. Describes the number of cores to be dedicated to 
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 }
 \value{
 Output is a data frame with the following columns, and can easily 

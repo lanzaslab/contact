@@ -6,14 +6,13 @@
 \usage{
 dt.calc(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL,
   timeUnits = "secs", parallel = FALSE,
-  nCores = parallel::detectCores(), timeStepRelation = 1)
+  nCores = (parallel::detectCores()/2), timeStepRelation = 1)
 }
 \arguments{
 \item{x}{data frame containing time data. If NULL at least dateTime must be 
 defined. Defaults to NULL.}
 
-\item{id}{Vector of length nrow(data.frame(x)) or singular character data, 
-detailing the relevant colname in x, that denotes what unique ids for 
+\item{id}{Vector of length nrow(data.frame(x)) that denotes what unique ids for 
 tracked individuals will be used. If argument == NULL, the function 
 assumes a column with the colname "id" exists in x. Defaults to NULL.}
 
@@ -35,14 +34,11 @@ differences. It takes the values "secs," "mins," "hours," "days," or
 "weeks." Defaults to "secs."}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the dt.calc wrapper 
-will be parallelized. Note that this can significantly speed up 
-processing of relatively small data sets, but may cause R to crash due to
-lack of available memory when attempting to process large datasets. 
-Defaults to FALSE.}
+will be parallelized. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{timeStepRelation}{Numerical. Takes the value "1" or "2." If 
 argument == "1," dt values in output represent the difference between 

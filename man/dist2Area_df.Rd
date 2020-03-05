@@ -6,7 +6,7 @@
 \usage{
 dist2Area_df(x = NULL, y = NULL, x.id = NULL, y.id = NULL,
   dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL,
-  parallel = FALSE, nCores = parallel::detectCores(),
+  parallel = FALSE, nCores = (parallel::detectCores()/2),
   dataType = "Point", lonlat = FALSE, numVertices = 4)
 }
 \arguments{
@@ -60,8 +60,8 @@ lack of available memory when attempting to process large datasets.
 Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half og the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{dataType}{Character string refering to the type of real-time-location 
 data presented in x, taking values of "Point" or "Polygon." If 

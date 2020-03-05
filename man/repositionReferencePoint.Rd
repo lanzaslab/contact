@@ -7,7 +7,7 @@
 repositionReferencePoint(x = NULL, id = NULL, dateTime = NULL,
   point.x = NULL, point.y = NULL, direction = NULL,
   repositionAngle = 0, repositionDist = 1, immobThreshold = 0,
-  parallel = FALSE, nCores = parallel::detectCores(),
+  parallel = FALSE, nCores = (parallel::detectCores()/2),
   modelOrientation = 90)
 }
 \arguments{
@@ -76,8 +76,8 @@ cause R to crash due to lack of available memory when attempting to
 process large datasets. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{modelOrientation}{Numerical. Describes the relative orientation (in 
 degrees) of a planar model (see vignette or Farthing et al. in Review 

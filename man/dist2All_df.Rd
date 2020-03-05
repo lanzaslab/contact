@@ -6,7 +6,7 @@
 \usage{
 dist2All_df(x = NULL, id = NULL, dateTime = NULL, point.x = NULL,
   point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE,
-  nCores = parallel::detectCores(), dataType = "Point",
+  nCores = (parallel::detectCores()/2), dataType = "Point",
   lonlat = FALSE, numVertices = 4)
 }
 \arguments{
@@ -46,14 +46,11 @@ relative vertical positioning will be incorporated into distance
 calculations. Defaults to NULL.}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the dist2All wrapper 
-will be parallelized. Note that this can significantly speed up 
-processing of relatively small data sets, but may cause R to crash due 
-to lack of available memory when attempting to process large datasets. 
-Defaults to FALSE.}
+will be parallelized. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{dataType}{Character string refering to the type of real-time-location 
 data presented in x, taking values of "Point" or "Polygon." If 
@@ -81,7 +78,7 @@ Returns a data frame (or list of data frames if \code{x} is a
    observed at the timepoint described in the \code{dateTime} column.}    
    \item{id}{The unique ID of a tracked individual for which we will 
    evaluate distances to all other individuals observed in \code{x}.}
-   \item{dist.to.indiv...}{The observed distance between the individual 
+   \item{dist.to.indiv_...}{The observed distance between the individual 
    described in the \code{id} column to every other individual observed 
    at specific timepoints.}
 }
@@ -114,16 +111,16 @@ Note that if inputting a separate matrix/dataframe with polygon xy
 \examples{
 data(calves)
 
-calves.dateTime<-datetime.append(calves, date = calves$date, 
-   time = calves$time) 
-   
-calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
-   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-   point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
-   extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
-   na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix intervals.  
+calves.dateTime<-datetime.append(calves, date = calves$date,
+   time = calves$time)
 
-calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point", 
+calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
+   dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x,
+   point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE,
+   extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE,
+   na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix intervals.
+
+calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
    lonlat = FALSE) #calculate distance between all individuals at each timepoint.
 
 }

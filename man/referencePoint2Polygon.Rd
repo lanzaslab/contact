@@ -9,7 +9,7 @@ referencePoint2Polygon(x = NULL, id = NULL, dateTime = NULL,
   StartLocation = "UL", UpDownRepositionLen = 1,
   LeftRightRepositionLen = 1, CenterPoint = FALSE, MidPoints = FALSE,
   immobThreshold = 0, parallel = FALSE,
-  nCores = parallel::detectCores(), modelOrientation = 90)
+  nCores = (parallel::detectCores()/2), modelOrientation = 90)
 }
 \arguments{
 \item{x}{Data frame or list of data frames containing real-time-location 
@@ -78,14 +78,11 @@ movements so miniscule that the majority of animals’ physical-space
 usage is likely unaffected (e.g., head shaking). Defaults to 0.}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the 
-referencePoint2Polygon wrapper will be parallelized. Note that this can 
-significantly speed up processing of relatively small data sets, but may 
-cause R to crash due to lack of available memory when attempting to 
-process large datasets. Defaults to FALSE.}
+referencePoint2Polygon wrapper will be parallelized. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{modelOrientation}{Numerical. Describes the relative orientation (in 
 degrees) of a planar model (see vignette or Farthing et al. in Review 

@@ -2,17 +2,14 @@
 % Please edit documentation in R/findDistThresh.R
 \name{findDistThresh}
 \alias{findDistThresh}
-\title{Identify Distance Threshold for Contact}
+\title{Identify Point-Based Distance Threshold for Contact}
 \usage{
-findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5,
-  acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.666)
+findDistThresh(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL,
+  pWithin1 = 90, pWithin2 = NULL, spTh = 0.666)
 }
 \arguments{
-\item{n1}{Numerical. Number of points used in the expected-distance 
-distribution(s). Defaults to 1000.}
-
-\item{n2}{Numerical. Number of expected-distance distribution iterations to 
-be averaaged. Defaults to 1000.}
+\item{n}{Numerical. Number of "in-contact" point-pairs used in the 
+expected-distance distribution(s). Defaults to 1000.}
 
 \item{acc.Dist1}{Numerical. Accuracy distance for point 1.}
 
@@ -31,30 +28,27 @@ threshold for contact.}
 \value{
 Output is a named vector with 22 observations describing the mean, 
    max, and upper 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75,
-   80, 85, 90, 95, and 99-percent CI values calculated from the 
-   contact-distance distribution.
+   80, 85, 90, 95, 99-percent CI values, and the true-positive rate (i.e., 
+   TPR) calculated from the contact-distance distribution.
 }
 \description{
-Sample from a multivariate normal distribution to create "in-contact" point 
-   pairs (n = n1) based on real-time-location systems accuracy, and 
-   generate distribution of length n2 describing average distances between 
-   point pairs. This function outputs upper confidence intervals associated 
-   with average distances between "in-contact" points.
+Sample from a multivariate normal distribution to create "in-contact" n 
+   point pairs based on real-time-location systems accuracy, and 
+   generate a distribution describing observed distances between point
+   ppairs.
 }
 \details{
 This function is for adjusting contact-distance thresholds (spTh) to account
-   for positional accuracty of real-time-location systems, assuming random 
+   for positional accuracy of real-time-location systems, assuming random 
    (non-biased) error in location-fix positions relative to true locations. 
    Essentially this function can be used to determine an adjusted spTh value
    that likely includes >= 99-percent of true contacts defined using the 
    initial spTh.
 }
 \examples{
-findDistThresh(n1 = 10, n2 = 10, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
+findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL, 
    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) 
 
-findDistThresh(n1 = 10, n2 = 10, acc.Dist1 = 0.5, acc.Dist2 = NULL, 
-   pWithin1 = 90, pWithin2 = NULL, spTh = 0)
 }
 \references{
 Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 

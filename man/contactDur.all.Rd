@@ -5,12 +5,12 @@
 \title{Identify Inter-animal Contacts}
 \usage{
 contactDur.all(x, dist.threshold = 1, sec.threshold = 10,
-  blocking = FALSE, blockUnit = "hours", blockLength = 1,
+  blocking = FALSE, blockLength = 1, blockUnit = "hours",
   equidistant.time = FALSE, parallel = FALSE,
-  nCores = parallel::detectCores(), reportParameters = TRUE)
+  nCores = (parallel::detectCores()/2), reportParameters = TRUE)
 }
 \arguments{
-\item{x}{Output from the dist.all function. Can be either a data frame or 
+\item{x}{Output from the dist2All function. Can be either a data frame or 
 non-data-frame list.}
 
 \item{dist.threshold}{Numeric. Radial distance (in meters) within which 
@@ -26,10 +26,10 @@ unbroken. Defaults to 10.}
 blocks spanning blockLength blockUnit (e.g., 6 hours) within the data 
 set. Defaults to FALSE.}
 
-\item{blockUnit}{Numerical. Describes the number blockUnits within each 
+\item{blockLength}{Integer. Describes the number blockUnits within each 
 temporal block. Defaults to 1.}
 
-\item{blockLength}{Character string taking the values, "secs," "mins," 
+\item{blockUnit}{Character string taking the values, "secs," "mins," 
 "hours," "days," or "weeks." Describes the temporal unit associated with
 each block. Defaults to "hours."}
 
@@ -41,14 +41,11 @@ location fix. If all fix intervals in an individuals' path are
 identical, it saves a lot of time.}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the contactDur.all 
-wrapper will be parallelized. Note that this can significantly speed up 
-processing of relatively small data sets, but may cause R to crash due 
-to lack of available memory when attempting to process large datasets. 
-Defaults to FALSE.}
+wrapper will be parallelized. Defaults to FALSE.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
-parallel processes. Defaults to the maximum number of cores available
-(i.e., parallel::detectCores()).}
+parallel processes. Defaults to half of the maximum number of cores 
+available (i.e., (parallel::detectCores()/2)).}
 
 \item{reportParameters}{Logical. If TRUE, function argument values will be 
 appended to output data frame(s). Defaults to TRUE.}
@@ -89,7 +86,7 @@ Returns a data frame (or list of data frames if \code{x} is a
    output data frame.
 }
 \description{
-This function uses the output from dist.all to determine when and for how 
+This function uses the output from dist2All to determine when and for how 
     long tracked individuals are in "contact" with one another. Individuals 
     are said to be in a "contact" event if they are observed within a given 
     distance (<= dist.threshold) at a given timestep. Contacts are broken 
