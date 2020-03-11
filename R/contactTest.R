@@ -205,7 +205,7 @@
 
 contactTest<-function(...){
   
-  .Defunct(msg = "'contactTest' is deprecated and will be removed in the next version. Please consider using another contact-comparison function instead (e.g., contactCompare_chisq, contactCompare_mantel, etc.)")
+  .Defunct(msg = "'contactTest' is now defunct. Please consider using another contact-comparison function instead (e.g., contactCompare_chisq, contactCompare_mantel, etc.)")
 
   block<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
   id2<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
