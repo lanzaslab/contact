@@ -8,16 +8,20 @@
 #'    function is required for using the "chisq" test argument in the 
 #'    contactTest function. 
 #'     
-#' @param x Output from the dist2All function. Can be either a data frame or 
-#'     non-data-frame list.
+#' @param x Output from the dist2All or dist2Area function. Can be either a 
+#'     data frame or non-data-frame list.
 #' @param blocking Logical. If TRUE, contacts will be evaluated for temporal 
 #'     blocks spanning blockLength blockUnit (e.g., 6 hours) within the data 
 #'     set. Defaults to FALSE.
 #' @param blockLength Integer. Describes the number blockUnits within each 
 #'     temporal block. Defaults to 1.
-#' @param blockUnit Character string taking the values, "secs," "mins," 
+#' @param blockUnit Character string taking the values: "secs," "mins," 
 #'     "hours," "days," or "weeks." Describes the temporal unit associated with
 #'     each block. Defaults to "hours."
+#' @param distFunction Character string taking the values: "dist2All_df",
+#'     or "dist2Area_df." Describes the contact-package function used to
+#'     generate x.
+#' 
 #' @keywords data-processing contact
 #' @return Returns a data frame (or list of data frames if \code{x} is a 
 #'    list of data frames) with the following columns:
@@ -61,7 +65,7 @@
 #'     
 #' calves.potentialContacts<-potentialDurations(x = calves.dist, blocking = FALSE)
 
-potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "hours"){ 
+potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "hours", distFunction = "dist2All_df"){ 
   
   #browser()
   
@@ -154,15 +158,36 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
             outputMat<- matrix(nrow = 1, ncol = (3 + length(grep("dist.to.", colnames(blockSub))))) #set up the empty matrix to hold the output data.
             colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", columnNames, sep =""))  
             
-            #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-            potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-            potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
+            #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix. However, how many potential nodes present in the block takes a bit more effort to calculate because the distance input object may have come from dist2All_df or dist2Area_df.
+            
+            potentialDegreeIdentifier <-NULL #create an empty vector to describe when nodes are present in the data set.
+            
+            for(i in 1:length(grep("dist.to.", colnames(blockSub)))){ #loops through the potentially-contactable nodes.
+              
+              presenceTest<- is.na(blockSub[,grep("dist.to.", colnames(blockSub))[i]]) #if nodes were not present all entries will be TRUE.
+              
+              if(length(which(presenceTest == FALSE)) > 0){ #identify when the reported value is FALSE (i.e., when nodes WERE present)
+                
+                potentialDegreeIdentifier <-c(potentialDegreeIdentifier, 1) #if nodes are present add 1 value to potentialDegreeIdentifier
+                
+              }else{next}
+              
+            }
+            if(distFunction == "dist2All_df"){ #if the dist2All_df function was used to generate x
+              potentialDegree <- ifelse(nrow(idSub) > 0, (length(potentialDegreeIdentifier) - 1), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed minus 1 (because individual j could not be in contact with itself).
+            }
+            if(distFunction == "dist2Area_df"){ #if the dist2Area_df function was used to generate x, then 1 does not need to be subtracted here 
+              potentialDegree <- ifelse(nrow(idSub) > 0, length(potentialDegreeIdentifier), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed.
+            }            
             if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
               potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
             }
             if(nrow(idSub) == 0){
               potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
             }
+            
+            potentialDurations <- sum(as.integer(potentialIndivDurations)) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block
+            
             outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
             
             outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
@@ -196,15 +221,37 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
         outputMat<- matrix(nrow = 1, ncol = (3 + length(grep("dist.to.", colnames(x))))) #set up the empty matrix to hold the output data.
         colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", dist.colnames_modified, sep =""))  
         
-        #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-        potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-        potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
+        #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix.  However, how many potential nodes present in the block takes a bit more effort to calculate because the distance input object may have come from dist2All_df or dist2Area_df.
+        
+        potentialDegreeIdentifier <-NULL #create an empty vector to describe when nodes are present in the data set.
+        
+        for(i in 1:length(grep("dist.to.", colnames(x)))){ #loops through the potentially-contactable nodes.
+          
+          presenceTest<- is.na(x[,grep("dist.to.", colnames(x))[i]]) #if nodes were not present all entries will be TRUE.
+          
+          if(length(which(presenceTest == FALSE)) > 0){ #identify when the reported value is FALSE (i.e., when nodes WERE present)
+            
+            potentialDegreeIdentifier <-c(potentialDegreeIdentifier, 1) #if nodes are present add 1 value to potentialDegreeIdentifier
+            
+          }else{next}
+          
+        }
+        if(distFunction == "dist2All_df"){ #if the dist2All_df function was used to generate x
+          potentialDegree <- ifelse(nrow(idSub) > 0, (length(potentialDegreeIdentifier) - 1), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed minus 1 (because individual j could not be in contact with itself).
+        }
+        if(distFunction == "dist2Area_df"){ #if the dist2Area_df function was used to generate x, then 1 does not need to be subtracted here 
+          potentialDegree <- ifelse(nrow(idSub) > 0, length(potentialDegreeIdentifier), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed.
+        }            
+
         if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
           potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
         }
         if(nrow(idSub) == 0){
-          potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
+          potentialIndivDurations <- rep(0, length(4:ncol(outputMat))) #just zeroes
         }
+        
+        potentialDurations <- sum(as.integer(potentialIndivDurations)) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block
+        
         outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
         
         outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
@@ -302,14 +349,34 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
               colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", columnNames, sep =""))  
               
               #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-              potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-              potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
+              potentialDegreeIdentifier <-NULL #create an empty vector to describe when nodes are present in the data set.
+              
+              for(i in 1:length(grep("dist.to.", colnames(blockSub)))){ #loops through the potentially-contactable nodes.
+                
+                presenceTest<- is.na(blockSub[,grep("dist.to.", colnames(blockSub))[i]]) #if nodes were not present all entries will be TRUE.
+                
+                if(length(which(presenceTest == FALSE)) > 0){ #identify when the reported value is FALSE (i.e., when nodes WERE present)
+                  
+                  potentialDegreeIdentifier <-c(potentialDegreeIdentifier, 1) #if nodes are present add 1 value to potentialDegreeIdentifier
+                  
+                }else{next}
+                
+              }
+              if(distFunction == "dist2All_df"){ #if the dist2All_df function was used to generate x
+                potentialDegree <- ifelse(nrow(idSub) > 0, (length(potentialDegreeIdentifier) - 1), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed minus 1 (because individual j could not be in contact with itself).
+              }
+              if(distFunction == "dist2Area_df"){ #if the dist2Area_df function was used to generate x, then 1 does not need to be subtracted here 
+                potentialDegree <- ifelse(nrow(idSub) > 0, length(potentialDegreeIdentifier), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed.
+              }     
               if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
                 potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
               }
               if(nrow(idSub) == 0){
                 potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
               }
+              
+              potentialDurations <- sum(as.integer(potentialIndivDurations)) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block
+              
               outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
               
               outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
@@ -346,14 +413,35 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
           colnames(outputMat)<- c("id", "potenDegree", "potenTotalContactDurations", paste("potenContactDurations_", dist.colnames_modified, sep =""))  
 
           #if the individual was not present (i.e., nrow(idSub) == 0), then 0s well be put in the matrix
-          potentialDegree <- ifelse(nrow(idSub) > 0, max(as.integer(idSub[, match("individualsAtTimestep", names(idSub))])), 0) #if the individual WAS present, the maximum potential degree is the maximum number of individuals observed over the course of the time period/block when individual k was also observed.
-          potentialDurations <- ifelse(nrow(idSub) > 0, sum(as.integer(idSub[, match("individualsAtTimestep", names(idSub))] - 1)), 0) #if the individual WAS present, the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block, excluding individual k (hence the - 1), when individual k was also observed.
+          potentialDegreeIdentifier <-NULL #create an empty vector to describe when nodes are present in the data set.
+          
+          for(i in 1:length(grep("dist.to.", colnames(x)))){ #loops through the potentially-contactable nodes.
+            
+            presenceTest<- is.na(x[,grep("dist.to.", colnames(x))[i]]) #if nodes were not present all entries will be TRUE.
+            
+            if(length(which(presenceTest == FALSE)) > 0){ #identify when the reported value is FALSE (i.e., when nodes WERE present)
+              
+              potentialDegreeIdentifier <-c(potentialDegreeIdentifier, 1) #if nodes are present add 1 value to potentialDegreeIdentifier
+              
+            }else{next}
+            
+          }
+          if(distFunction == "dist2All_df"){ #if the dist2All_df function was used to generate x
+            potentialDegree <- ifelse(nrow(idSub) > 0, (length(potentialDegreeIdentifier) - 1), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed minus 1 (because individual j could not be in contact with itself).
+          }
+          if(distFunction == "dist2Area_df"){ #if the dist2Area_df function was used to generate x, then 1 does not need to be subtracted here 
+            potentialDegree <- ifelse(nrow(idSub) > 0, length(potentialDegreeIdentifier), 0) #if the individual WAS present the maximum potential degree is the number of individuals observed over the course of the time period/block when individual j was also observed.
+          }   
+          
           if(nrow(idSub) > 0){ #for some reason, if and else statements kept returning an error, so I was forced to use 2 if statements instead
             potentialIndivDurations <- unname(apply(idSub[,grep("dist.to.", colnames(idSub))], 2, function(x){length(which(is.na(x) == FALSE))})) #This means if the individual WAS present the max number of durations potentially observed is the number of TSWs both individuals (or an individual and fixed area) were observed at the same time. 
           }
           if(nrow(idSub) == 0){
             potentialIndivDurations <- rep(0, length(4:ncol(outputMat)))
           }
+          
+          potentialDurations <- sum(as.integer(potentialIndivDurations)) #if the individual WAS present the maximum potential contact durations is the sum of all individuals observed at each time step during the time period/block
+          
           outputMat[1,(2:ncol(outputMat))] <- c(potentialDegree, potentialDurations, potentialIndivDurations)
           outputFrame <- data.frame(outputMat, stringsAsFactors = TRUE) #convert to a data frame to allow storage of multiple data types (the ids will be character strings)
           outputFrame$id <- j #define the id

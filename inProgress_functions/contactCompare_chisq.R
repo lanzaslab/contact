@@ -12,7 +12,7 @@
 
 
 
-contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffleType = 1){
+contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1){
   
   
   tryCatch.W.E <- function(expr) #this function comes from https://stat.ethz.ch/pipermail/r-help/2010-December/262626.html
@@ -54,6 +54,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("replicateID", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
       output<-aggregate(sumTable.redac, list(id = sumTable$id), sum) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+      output$potenDegree <- length(grep("potenContactDurations_", colnames(output))) #redefine the potential degree as the total number potentially-contactable entities present at in the data. Note that this is only accurate if y is derived from contact::dist2Area_df output. If y was instead derived from dist2All_df, then these values must have 1 subtracted from them. If this is the case, the subtraction will take place outside of this function. 
       
     }
     return(output)
@@ -85,7 +86,17 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       x.summaryRedac <- droplevels(x.summary[, - c(which(colnames(x.summary) == "block"):ncol(x.summary))]) #remove the block information (four columns: block, block.start, block.end, and numBlocks)
       x.summary<- aggregate(x.summaryRedac[,-match("id", colnames(x.summary))], list(id = x.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
-      ###so now we have an x.summary object with no block information
+      ###so now we have an x.summary object with no block information. However, we must recognize that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)
+      ###below we recalculate the totalDegree for each individual. Note that this will be a different value depending on whether or not x.summary was based on dist2All or dist2Area outputs.
+      indivSummaryTest.x<- ifelse(length(grep("contactDuration_Indiv", colnames(x.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+      
+      if(indivSummaryTest.x == TRUE){ #if x.summary was derived from dist2All
+        x.summary$totalDegree <- length(unique(x.summary$id)) - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
+      }
+      if(indivSummaryTest.x == FALSE){ #if x.summary was derived from dist2Area
+        x.summary$totalDegree <- length(grep("contactDuration_", colnames(x.summary))) #the potential degree is the maximum number of edges that can extend from any one node in the network
+      }
+      
       rm(x.summaryRedac) #remove x.summaryRedac to free up local memory
     }
     
@@ -102,11 +113,11 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     
     if(length(y.summary$block) == 0){
       
-      warning("importBlocks set to TRUE, but no block column exists in y.summary. Proceding as if y.summary values are stable and relevant to EVERY block.")
+      warning("importBlocks set to TRUE, but no block column exists in y.summary. Proceding as if y.summary values are stable across time and relevant to EVERY block.")
       
       y.summaryBlock<-NULL #create an empty object to contain new block information
       
-      for(i in unique(x$block)){
+      for(i in unique(x.summary$block)){
         
         y.summary$block <- i #add a block column containing only the i value to y.summary
         y.summaryBlock <- data.table::rbindlist(list(y.summaryBlock, y.summary), fill = TRUE) #rbind the data frames together
@@ -125,12 +136,23 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       y.summaryRedac <- droplevels(y.summary[, - c(which(colnames(y.summary) == "block"):ncol(y.summary))]) #remove the block information (four columns: block, block.start, block.end, and numBlocks)
       y.summary<- aggregate(y.summaryRedac[,-match("id", colnames(y.summary))], list(id = y.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
-      ###so now we have an y.summary object with no block information
+      ###so now we have an y.summary object with no block information. However, we must recognize that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)     
+      ###below we recalculate the totalDegree for each individual.Note that this will be a different value depending on whether or not y.summary was based on dist2All or dist2Area outputs.
+      indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+      
+      if(indivSummaryTest.x == TRUE){ #if x.summary was derived from dist2All
+        y.summary$totalDegree <- length(unique(y.summary$id)) - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
+      }
+      if(indivSummaryTest.x == FALSE){ #if x.summary was derived from dist2Area
+        y.summary$totalDegree <- length(grep("contactDuration_", colnames(y.summary))) #the potential degree is the maximum number of edges that can extend from any one node in the network
+      }
       rm(y.summaryRedac) #remove y.summaryRedac to free up local memory
       
     }
     
   }
+  
+  
   
   ##potential inputs (i.e., outputs from potentialContacts function)
   
@@ -166,19 +188,22 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         if(importBlocks == FALSE){ #if there ARE blocks in x.potential, but importBlocks == FALSE, we have to recreate x.potential without the bloking information.
           
           for(i in 1:length(x.potential)){ #add replicateID to the input. This was not required when processing x.summary because only the first entry of the list is returned.
-            x.potential[[i]]$replicateID == i}
+            x.potential[[i]]$replicateID = i}
           
           x.potentialAgg<- data.frame(data.table::rbindlist(x.potential, fill = TRUE), stringsAsFactors = TRUE) #remake x.potentialAgg
           
-          blockSeq1<-unique(x.potentialAgg$block) #there may be differences in blocks containing contact info between the empirical and randomized data sets
-          meanTab <- apply(data.frame(blockSeq1, stringsAsFactors = TRUE), 1, summaryAgg.block1, y = x.potentialAgg) #Note that block information MUST be included in the x.potentialAgg input
-          x.potentialAggBlockMean <- data.frame(data.table::rbindlist(meanTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
           #now we have an object that represents average contact durations in each block
-          repSeq<-unique(x.potentialAggBlockMean$replicateID)
-          sumTab <- apply(data.frame(repSeq, stringsAsFactors = TRUE), 1, summaryAgg.block2, y = x.potentialAggBlockMean) #sum across columns by id and replicateID
+          repSeq<-unique(x.potentialAgg$replicateID)
+          sumTab <- apply(data.frame(repSeq, stringsAsFactors = TRUE), 1, summaryAgg.block2, y = x.potentialAgg) #sum across columns by id and replicateID
           x.potentialAgg <- data.frame(data.table::rbindlist(sumTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
-          ##and now we have an object contained summed averages by id, replicateID
-          rm(list = c("meanTab", "sumTab", "x.potentialAggBlockMean")) #remove meanTab to free up local memory
+          ##and now we have an object contained summed averages by id, replicateID. However, we may need to retractively adjust potenDegree values (see summaryAgg.block2)
+          indivSummaryTest.x<- ifelse(length(grep("contactDuration_Indiv", colnames(x.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+          
+          if(indivSummaryTest.x == TRUE){ #if x.summary was derived from dist2All (Note that this assumes x.summary and x.potential are derived from the same distance function)
+            x.potentialAgg$potenDegree <- x.potentialAgg$potenDegree - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
+          }
+          
+          rm(sumTab) #remove meanTab to free up local memory
           
         }
         
@@ -203,8 +228,17 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       if(length(x.potential$block) > 0){ #Alternatively, if there are blocked time sets in the empirical input, we need to dictate how to handle them.
         
-        x.potential<-aggregate(x.potential[,-match("id", colnames(x.potential))], list(id = x.potential$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+        x.potential<-aggregate(x.potential[,- c(match("id", colnames(x.potential)),match("block", colnames(x.potential)):ncol(x.potential))], list(id = x.potential$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+        ### We must recognize, however, that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)
+        ###below we recalculate the totalDegree for each individual.Note that this will be a different value depending on whether or not x.summary was based on dist2All or dist2Area outputs.
+        indivSummaryTest.x<- ifelse(length(grep("contactDuration_Indiv", colnames(x.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
         
+        if(indivSummaryTest.x == TRUE){ #if x.summary was derived from dist2All (Note that this assumes x.summary and x.potential are derived from the same distance function)
+          x.potential$potenDegree <- length(unique(x.potential$id)) - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
+        }
+        if(indivSummaryTest.x == FALSE){ #if x.summary was derived from dist2Area
+          x.potential$potenDegree <- length(grep("potentialContactDurations_", colnames(x.potential))) #the potential degree is the maximum number of edges that can extend from any one node in the network
+        }        
       }
 
     }
@@ -214,12 +248,341 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   
   #we do the same thing for y.potential as we did for x.potential above.
   
+  if(is.data.frame(y.potential) == FALSE & is.list(y.potential) == TRUE){ #Because R treats dataframes as lists, we assess here if the input was only a single data frame or a list of data frames.
+    
+    y.potentialAgg<- data.frame(data.table::rbindlist(y.potential, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together. 
+    
+    if(importBlocks == TRUE){
+      
+      if(is.na(match("block", colnames(y.potentialAgg))) == TRUE){ #if there is NOT a "block" column present, the function will return a warning and proceed as if importBlocks == FALSE. 
+        
+        warning("importBlocks set to TRUE, but no block column exists in y.potential. Proceding as if y.potential values are stable across time and relevant to EVERY block.")
+        
+        #return y.potential as if importBlocks == FALSE and no block column exists in y.potential then repeat it for each block
+        y.potential<-aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+        rm(y.potentialAgg) #remove y.potentialAgg to free up local memory
+        
+        y.potentialBlock<-NULL #create an empty object to contain new block information
+        
+        for(i in unique(x.potential$block)){
+          
+          y.potential$block <- i #add a block column containing only the i value to y.potential
+          y.potentialBlock <- data.table::rbindlist(list(y.potentialBlock, y.potential), fill = TRUE) #rbind the data frames together
+          
+        }
+        
+        y.potential <- data.frame(y.potentialBlock, stringsAsFactors = TRUE) #redefine y.potential as the object containing block information
+        rm(list = c("y.potentialAgg", "y.potentialBlock")) #remove y.potentialBlock to free up local memory
+        
+      }else{ #If there IS a block column, we average observations by id AND block
+        
+        blockSeq1<-unique(y.potentialAgg$block) #there may be differences in blocks containing contact info between the empirical and randomized data sets
+        meanTab <- apply(data.frame(blockSeq1, stringsAsFactors = TRUE), 1, summaryAgg.block1, y = y.potentialAgg) #Note that block information MUST be included in the y.potentialAgg input
+        y.potential <- data.frame(data.table::rbindlist(meanTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
+        rm(list = c("y.potentialAgg", "meanTab")) #remove y.potentialAgg and meanTab to free up local memory
+        
+      }
+      
+    }else{ #if importBlocks == FALSE we only average the data by id.
+      
+      if(length(y.potentialAgg$block) > 0){ #Alternatively, #if there ARE blocks in y.potential, but importBlocks == FALSE, we have to recreate y.potential without the blocking information.
+        
+          for(i in 1:length(y.potential)){ #add replicateID to the input. This was not required when processing x.summary because only the first entry of the list is returned.
+            y.potential[[i]]$replicateID = i}
+        
+          y.potentialAgg<- data.frame(data.table::rbindlist(y.potential, fill = TRUE), stringsAsFactors = TRUE) #remake y.potentialAgg
+          repSeq<-unique(y.potentialAgg$replicateID) #make a vector of the unique replicateIDs
+          sumTab <- apply(data.frame(repSeq, stringsAsFactors = TRUE), 1, summaryAgg.block2, y = y.potentialAgg) #sum across columns by id and replicateID
+          y.potentialAgg <- data.frame(data.table::rbindlist(sumTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
+          ##and now we have an object contained summed averages by id, replicateID. However, we may need to retractively adjust potenDegree values (see summaryAgg.block2)
+          indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+          
+          if(indivSummaryTest.y == TRUE){ #if x.summary was derived from dist2All (Note that this assumes x.summary and x.potential are derived from the same distance function)
+            y.potentialAgg$potenDegree <- y.potentialAgg$potenDegree - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
+          }
+          
+          rm(list = c("meanTab", "sumTab", "y.potentialAggBlockMean")) #remove meanTab to free up local memory
+
+      }
+      ##now we take the average across all replicateIDs
+      y.potential<-aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+      rm(y.potentialAgg) #remove y.potentialAgg to free up local memory
+      
+    }
+    
+  }else{ #if y.potential is only a single data frame
+    
+    if(importBlocks == TRUE){
+      
+      if(is.na(match("block", colnames(y.potential))) == TRUE){ #if there is NOT a "block" column present.
+        
+        warning("importBlocks set to TRUE, but no block column exists in y.potential. Proceding as if y.potential values are stable across time and relevant to EVERY block.")
+        
+        #return y.potential as if importBlocks == FALSE and no block column exists in y.potential then repeat it for each block
+        
+        y.potentialBlock<-NULL #create an empty object to contain new block information
+        
+        for(i in unique(x.potential$block)){
+          
+          y.potential$block <- i #add a block column containing only the i value to y.potential
+          y.potentialBlock <- data.table::rbindlist(list(y.potentialBlock, y.potential), fill = TRUE) #rbind the data frames together
+          
+        }
+        
+        y.potential <- data.frame(y.potentialBlock, stringsAsFactors = TRUE) #redefine y.potential as the object containing block information
+        rm("y.potentialBlock") #remove y.potentialBlock to free up local memory        
+      }
+      
+    }else{ #if importBlocks == FALSE we must sum the data by id if blocks exist in the input data. If blocks do not exist in the data, nothing needs to be done.
+      
+      if(length(y.potential$block) > 0){ #Alternatively, if there are blocked time sets in the empirical input, we need to dictate how to handle them.
+        
+        y.potential<-aggregate(y.potential[,-c(match("id", colnames(y.potential)),match("block", colnames(y.potential)):ncol(y.potential))], list(id = y.potential$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+        ### We must recognize, however, that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)
+        ###below we recalculate the totalDegree for each individual.Note that this will be a different value depending on whether or not x.summary was based on dist2All or dist2Area outputs.
+        indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+        
+        if(indivSummaryTest.y == TRUE){ #if y.summary was derived from dist2All (Note that this assumes y.summary and y.potential are derived from the same distance function)
+          y.potential$potenDegree <- length(unique(y.potential$id)) - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
+        }
+        if(indivSummaryTest.y == FALSE){ #if y.summary was derived from dist2Area
+          y.potential$potenDegree <- length(grep("potentialContactDurations_", colnames(y.potential))) #the potential degree is the maximum number of edges that can extend from any one node in the network
+        }     
+      }
+      
+    }
+    
+  }
+  
+  #OK. Now we have x.summary, y.summary, x.potential, and y.potential objects that are gauranteed to work with the chisq.loop function.
+  
+  #define the loop objects.
+  
+  idSeq <- unique(c(x.summary$id, y.summary$id)) #pulls the unique ids for each individual
+  empiricalColNames <- c("totalDegree", "totalContactDurations", substring(names(x.summary[,4:max(grep("contactDuration_", names(x.summary)))]), 22)) #identifies which field each column relates to in x.summary
+  
+  if(importBlocks == TRUE){
+    
+    blockSeq <- as.integer(as.character(unique(x.summary$block))) #pull unique blocks from x.summary
+    loopFrame <- expand.grid(idSeq, empiricalColNames, blockSeq) #create the loopFrame by combining the 3 previously-created vectors
+    
+  }else{ #if importBlocks == FALSE
+    
+    loopFrame <- expand.grid(idSeq, empiricalColNames) #create the loopFrame by combining the 2 previously-created vectors
+    
+  }
+  
+  loopFrame$shuffle.type <-shuffle.type #add shuffle.type designation to the loopFrame
+
+  
+  
+  
+  if(importBlocks == TRUE){ #If there are blocks in the randomized input
+    blocks<-x[,3]
+    if(shuffle.type == 2){ #recall that shuffle.type 2 (from the randomizeLocations function) produces only 1 shuffle.unit's worth of data, rather than a dataset with the same length of x. As such, there may be a different number of blocks in y compared to x. Here we assume that the mean randomized durations per block, are representative of mean randomized durations per block across each shuffle unit (e.g., day)
+      if(unlist(unname(blocks[i])) > max(randomized$blocks)){
+        block = unlist(unname(blocks[i])) - (ceiling((unlist(unname(blocks[i])) - max(randomized$block)) /max(randomized$block))*max(randomized$block))
+        
+        if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+          
+          
+          if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+            
+            randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == block), 
+                                       match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+            
+          }
+          
+          if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+            
+            randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == block), 
+                                       match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+            
+          }
+        }else{ #i.e., x[2] == randomized[,2] or randomized[,3]
+          
+          randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == block), 
+                                     grep(unlist(unname(cols[i])),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+          
+        }
+        
+      }
+    }else{ #if there is any other shuffle type than 2
+      
+      if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+        
+        
+        if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+          
+          randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == unlist(unname(blocks[i]))), 
+                                     match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+          
+        }
+        
+        if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+          
+          randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == unlist(unname(blocks[i]))), 
+                                     match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+          
+        }
+      }else{ #i.e., x[2] == randomized[,2] or randomized[,3]
+        
+        randDurations<- randomized[which(randomized$id == unlist(unname(ids[i])) & randomized$block == unlist(unname(blocks[i]))), 
+                                   grep(unlist(unname(cols[i])),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+        
+      }
+    }
+  }
   
   
   
   
-  indivSummaryTest<- ifelse(length(grep("contactDuration_Indiv", colnames(x.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
   
+  
+  chisq.forLoop<-function(x, empirical = x, randomized = y, emp.Potential = emp.PotentialDurations, rand.Potential = rand.PotentialDurations, importBlocks){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work.
+    
+    id<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
+    output<-NULL
+    
+    indivSummaryTest<- ifelse(length(grep("contactDuration_Indiv", colnames(empirical))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+    
+    #vectorize the input
+    ids<-x[,1]
+    cols<-x[,2]
+    shuffle.type<-unique(x[,match("shuffle.type", colnames(x))]) #we don't need the full-length vector, just one observation
+    
+    
+    for(i in 1:nrow(x)){
+      
+      if(grep(unlist(unname(cols[i])),colnames(empirical))[1] >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+        
+        if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+          
+          empDurations<- empirical[which(empirical$id == unlist(unname(ids[i]))), match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(empirical))] #pull the value of a given column for a specific id 
+          
+        }
+        
+        if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+          
+          empDurations<- empirical[which(empirical$id == unlist(unname(ids[i]))), match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(empirical))] #pull the value of a given column for a specific id 
+          
+        }
+      }else{ #i.e., x[2] == empirical[,2] or empirical[,3]
+        
+        empDurations<- empirical[which(empirical$id == unlist(unname(ids[i]))), grep(unlist(unname(cols[i])),colnames(empirical))] #pull the value of a given column for a specific id 
+        
+      }
+      
+      
+      empDurations<-empDurations[is.na(empDurations) == FALSE] #remove the NAs
+      summaryFrame<-NULL
+      
+      if(length(empDurations) > 0){ #if there is no entry OR is.na == TRUE, nothing will happen
+        
+        if(grep(unlist(unname(cols[i])),colnames(empirical))[1] >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+          
+          maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i]))), match(paste("potenContactDurations_", unlist(unname(cols[i])), sep = ""), names(emp.potential))]
+          
+        }else{ #i.e., x[2] == 2 or 3
+          if(grep(unlist(unname(cols[i])),colnames(empirical))[1] == 2){ #if cols = totalDegree, the maximum degree possible would be the number of individuals observed during the time period (i.e., potenDegree in emp.potential)
+            maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i]))), match("potenDegree", names(emp.potential))]
+          }
+          if(grep(unlist(unname(cols[i])),colnames(empirical))[1] == 3){ #if cols = totalcontactDurations, the maximum possible number of contacts would be would be the sum of all individuals observed at each time step during the time period, excluding individual i (i.e., potenTotalContactDurations in emp.potential).
+            maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i]))), match("potenTotalContactDurations", names(emp.potential))]
+          }
+        }
+        
+        if(maxDurations == 0 | is.infinite(maxDurations) == TRUE){ #if there was no potential for contacts to occur, the loop moves on
+          next
+        }
+        
+        if(length(grep(unlist(unname(cols[i])),colnames(randomized))) == 0){ #if i is trying to reference a specific object not present in the random set, rand duration will equal "0."
+          randDurations <- 0
+        }else{ # if the relavent column DOES exist in randomized
+          
+
+          if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+              
+              
+            if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
+                
+                randDurations<- randomized[which(randomized$id == unlist(unname(ids[i]))), 
+                                           match(paste("contactDuration_Indiv",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                
+              }
+              
+              if(indivSummaryTest == FALSE){ #if the summarizeContacts output represented contacts with individuals
+                
+                randDurations<- randomized[which(randomized$id == unlist(unname(ids[i]))), 
+                                           match(paste("contactDuration_Area_",unlist(unname(cols[i])), sep = ""),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+                
+              }
+            }else{ #i.e., x[2] == randomized[,2] or randomized[,3]
+              
+              randDurations<- randomized[which(randomized$id == unlist(unname(ids[i]))), 
+                                         grep(unlist(unname(cols[i])),colnames(randomized))] #pull the value of a given column for a specific id in a specific block
+              
+            }
+          
+        }
+        
+        randDurations<-randDurations[is.na(randDurations) == FALSE] #remove the NAs
+        if(length(randDurations) == 0){ #if removing the NAs removed the only observations, then randDurations reverts to 0
+          randDurations <- 0
+        }
+        
+        if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+          
+          maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i]))), match(paste("potenContactDurations_", unlist(unname(cols[i])), sep = ""), names(rand.potential))]
+          
+        }else{ #i.e., x[2] == 2 or 3
+          if(grep(unlist(unname(cols[i])),colnames(randomized))[1] == 2){ #if cols = totalDegree, the maximum degree possible would be the number of individuals observed during the time period (i.e., potenDegree in rand.potential)
+            maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i]))), match("potenDegree", names(rand.potential))]
+          }
+          if(grep(unlist(unname(cols[i])),colnames(randomized))[1] == 3){ #if cols = totalcontactDurations, the maximum possible number of contacts would be would be the sum of all individuals observed at each time step during the time period, excluding individual i (i.e., potenTotalContactDurations in rand.potential).
+            maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i]))), match("potenTotalContactDurations", names(rand.potential))]
+          }
+        }
+        
+        observedVec <- c(sum(empDurations), maxDurations-sum(empDurations)) #create a vector describing observed counts
+        expectedProb <- c((sum(randDurations)/maxDurations.rand), ((maxDurations.rand-sum(randDurations))/maxDurations.rand)) #convert the observed random durations to probabilities.
+        
+        assign("last.warning", NULL, envir = baseenv()) #clears the warnings
+        
+        test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value
+        warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message
+        
+        if(length(warn1) == 0){
+          warn1 = ""
+        }
+        
+          summaryFrame <- data.frame(id1 = unlist(unname(ids[i])), id2 = unlist(unname(cols[i])), method = unname(test[4]), X.squared = unname(test[1]), 
+                                     df = unname(test[2]), p.val = unname(test[3]), empiricalContactDurations = sum(empDurations), 
+                                     randContactDurations.mean = sum(randDurations), empiricalNoContactDurations = (maxDurations - sum(empDurations)), 
+                                     randNoContactDurations.mean = (maxDurations - sum(randDurations)), difference = abs((maxDurations - sum(empDurations)) - (maxDurations - sum(randDurations))), 
+                                     warning = warn1)
+          
+          colnames(summaryFrame)<-c("id1", "id2", "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y_mean", "noContactDurations.x", 
+                                    "noContactDurations.y_mean", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
+          
+        
+        
+        rownames(summaryFrame) <-1
+        
+        bindlist<-list(output, summaryFrame)
+        output<- data.table::rbindlist(bindlist, fill = TRUE)
+      }else{ #if there is no entry OR is.na == TRUE, nothing will happen
+        next
+      }
+    }
+    
+    
+    final.out<-data.frame(output)
+    
+    return(final.out)
+  }
+  
+  system.time(testOut<-chisq.forLoop(loopFrame, empirical = x.summary, randomized = y.summary, emp.potential = x.potential, rand.potential = y.potential, importBlocks))
   
   
 }
