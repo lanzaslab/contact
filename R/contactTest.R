@@ -40,7 +40,7 @@
 #'    Who determined individuals to be expressing social behavior when nodes 
 #'    had greater degree values than would be expected at random, with 
 #'    randomized contact networks derived from movement paths randomized 
-#'    according to their novel methodology (i.e., shuffle.type == 2). Here, 
+#'    according to their novel methodology. Here, 
 #'    however, by specifying a p-value threshold, users can also identify when 
 #'    more or fewer (demonstrated by the sign of values in the "difference" 
 #'    column) contacts with specific individuals than would be expected at 
@@ -469,7 +469,6 @@ contactTest<-function(...){
   chisq.forLoop<-function(x, empirical = x, randomized = y, emp.Potential = emp.PotentialDurations, rand.Potential = rand.PotentialDurations, x.blocking, y.blocking, listStatus.x){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work.
     
     id<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
-    
     output<-NULL
    
     indivSummaryTest<- ifelse(length(grep("contactDuration_Indiv", colnames(empirical))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 

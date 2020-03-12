@@ -285,8 +285,8 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
         x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
         
         #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
-        totSecond <- rep(0, length(which(dist.input$dateTime == dist.input$dateTime[1])))
-        totSecond2<-as.integer(difftime(dist.input$dateTime[(length(totSecond) +1): nrow(dist.input)] ,dist.input$dateTime[1] , units = c("secs")))
+        totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
+        totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
         studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1)
         
         numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
@@ -309,11 +309,13 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
         rm(list = c("daySecondList", "lub.dates", "totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
         
         blockList<-list()
+        blockVec <- unique(x$block)
         
         for(j in 1:length(blockVec)){
-          blockL1<- list(x[which(block == blockVec[j]),])
+          blockL1<- list(x[which(x$block == blockVec[j]),])
           blockList<- c(blockList, blockL1)
         }
+        
       }else{ #if(length(x$block) > 0)
         block = x$block
         blockVec<-unique(block)

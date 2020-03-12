@@ -7,14 +7,14 @@ citEntry(entry = "Article",
                                    as.person("Mike W. Sanderson"),
                                    as.person("Cristina Lanzas")),
          journal      = "Ecology and Evolution",
-         year         = "in Review",
+         year         = "in Press",
          volume       = "",
          number       = "",
          pages        = "",
          url          = "",
          
          textVersion  =
-           paste("Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. (in Review).",
+           paste("Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. (in Press).",
                  "Accounting for space and uncertainty in real-time-location-system-derived contact networks.",
                  "Ecology and Evolution")
 )

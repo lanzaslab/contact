@@ -1,18 +1,219 @@
-
-
-
-
+#' Determine if Observed Contacts are More or Less Frequent than in a Random
+#'    Distribution
+#'    
+#' This function is used to determine if tracked individuals in an 
+#'    empirical dataset had more or fewer contacts with other tracked 
+#'    individuals/specified locations than would be expected at random. The
+#'    function works by comparing an empirical contact distribution (generated 
+#'    using x.summary and x.potential) to a NULL distribution (generated using 
+#'    y.summary and y.potential) using a X-squared goodness-of-fit test. Note
+#'    that this function SHOULD NOT be used to compare two empirical networks 
+#'    using Chi-squared tests, as the function assumes x.summary and y.summary 
+#'    represent observed and expected values, respectively.
+#'    
+#' This function was inspired by the methods described by Spiegel et al. 2016. 
+#'    Who determined individuals to be expressing social behavior when nodes 
+#'    had greater degree values than would be expected at random, with 
+#'    randomized contact networks derived from movement paths randomized 
+#'    according to their novel methodology. Here, 
+#'    however, by specifying a p-value threshold, users can also identify when 
+#'    more or fewer (demonstrated by the sign of values in the "difference" 
+#'    column) contacts with specific individuals than would be expected at 
+#'    random. Such relationships suggest social affinities or aversions, 
+#'    respectively, may exist between specific individuals.
+#'    
+#' Note:The default tested column (i.e., categorical data column from which 
+#'    data is drawn to be compared to randomized sets herein) is "id." This 
+#'    means that contacts involving each individual (defined by a unique "id") 
+#'    will be compared to randomized sets. Users may not use any data column 
+#'    for analysis other than "id." If users want to use another categorical 
+#'    data column in analyses rather than "id," we recommend re-processing 
+#'    data (starting from the dist.all/distToArea functions), while specifying 
+#'    this new data as an "id." For example, users may annotate an illness 
+#'    status column to the empirical input, wherein they describe if the 
+#'    tracked individual displayed gastrointestinal ("gastr"), respiratory 
+#'    ("respr"), both ("both"), illness symptoms, or were consistently healthy 
+#'    ("hel") over the course of the tracking period. Users could set this 
+#'    information as the "id," and carry it forward as such through the 
+#'    data-processing pipeline. Ultimately, they could determine if each of 
+#'    these disease states affected contact rates, relative to what would be 
+#'    expected at random.    
+#'    
+#' Take care to ensure that the same shuffle.type is denoted as was originally 
+#'    used to randomize individuals' locations (assuming the randomizePaths 
+#'    function was used to do so). This is important for two reasons: 1.) If 
+#'    there was no y.potential input, the function assumes that x.potential is 
+#'    relevant to the random set as well. This is a completely fair assumption 
+#'    when importBlocks == FALSE or when the shuffleUnit == 0. In cases when 
+#'    the shuffle.type is 1 or 2, however, this assumption can lead to 
+#'    erroneous results and/or errors in the function. 2.) In the 
+#'    randomizePaths function, setting shuffle.type == 2 produces only 1 
+#'    shuffle.unit's worth of data (e.g., 1 day), rather than a dataset with 
+#'    the same length of x. As such, there may be a different number of blocks 
+#'    in y compared to x. Here we assume that the mean randomized durations 
+#'    per block in y.summary and y.potential, are representative of mean 
+#'    randomized durations per block across each shuffle unit (e.g., day 1 is 
+#'    represntative of day 3, etc.).
+#'    
+#' Finally, if X-squared expected values will be very small, 
+#'    approximations of p may not be correct (and in fact, all estimates will 
+#'    be poor). It may be best to weight these tests differently. To address 
+#'    this, We've added the function reported that results may be inaccurate. 
+#'
+#' @param x.summary List or single-data frame output from the summarizeContacts
+#'    function refering to the empirical data. Note that if x.summary is a list
+#'    of data frames, only the first data frame will be used in the function.
+#' @param y.summary List or single-data frame output from the summarizeContacts
+#'    function refering to the randomized data (i.e., NULL model 
+#'    contact-network edge weights). Note that if y.summary is a list
+#'    of data frames, only the first data frame will be used in the function.
+#' @param x.potential List or single-data frame output from the 
+#'    potentialDurations function refering to the empirical data. Note that if 
+#'    x.potential is a list of data frames, potential contact durations used in
+#'    the function will be determined by averaging those reported in each list 
+#'    entry. 
+#' @param y.potential List or single-data frame output from the 
+#'    potentialDurations function refering to the randomized data. Note that if 
+#'    y.potential is a list of data frames, potential contact durations used in
+#'    the function will be determined by averaging those reported in each list 
+#'    entry. If NULL, reverts to x.potential. Defaults to NULL.
 #' @param importBlocks Logical. If true, each block in x.summary will be 
 #'    analyzed separately. Defaults to FALSE. Note that the "block" column must
-#'    exist in x.summary AND x.potential, otherwise an error will be returned.
+#'    exist in .summary AND .potential objects, and values must be identical 
+#'    (i.e., if block 100 exists in x inputs, it must also exist in y inputs), 
+#'    otherwise an error will be returned.
 #' @param shuffle.type Integer. Describes which shuffle.type (from the 
 #'    randomizePaths function) was used to randomize the y.summary data 
-#'    set(s). Takes the values "0," "1," or "2." For tests other than 
-#'    "chisq" this value is irrelevant.
+#'    set(s). Takes the values "0," "1," or "2." This is important because 
+#'    there are different assumptions associated with each shuffle.type.
+#' @param popLevelOutput Logical. If TRUE a secondary output describing 
+#'    population-level comparisons will be appended to the standard, 
+#'    individual-level function output.
+#' @param parallel Logical. If TRUE, sub-functions within the summarizeContacts
+#'    wrapper will be parallelized. Note that the only sub-function 
+#'    parallelized here is called ONLY when importBlocks == TRUE.
+#' @param nCores Integer. Describes the number of cores to be dedicated to 
+#'    parallel processes. Defaults to half of the maximum number of cores 
+#'    available (i.e., (parallel::detectCores()/2)).
+#' @keywords network-analysis social-network
+#' @return Output format is dependent on \code{popLevelOutput} value.
+#' 
+#'    If \code{popLevelOut} == FALSE output will be a single two data frame 
+#'    containing individual-level pairwise analyses of node degree, total 
+#'    edge weight (i.e., the sum of all observed contacts involving each 
+#'    individual), and specific dyad weights (e.g., contacts between 
+#'    individuals 1 and 2). The data frame contains the following columns: 
+#'    
+#'    \item{id}{the id of the specific individual.}
+#'    \item{metric}{designation of what is being compared (e.g., totalDegree, 
+#'    totalContactDurations, individual 2, etc.). Content will 
+#'    change depending on which data frame is being observed.}
+#'    \item{method}{Statistical test used to determine significance.}
+#'    \item{X.squared}{Test statistic associated with the comparison.}
+#'    \item{p.val}{p.values associated with each comparison.}
+#'    \item{df}{Degrees of freedom associated with the statistical test.}
+#'    \item{contactDurations.x}{Describes the number of observed events
+#'    in x.summary.}
+#'    \item{contactDurations.y}{Describes the number of observed events in 
+#'    y.summary.}
+#'    \item{noContactDurations.x}{Describes the number of empirical events that
+#'    were not observed given the total number of potential events in 
+#'    x.potential.}
+#'    \item{noContactDurations.y}{Describes the number of random events that
+#'    were not observed given the total number of potential events in 
+#'    y.potential.}
+#'    \item{difference}{The absolute value given by subtracting 
+#'    contactDurations.y from contactDurations.x.}
+#'    \item{warning}{Denotes if any specific warning occurred during analysis.}
+#'    \item{block.x}{Denotes the specific time block from x.(Only if 
+#'    \code{importBlocks} == TRUE)}
+#'    \item{block.start.x}{Denotes the specific timepoint at the beginning of 
+#'    each time block. (Only if \code{importBlocks} == TRUE)}
+#'    \item{block.end.x}{Denotes the specific timepoint at the end of each time
+#'    block. (Only if \code{importBlocks} == TRUE)}
+#'    \item{block.y}{Denotes the specific time block from y.(Only if 
+#'    \code{importBlocks} == TRUE)}
+#'    \item{block.start.y}{Denotes the specific timepoint at the beginning of 
+#'    each time block. (Only if \code{importBlocks} == TRUE)}
+#'    \item{block.end.y}{Denotes the specific timepoint at the end of each time
+#'    block. (Only if \code{importBlocks} == TRUE)}
+#'    
+#'    If \code{popLevelOutput} == TRUE, output will be a list of two data 
+#'    frames: The one described above, and second describing the 
+#'    population-level comparisons. Columns in each data frame are identical.
+#'    
+#' @references Farine, D.R., 2017. A guide to null models for animal social 
+#'    network analysis. Methods in Ecology and Evolution 8:1309-1320.
+#'    https://doi.org/10.1111/2041-210X.12772.
+#'    
+#'    Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
+#'    interacting or indifferent neighbors? Randomization of movement paths to 
+#'    tease apart social preference and spatial constraints. Methods in Ecology
+#'    and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
+#'  
+#' @import foreach  
+#' @export
+#' @examples
+#' \donttest{
+#' data(calves) #load data
+#' 
+#' calves.dateTime<-datetime.append(calves, date = calves$date,
+#'                                  time = calves$time) #add dateTime column
+#' 
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
+#'                        dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x,
+#'                        point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE,
+#'                        extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE,
+#'                        na.rm = TRUE, smooth.type = 1) #aggregate to 5-min timepoints
+#' 
+#' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE,
+#'                        dataType = "Point", lonlat = FALSE) #calculate  inter-calf distances
+#' 
+#' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1,
+#'                        sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1,
+#'                        equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
+#' 
+#' emp.summary <- summarizeContacts(calves.contact.block, 
+#'                                  importBlocks = TRUE) #empirical contact summ.
+#' emp.potential <- potentialDurations(calves.dist, blocking = TRUE, 
+#'                                     blockUnit = "hours", blockLength = 1, 
+#'                                     distFunction = "dist2All_df") 
+#' 
+#' 
+#' 
+#' calves.agg.rand<-randomizePaths(x = calves.agg, id = "id",
+#'                        dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL,
+#'                        parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE,
+#'                        blockUnit = "mins", blockLength = 20, shuffle.type = 0, shuffleUnit = NA,
+#'                        indivPaths = TRUE, numRandomizations = 2) #randomize calves.agg
+#' 
+#' calves.dist.rand<-dist2All_df(x = calves.agg.rand, point.x = "x.rand",
+#'                        point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE)
+#' 
+#' calves.contact.rand<-contactDur.all(x = calves.dist.rand,
+#'                        dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours",
+#'                        blockLength = 1, equidistant.time = FALSE, parallel = FALSE,
+#'                        reportParameters = TRUE) #NULL model contacts (list of 2)
+#' 
+#' rand.summary <- summarizeContacts(calves.contact.rand, avg = TRUE,
+#'                                   importBlocks = TRUE) #NULL contact summary
+#' rand.potential <- potentialDurations(calves.dist.rand, blocking = TRUE, 
+#'                                      blockUnit = "hours", blockLength = 1, 
+#'                                      distFunction = "dist2All_df") 
+#' 
+#' 
+#' contactCompare_chisq(x.summary = emp.summary, y.summary = rand.summary, 
+#'                      x.potential = emp.potential, y.potential = rand.potential,
+#'                      importBlocks = FALSE, shuffle.type = 0, 
+#'                      popLevelOut = TRUE, parallel = FALSE) #no blocking
+#' 
+#' contactCompare_chisq(x.summary = emp.summary, y.summary = rand.summary, 
+#'                      x.potential = emp.potential, y.potential = rand.potential,
+#'                      importBlocks = TRUE, shuffle.type = 0, 
+#'                      popLevelOut = TRUE, parallel = FALSE) #blocking
+#'    }
 
-
-
-contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1, parallel = FALSE, nCores = (parallel::detectCores()/2)){
+contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1, popLevelOutput = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
   
   chisq.forLoop<-function(x, empirical, randomized, emp.potential, rand.potential){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work. Note "x" here is not x.summary or x.potential. Those are represented by the empirical and emp.potential arguments, respectively.
     
@@ -143,14 +344,14 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           warn1 = ""
         }
         
-        summaryFrame <- data.frame(id1 = unlist(unname(ids[i])), metric = unlist(unname(cols[i])), method = unname(test[4]), X.squared = unname(test[1]), 
+        summaryFrame <- data.frame(id = unlist(unname(ids[i])), metric = unlist(unname(cols[i])), method = unname(test[4]), X.squared = unname(test[1]), 
                                    df = unname(test[2]), p.val = unname(test[3]), empiricalContactDurations = sum(empDurations), 
                                    randContactDurations.mean = sum(randDurations), empiricalNoContactDurations = (maxDurations - sum(empDurations)), 
                                    randNoContactDurations.mean = (maxDurations.rand - sum(randDurations)), difference = abs((maxDurations - sum(empDurations)) - (maxDurations.rand - sum(randDurations))), 
                                    warning = warn1, stringsAsFactors = TRUE)
         
-        colnames(summaryFrame)<-c("id1", "metric", "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y_mean", "noContactDurations.x", 
-                                  "noContactDurations.y_mean", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
+        colnames(summaryFrame)<-c("id", "metric", "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
+                                  "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
         
         
@@ -236,8 +437,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       if(indivSummaryTest.x == FALSE){ #if x.summary was derived from dist2Area
         x.summary$totalDegree <- length(grep("contactDuration_", colnames(x.summary))) #the potential degree is the maximum number of edges that can extend from any one node in the network
       }
-      
-      rm(x.summaryRedac) #remove x.summaryRedac to free up local memory
     }
     
   }
@@ -265,7 +464,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       }
       
       y.summary <- data.frame(y.summaryBlock, stringsAsFactors = TRUE) #redefine y.summary as the object containing block information
-      rm(y.summaryBlock) #remove y.summaryBlock to free up local memory
     }
     
   }
@@ -286,8 +484,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       if(indivSummaryTest.x == FALSE){ #if x.summary was derived from dist2Area
         y.summary$totalDegree <- length(grep("contactDuration_", colnames(y.summary))) #the potential degree is the maximum number of edges that can extend from any one node in the network
       }
-      rm(y.summaryRedac) #remove y.summaryRedac to free up local memory
-      
     }
     
   }
@@ -315,8 +511,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         blockSeq1<-unique(x.potentialAgg$block) #there may be differences in blocks containing contact info between the empirical and randomized data sets
         meanTab <- apply(data.frame(blockSeq1, stringsAsFactors = TRUE), 1, summaryAgg.block1, y = x.potentialAgg) #Note that block information MUST be included in the x.potentialAgg input
         x.potential <- data.frame(data.table::rbindlist(meanTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
-        rm(list = c("x.potentialAgg", "meanTab")) #remove x.potentialAgg and meanTab to free up local memory
-        
       }
       
     }else{ #if importBlocks == FALSE we only average the data by id.
@@ -341,15 +535,11 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
             x.potentialAgg$potenDegree <- x.potentialAgg$potenDegree - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
           }
           
-          rm(sumTab) #remove meanTab to free up local memory
-          
         }
         
       }
       ##now we take the average across all replicateIDs
       x.potential<-aggregate(x.potentialAgg[,-match("id", colnames(x.potentialAgg))], list(id = x.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
-      rm(x.potentialAgg) #remove x.potentialAgg to free up local memory
-      
     }
     
   }else{ #if x.potential is only a single data frame
@@ -398,8 +588,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         #return y.potential as if importBlocks == FALSE and no block column exists in y.potential then repeat it for each block
         y.potential<-aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
-        rm(y.potentialAgg) #remove y.potentialAgg to free up local memory
-        
+
         y.potentialBlock<-NULL #create an empty object to contain new block information
         
         for(i in unique(x.potential$block)){
@@ -410,15 +599,13 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         }
         
         y.potential <- data.frame(y.potentialBlock, stringsAsFactors = TRUE) #redefine y.potential as the object containing block information
-        rm(list = c("y.potentialAgg", "y.potentialBlock")) #remove y.potentialBlock to free up local memory
-        
+
       }else{ #If there IS a block column, we average observations by id AND block
         
         blockSeq1<-unique(y.potentialAgg$block) #there may be differences in blocks containing contact info between the empirical and randomized data sets
         meanTab <- apply(data.frame(blockSeq1, stringsAsFactors = TRUE), 1, summaryAgg.block1, y = y.potentialAgg) #Note that block information MUST be included in the y.potentialAgg input
         y.potential <- data.frame(data.table::rbindlist(meanTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
-        rm(list = c("y.potentialAgg", "meanTab")) #remove y.potentialAgg and meanTab to free up local memory
-        
+
       }
       
     }else{ #if importBlocks == FALSE we only average the data by id.
@@ -439,13 +626,10 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
             y.potentialAgg$potenDegree <- y.potentialAgg$potenDegree - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
           }
           
-          rm(list = c("meanTab", "sumTab", "y.potentialAggBlockMean")) #remove meanTab to free up local memory
-
       }
       ##now we take the average across all replicateIDs
       y.potential<-aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
-      rm(y.potentialAgg) #remove y.potentialAgg to free up local memory
-      
+
     }
     
   }else{ #if y.potential is only a single data frame
@@ -468,7 +652,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         }
         
         y.potential <- data.frame(y.potentialBlock, stringsAsFactors = TRUE) #redefine y.potential as the object containing block information
-        rm("y.potentialBlock") #remove y.potentialBlock to free up local memory        
       }
       
     }else{ #if importBlocks == FALSE we must sum the data by id if blocks exist in the input data. If blocks do not exist in the data, nothing needs to be done.
@@ -597,8 +780,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
         maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
-        expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y_mean", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y_mean", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-        maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y_mean", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y_mean", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
+        expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+        maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
         
         expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
         
@@ -617,8 +800,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
                                    randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
                                    warning = warn1, stringsAsFactors = TRUE)
         
-        colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y_mean", "noContactDurations.x", 
-                                  "noContactDurations.y_mean", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
+        colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
+                                  "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
         ##add block information to summaryFrame (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
         summaryFrame$block.x <- unique(popLevelMetric$block.x)
@@ -666,8 +849,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
         maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
-        expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y_mean", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y_mean", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-        maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y_mean", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y_mean", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
+        expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+        maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
         
         expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
         
@@ -686,8 +869,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
                                    randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
                                    warning = warn1, stringsAsFactors = TRUE)
         
-        colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y_mean", "noContactDurations.x", 
-                                  "noContactDurations.y_mean", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
+        colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
+                                  "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
         rownames(summaryFrame) <-1
         
@@ -706,22 +889,3 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   return(chisqOut) #outputs the chisqOut object (Note that this can be either a single data frame or a list of 2 data frames)
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
