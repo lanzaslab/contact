@@ -12,15 +12,16 @@
 #'    represent observed and expected values, respectively.
 #'    
 #' This function was inspired by the methods described by Spiegel et al. 2016. 
-#'    Who determined individuals to be expressing social behavior when nodes 
+#'    They determined individuals to be expressing social behavior when nodes 
 #'    had greater degree values than would be expected at random, with 
 #'    randomized contact networks derived from movement paths randomized 
-#'    according to their novel methodology. Here, 
-#'    however, by specifying a p-value threshold, users can also identify when 
-#'    more or fewer (demonstrated by the sign of values in the "difference" 
-#'    column) contacts with specific individuals than would be expected at 
-#'    random. Such relationships suggest social affinities or aversions, 
-#'    respectively, may exist between specific individuals.
+#'    according to their novel methodology (that can be implemented using our 
+#'    randomizePaths function). Here, users can also identify when more or 
+#'    fewer contacts (demonstrated by the sign of values in the "difference" 
+#'    column in the output) with specific individuals than would be expected 
+#'    at random, given a pre-determined p-value threshold. Such relationships 
+#'    suggest social affinities or aversions, respectively, may exist between 
+#'    specific individuals.
 #'    
 #' Note:The default tested column (i.e., categorical data column from which 
 #'    data is drawn to be compared to randomized sets herein) is "id." This 
@@ -681,6 +682,12 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   empiricalColNames <- c("totalDegree", "totalContactDurations", substring(names(x.summary[,4:max(grep("contactDuration_", names(x.summary)))]), 22)) #identifies which field each column relates to in x.summary
   loopFrame <- expand.grid(idSeq, empiricalColNames, stringsAsFactors = TRUE) #create the loopFrame to run through the chisqLoop function by combining the 2 previously-created vectors
   
+  #ensure that warnings in the chisq.forLoop function are able to be recorded in output
+  ##before executing the tests we must ensure that warnings for sub-level functions will not be silenced (so that we can record them as they occur, allowing users to pinpoint what part of their output might be erroneous).
+  oldw <- getOption("warn") #pull the current warn setting 
+  options(warn = 1) #make warnings appear as they occur, rather than be stored until the top-level function returns
+  on.exit(options(warn = oldw)) #ensure that when the function ends, users' options are reset.
+  
   #run the chisq.forLoop function
   
   if(length(x.summary$block) > 0){ #importBlocks == TRUE and blocks exist in the inputs (note: if importBlocks == FALSE, code above ensures that no "block" column will exist at this point.)
@@ -691,7 +698,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       cl <- parallel::makeCluster(nCores) #set up cluster
       doParallel::registerDoParallel(cl) #register the cluster
-      on.exit(parallel::stopCluster(cl)) #ensure the cluster is closed out when the function ends
+      on.exit(parallel::stopCluster(cl), add = TRUE) #ensure the cluster is closed out when the function ends. This is added to the previous on.exit call that resets user's warning settings.
       
       chisqOut.list <- foreach::foreach(j = blockSeq) %dopar% {
         
