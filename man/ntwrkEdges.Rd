@@ -4,8 +4,13 @@
 \alias{ntwrkEdges}
 \title{Compile List of Network Edges from a Contact Table}
 \usage{
-ntwrkEdges(x, importBlocks = FALSE, removeDuplicates = TRUE,
-  parallel = FALSE, nCores = (parallel::detectCores()/2))
+ntwrkEdges(
+  x,
+  importBlocks = FALSE,
+  removeDuplicates = TRUE,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2)
+)
 }
 \arguments{
 \item{x}{Output from the contactDur.all or contactDur.area functions. Can be

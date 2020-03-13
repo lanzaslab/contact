@@ -106,13 +106,15 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     
     thisEnvironment<-environment() #tag the environment of the parent function so that sub-functions may work within it. This is done so that we don't have to clone the list of data frames in the various sub functions over and over again.
     
-    listBreak_dist.generator <-function(k,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores, environmentTag = thisEnvironment){
+    listBreak_dist.generator <-function(k,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores, environmentTag = thisEnvironment){ #this function pulls each object from the list, and processes it as if x were a single data frame. Note that this processing takes place in the master-function environment to prevent cloning large data files.
       
       assign("listBreak", k, envir = environmentTag) #assign a "listBreak" object in the parent environment
       
+      #ensure that the processes below are evaluated in the master-function environment by using the eval function
+      
       eval(expr = {
         
-        dist.generator<-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ #this is the same as dist.generator1 except that 
+        dist.generator<-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){  
           
           #browser()
           
@@ -405,7 +407,9 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     
   }else{ #if(is.list(x) == FALSE)
     
-    dist.generator<-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ #this is the same as dist.generator1 except that 
+    #write all the sub-functions first
+    
+    dist.generator<-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ 
       
       #browser()
       
@@ -675,11 +679,11 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       cl <- parallel::makeCluster(nCores)
       doParallel::registerDoParallel(cl)
       on.exit(parallel::stopCluster(cl))
-      distances<-foreach::foreach(j = date.vec, .packages = 'foreach') %dopar% day_listDistance(j, data.list, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops
+      distances<-foreach::foreach(j = date.vec, .packages = 'foreach') %dopar% day_listDistance(j, data.list, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops. Note that the parallel and nCores arguments here are artifacts of previous function iterations. They do not affect anything going forward.
       
     }else{ #if parallel == FALSE
       
-      distances<-foreach::foreach(j = date.vec, .packages = 'foreach') %do% day_listDistance(j, data.list, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops
+      distances<-foreach::foreach(j = date.vec, .packages = 'foreach') %do% day_listDistance(j, data.list, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops. Note that the parallel and nCores arguments here are artifacts of previous function iterations. They do not affect anything going forward.
       
     }
     

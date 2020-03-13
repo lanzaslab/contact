@@ -4,7 +4,8 @@
 \name{baboons}
 \alias{baboons}
 \title{Real-time location data for 19 baboons}
-\format{A data frame with 65140 rows and 5 variables:
+\format{
+A data frame with 65140 rows and 5 variables:
 \describe{
   \item{timestamp}{The date and time a sensor measurement was taken. 
    Time units are in UTC (Coordinated Universal Time) or GPS time, which 
@@ -22,7 +23,8 @@
   \item{dateTime}{The date and time, rounded to the nearest second that 
   a sensor measurement was taken. Derrived from timestamps. Note that 
   this variable is not present in the source data set.}
-}}
+}
+}
 \source{
 \url{https://doi.org/10.5441/001/1.kn0816jn}
 }

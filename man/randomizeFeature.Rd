@@ -4,8 +4,13 @@
 \alias{randomizeFeature}
 \title{Randomize or Pseudorandomize Categorical Variables}
 \usage{
-randomizeFeature(x, feature = NULL, shuffle = FALSE,
-  maintainDistr = TRUE, numRandomizations = 10)
+randomizeFeature(
+  x,
+  feature = NULL,
+  shuffle = FALSE,
+  maintainDistr = TRUE,
+  numRandomizations = 10
+)
 }
 \arguments{
 \item{x}{Data frame containing real-time-location data.}

@@ -1,6 +1,6 @@
 Package: contact
 Title: Creating Contact and Social Networks
-Version: 1.0.1
+Version: 1.2.1
 Authors@R: 
     c(person(given = "Trevor", family = "Farthing", role = c("aut", "cre"),
     email = "tsfarthi@ncsu.edu"), person(given = "Daniel", family = "Dawson",
@@ -41,7 +41,7 @@ Imports:
 License: CC0
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 BugReports: https://github.com/lanzaslab/contact/issues
 Suggests: 
     knitr,

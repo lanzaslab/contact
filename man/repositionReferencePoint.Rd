@@ -4,11 +4,20 @@
 \alias{repositionReferencePoint}
 \title{Move Data Point a Specified Distance}
 \usage{
-repositionReferencePoint(x = NULL, id = NULL, dateTime = NULL,
-  point.x = NULL, point.y = NULL, direction = NULL,
-  repositionAngle = 0, repositionDist = 1, immobThreshold = 0,
-  parallel = FALSE, nCores = (parallel::detectCores()/2),
-  modelOrientation = 90)
+repositionReferencePoint(
+  x = NULL,
+  id = NULL,
+  dateTime = NULL,
+  point.x = NULL,
+  point.y = NULL,
+  direction = NULL,
+  repositionAngle = 0,
+  repositionDist = 1,
+  immobThreshold = 0,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  modelOrientation = 90
+)
 }
 \arguments{
 \item{x}{Data frame or list of data frames containing real-time-location 
@@ -169,7 +178,7 @@ Note that populating the direction argument with gyroscopic accelerometer
    dt > secondAgg; remember that dt indicates the time between recording xy 
    coordinates in row i to row i + 1) from your data set.
 
-Second, unless the direction argument is specifically given (i.e., 
+   Second, unless the direction argument is specifically given (i.e., 
    direction != NULL), this function assumes tracked individuals are always 
    forward-facing. This is because by observing only a single point on each 
    individual, we cannot ascertain the true positioning of individuals' 

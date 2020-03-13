@@ -4,14 +4,16 @@
 \name{calves}
 \alias{calves}
 \title{Real-time location data for 10 calves on May 2nd 2016}
-\format{A data frame with 11118 rows and 5 variables:
+\format{
+A data frame with 11118 rows and 5 variables:
 \describe{
   \item{calftag}{a unique identifier for each calf}
   \item{x}{planar x coordinate}
   \item{y}{planar y coordinate}
   \item{time}{UTC time at which location fix was obtained}
   \item{date}{date on which fix location occurred}
-}}
+}
+}
 \source{
 \url{https://doi.org/10.1016/j.epidem.2018.08.003}
 }

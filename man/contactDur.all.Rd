@@ -4,10 +4,18 @@
 \alias{contactDur.all}
 \title{Identify Inter-animal Contacts}
 \usage{
-contactDur.all(x, dist.threshold = 1, sec.threshold = 10,
-  blocking = FALSE, blockLength = 1, blockUnit = "hours",
-  equidistant.time = FALSE, parallel = FALSE,
-  nCores = (parallel::detectCores()/2), reportParameters = TRUE)
+contactDur.all(
+  x,
+  dist.threshold = 1,
+  sec.threshold = 10,
+  blocking = FALSE,
+  blockLength = 1,
+  blockUnit = "hours",
+  equidistant.time = FALSE,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  reportParameters = TRUE
+)
 }
 \arguments{
 \item{x}{Output from the dist2All function. Can be either a data frame or 

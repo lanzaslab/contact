@@ -4,8 +4,13 @@
 \alias{summarizeContacts}
 \title{Summarize Contact Events}
 \usage{
-summarizeContacts(x, importBlocks = FALSE, avg = FALSE,
-  parallel = FALSE, nCores = (parallel::detectCores()/2))
+summarizeContacts(
+  x,
+  importBlocks = FALSE,
+  avg = FALSE,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2)
+)
 }
 \arguments{
 \item{x}{Output from the contactDur.all or contactDur.area functions. Can 

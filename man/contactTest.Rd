@@ -8,165 +8,22 @@
 contactTest(...)
 }
 \arguments{
-\item{emp.input}{List or data frame containing contactDur.all or 
-contactDur.area output refering to the empirical data. Note that if 
-emp.input is a list of data frames, contacts used in analyses will be 
-determined by averaging contacts reported in each list entry.}
-
-\item{rand.input}{List or data frame containing contactDur.all or 
-contactDur.area output refering to the randomized-path data. Note that if
-rand.input is a list of data frames, contacts used in analyses will be 
-determined by averaging contacts reported in each list entry.}
-
-\item{dist.input}{List or data frame containing dist.all/distToArea function
-output refering to the empirical data. Note that if test == "chisq," a 
-dist.input argument is required. If test == "mantel," however,
-dist.input can be set to NULL. This input is used to determine the  
-number of durations that each pair of individuals (or individuals and 
-fixed locations/polygons if dist2Area output is used) were observed 
-during the same timestep (i.e., the maximum number of durations dyad 
-members could potentially be in contact with one another).}
-
-\item{test}{Character string. Describes the statistical test used to 
-evaluate differences. Currently only takes the values "chisq," or 
-"mantel." Defaults to "chisq." More tests will be added in later 
-versions.}
-
-\item{numPermutations}{Integer. Number of times to permute the data given
-test == "mantel."}
-
-\item{alternative.hyp}{Character string. Describes the nature of the 
-alternative hypothesis being tested when test == "mantel." Takes the 
-values "two.sided," "less," or "greater." Defaults to "two.sided."}
-
-\item{importBlocks}{Logical. If true, each block in emp.input will be 
-analyzed separately. Defaults to FALSE. Note that the "block" column must
-exist in emp.input.}
-
-\item{shuffle.type}{Integer. Describes which shuffle.type (from the 
-randomizePaths function) was used to randomize the rand.input data 
-set(s). Takes the values "0," "1," or "2." For tests other than 
-"chisq" this value is irrelevant.}
+\item{...}{Any input will return the error message: "'contactTest' is now 
+defunct. Please consider using another contact-comparison function 
+instead (e.g., contactCompare_chisq, contactCompare_mantel, etc.)."}
 }
 \value{
-Output format is dependent on \code{test} value.
-
-   If \code{test} == "chisq," output will be a list of two data frames.
-   The first data frame contains pairwise analyses of node degree and total 
-   edge weight (i.e., the sum of all observed contacts involving each 
-   individual). The second data frame contains results of pairwise analyses 
-   specific dyadic relationships (e.g., contacts between individuals 1 and 
-   2). Each data frame contains the following columns: 
-   
-   \item{id1}{the id of the first individual involved in the contact.}
-   \item{id2}{designation of what is being compared (e.g., totalDegree, 
-   totalContactDurations, individual 2, etc.). Content will 
-   change depending on which data frame is being observed.}
-   \item{method}{Statistical test used to determine significance.}
-   \item{statistic}{Test statistic associated with the specific method.}
-   \item{p.value}{p.values associated with each comparison.}
-   \item{df}{Degrees of freedom associated with the statistical test.}
-   \item{block}{Denotes the relevant time block for each 
-   analysis. (if applicable)}
-   \item{warning}{Denotes if any specific warning occurred during analysis.}
-   \item{empiricalContactDurations}{Describes the number of observed events
-   in emp.input.}
-   \item{randContactDurations.mean}{Describes the average number of observed
-   events in rand.input.}
-   \item{empiricalNoContactDurations}{Describes the number of events that 
-   were not observed given the total number of potential events in 
-   emp.input.}
-   \item{randNoContactDurations.mean}{Describes the average number of events
-   that were not observed given the total number of potential events
-   in rand.input.}
-   \item{difference}{The value given by subtracting 
-   randContactDurations.mean from empiricalContactDurations.}
-
-   If \code{test} == "mantel," output will be a single data frame with the
-   following columns:
-    
-   \item{method}{Statistical test used to determine significance.}
-   \item{z.val}{z statistic associated with the specific method.}
-   \item{p.value}{p.values associated with each comparison.}
-   \item{emp.mean}{mean contacts in the emp.input overall or by block (if 
-   applicable).}
-   \item{rand.mean}{mean contacts in the rand.input overall or by block (if
-   applicable).} 
-   \item{alternative.hyp}{The nature of the alternative hypothesis being 
-   tested.}
-   \item{nperm}{Number of permutations used to generate p value.}
-   \item{warning}{Denotes if any specific warning occurred during analysis.}
+Always returns the error message: "'contactTest' is now 
+   defunct. Please consider using another contact-comparison function 
+   instead (e.g., contactCompare_chisq, contactCompare_mantel, etc.)."
 }
 \description{
-This DEFUNCT function is used to determine if tracked individuals in an 
+This DEFUNCT function was used to determine if tracked individuals in an 
    empirical dataset had more or fewer contacts with other tracked 
    individuals/specified locations than would be expected at random. The 
    function works by comparing an empirically-based contactDur.all or 
    contactDur.area function output (emp.input) to the contactDur.all or 
    contactDur.area output generated from randomized data (rand.input).
-}
-\details{
-Note: The current functionality is limited to comparisons using the 
-   X-squared "goodness of fit" test or Mantel test for evaluating 
-   correlations between two matrices. Please note that the output of this 
-   function changes based on what test is run. The assumptions and 
-   intricacies associated with running these tests here are described below 
-   in brief. 
-   
-   X-Squared (chisq.test): In this function, chisq.test is used to compare 
-   the distribution of observed inter-animal or animal-environment contacts 
-   in an empirical dataset, emp.input, to a distribution described in a NULL
-   model, rand.input (i.e., expected contact counts). This test requires 
-   equidistant TSWs (temporal-sampling windows; see the tempAggregate 
-   function) in each movement path within dist.input. The dist.input (i.e., 
-   output from dist.all or dist2Area functions) is used here to determine 
-   how frequently each individual was observed in the empirical 
-   dataset/block of interest, allowing us to calculate the number of TSWs 
-   each individual was present but not involved in contacts. Note here that 
-   if X-squared expected values will be very small, approximations of p may 
-   not be correct (and in fact, all estimates will be poor). It may be best 
-   to weight these tests differently. To address this, We've added the 
-   "warning" column to the output which notifies users when the chisq.test 
-   function reported that results may be inaccurate. 
-   
-   Mantel test (ape::mantel.test): tests for similarity of the emp.input to 
-   rand.input. Please note that ape::mantel.test does not allow for missing
-   values in matrices, so all NAs will be treated as 0. Output is a single
-   data frame describing the test results.
-
-This function was inspired by the methods described by Spiegel et al. 2016. 
-   Who determined individuals to be expressing social behavior when nodes 
-   had greater degree values than would be expected at random, with 
-   randomized contact networks derived from movement paths randomized 
-   according to their novel methodology (i.e., shuffle.type == 2). Here, 
-   however, by specifying a p-value threshold, users can also identify when 
-   more or fewer (demonstrated by the sign of values in the "difference" 
-   column) contacts with specific individuals than would be expected at 
-   random. Such relationships suggest social affinities or aversions, 
-   respectively, may exist between specific individuals.
-
-Note:The default tested column (i.e., categorical data column from which 
-   data is drawn to be compared to randomized sets herein) is "id." This 
-   means that contacts involving each individual (defined by a unique "id") 
-   will be compared to randomized sets. Users may not use any data column 
-   for analysis other than "id." If users want to use another categorical 
-   data column in analyses rather than "id," we recommend re-processing 
-   data (starting from the dist.all/distToArea functions), while specifying 
-   this new data as an "id." For example, users may annotate an illness 
-   status column to the empirical input, wherein they describe if the 
-   tracked individual displayed gastrointestinal ("gastr"), respiratory 
-   ("respr"), both ("both"), illness symptoms, or were consistently healthy 
-   ("hel") over the course of the tracking period. Users could set this 
-   information as the "id," and carry it forward as such through the 
-   data-processing pipeline. Ultimately, they could determine if each of 
-   these disease states affected contact rates, relative to what would be 
-   expected at random.
-
-Note: if importBlocks == TRUE, a "block" column MUST exist in emp.input. 
-   However, a "block" column need not exist in rand.contact. If no 
-   "block" column exists in rand.input, empirical values in all emp.input 
-   blocks will be compared to the overall average values in rand.input.
-   Block columns will also be appended to function outputs.
 }
 \examples{
 \donttest{
@@ -202,23 +59,11 @@ calves.contact.rand<-contactDur.all(x = calves.dist.rand,
    blockLength = 1, equidistant.time = FALSE, parallel = FALSE, 
    reportParameters = TRUE) 
 
-nullTest<- contactTest(emp.input = calves.contact.block, 
+contactTest(emp.input = calves.contact.block, 
    rand.input = calves.contact.rand, dist.input = calves.dist, 
-   importBlocks = FALSE, shuffle.type = 0)
+   importBlocks = FALSE, shuffle.type = 0) #Defunct!
    }
 }
-\references{
-Farine, D.R., 2017. A guide to null models for animal social 
-   network analysis. Methods in Ecology and Evolution 8:1309-1320.
-   https://doi.org/10.1111/2041-210X.12772.
-   
-   Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
-   interacting or indifferent neighbors? Randomization of movement paths to 
-   tease apart social preference and spatial constraints. Methods in Ecology
-   and Evolution 7:971-979. https://doi.org/10.1111/2041-210X.12553.
-   
-   Mantel, N. 1967. The detection of disease clustering and a 
-   generalized regression approach. Cancer Research, 27:209–220.
-}
+\keyword{defunct}
 \keyword{network-analysis}
 \keyword{social-network}

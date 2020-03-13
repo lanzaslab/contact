@@ -4,11 +4,21 @@
 \alias{tempAggregate}
 \title{Smooth Point-Locations Over Time}
 \usage{
-tempAggregate(x = NULL, id = NULL, point.x = NULL, point.y = NULL,
-  dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE,
-  extrapolate.right = FALSE, resolutionLevel = "full",
-  parallel = FALSE, nCores = (parallel::detectCores()/2),
-  na.rm = TRUE, smooth.type = 1)
+tempAggregate(
+  x = NULL,
+  id = NULL,
+  point.x = NULL,
+  point.y = NULL,
+  dateTime = NULL,
+  secondAgg = 10,
+  extrapolate.left = FALSE,
+  extrapolate.right = FALSE,
+  resolutionLevel = "full",
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  na.rm = TRUE,
+  smooth.type = 1
+)
 }
 \arguments{
 \item{x}{Data frame or list of data frames containing real-time-location 

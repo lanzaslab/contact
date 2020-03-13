@@ -4,8 +4,12 @@
 \alias{timeBlock.append}
 \title{Append TimeBlock Information to a Data Frame}
 \usage{
-timeBlock.append(x = NULL, dateTime = NULL, blockLength = 1,
-  blockUnit = "hours")
+timeBlock.append(
+  x = NULL,
+  dateTime = NULL,
+  blockLength = 1,
+  blockUnit = "hours"
+)
 }
 \arguments{
 \item{x}{Data frame containing dateTime information, and to which block 

@@ -4,9 +4,18 @@
 \alias{mps}
 \title{Identify and Remove Data Points Based on Observed Movement Speed}
 \usage{
-mps(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL,
-  mpsThreshold = 10, lonlat = FALSE, parallel = FALSE,
-  nCores = (parallel::detectCores()/2), filterOutput = TRUE)
+mps(
+  x,
+  id = NULL,
+  point.x = NULL,
+  point.y = NULL,
+  dateTime = NULL,
+  mpsThreshold = 10,
+  lonlat = FALSE,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  filterOutput = TRUE
+)
 }
 \arguments{
 \item{x}{List or data frame containing real-time location data that will be 

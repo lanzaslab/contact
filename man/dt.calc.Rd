@@ -4,9 +4,16 @@
 \alias{dt.calc}
 \title{Calculate Time Difference Between Relocations}
 \usage{
-dt.calc(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL,
-  timeUnits = "secs", parallel = FALSE,
-  nCores = (parallel::detectCores()/2), timeStepRelation = 1)
+dt.calc(
+  x = NULL,
+  id = NULL,
+  dateTime1 = NULL,
+  dateTime2 = NULL,
+  timeUnits = "secs",
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  timeStepRelation = 1
+)
 }
 \arguments{
 \item{x}{data frame containing time data. If NULL at least dateTime must be 

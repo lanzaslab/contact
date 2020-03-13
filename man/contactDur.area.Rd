@@ -4,10 +4,18 @@
 \alias{contactDur.area}
 \title{Identify Environmental Contacts}
 \usage{
-contactDur.area(x, dist.threshold = 1, sec.threshold = 10,
-  blocking = FALSE, blockLength = 1, blockUnit = "hours",
-  equidistant.time = FALSE, parallel = FALSE,
-  nCores = (parallel::detectCores()/2), reportParameters = TRUE)
+contactDur.area(
+  x,
+  dist.threshold = 1,
+  sec.threshold = 10,
+  blocking = FALSE,
+  blockLength = 1,
+  blockUnit = "hours",
+  equidistant.time = FALSE,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  reportParameters = TRUE
+)
 }
 \arguments{
 \item{x}{Output from the dist2Area function (either df or sf variant). Can 

@@ -4,11 +4,25 @@
 \alias{datetime.append}
 \title{Append Date-Time Information to a Dataset}
 \usage{
-datetime.append(x, date = NULL, time = NULL, dateTime = NULL,
-  dateFormat = "mdy", dateFake = FALSE, startYear = 2000,
-  tz.in = "UTC", tz.out = NULL, month = FALSE, day = FALSE,
-  year = FALSE, hour = FALSE, minute = FALSE, second = FALSE,
-  daySecond = FALSE, totalSecond = FALSE)
+datetime.append(
+  x,
+  date = NULL,
+  time = NULL,
+  dateTime = NULL,
+  dateFormat = "mdy",
+  dateFake = FALSE,
+  startYear = 2000,
+  tz.in = "UTC",
+  tz.out = NULL,
+  month = FALSE,
+  day = FALSE,
+  year = FALSE,
+  hour = FALSE,
+  minute = FALSE,
+  second = FALSE,
+  daySecond = FALSE,
+  totalSecond = FALSE
+)
 }
 \arguments{
 \item{x}{Data frame or list of data frames to which new information will be 

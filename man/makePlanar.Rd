@@ -4,8 +4,14 @@
 \alias{makePlanar}
 \title{Project Geographic Coordinates onto a Plane}
 \usage{
-makePlanar(x = NULL, x.lon = NULL, x.lat = NULL, origin.lon = NULL,
-  origin.lat = NULL, datum = "WGS84")
+makePlanar(
+  x = NULL,
+  x.lon = NULL,
+  x.lat = NULL,
+  origin.lon = NULL,
+  origin.lat = NULL,
+  datum = "WGS84"
+)
 }
 \arguments{
 \item{x}{Data frame or matrix containing geographic data. Defaults to NULL.}
@@ -57,7 +63,7 @@ This function converts lon/lat data (decimal degrees) from a geographic
 Users may specify longitude and latitude coordinates to become the origin of
    the projection (i.e., the (0,0) coordinate). If they do not specify these
    values, however, the function calculates the centroid of the data and 
-   will use this as the origin point.
+   will use this as the origin point. 
 
 Note: this function does not allow any NA coordinate values in 
    longitude/latitude vectors. If NAs exist you will get the following 

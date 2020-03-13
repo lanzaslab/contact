@@ -4,8 +4,14 @@
 \alias{confine}
 \title{Identify and Remove Data Points Outside of a Specified Area}
 \usage{
-confine(x, point.x = NULL, point.y = NULL, confinementCoord.x,
-  confinementCoord.y, filterOutput = TRUE)
+confine(
+  x,
+  point.x = NULL,
+  point.y = NULL,
+  confinementCoord.x,
+  confinementCoord.y,
+  filterOutput = TRUE
+)
 }
 \arguments{
 \item{x}{Data frame or non-data-frame list that will be filtered.}

@@ -4,9 +4,17 @@
 \alias{dup}
 \title{Identify and Remove Duplicated Data Points}
 \usage{
-dup(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL,
-  avg = TRUE, parallel = FALSE, nCores = (parallel::detectCores()/2),
-  filterOutput = TRUE)
+dup(
+  x,
+  id = NULL,
+  point.x = NULL,
+  point.y = NULL,
+  dateTime = NULL,
+  avg = TRUE,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  filterOutput = TRUE
+)
 }
 \arguments{
 \item{x}{Data frame containing real-time-location data that will be filtered.}

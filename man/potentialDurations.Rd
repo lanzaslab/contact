@@ -4,12 +4,17 @@
 \alias{potentialDurations}
 \title{Identify Potential Contact Durations}
 \usage{
-potentialDurations(x, blocking = FALSE, blockLength = 1,
-  blockUnit = "hours")
+potentialDurations(
+  x,
+  blocking = FALSE,
+  blockLength = 1,
+  blockUnit = "hours",
+  distFunction = "dist2All_df"
+)
 }
 \arguments{
-\item{x}{Output from the dist2All function. Can be either a data frame or 
-non-data-frame list.}
+\item{x}{Output from the dist2All or dist2Area function. Can be either a 
+data frame or non-data-frame list.}
 
 \item{blocking}{Logical. If TRUE, contacts will be evaluated for temporal 
 blocks spanning blockLength blockUnit (e.g., 6 hours) within the data 
@@ -18,9 +23,13 @@ set. Defaults to FALSE.}
 \item{blockLength}{Integer. Describes the number blockUnits within each 
 temporal block. Defaults to 1.}
 
-\item{blockUnit}{Character string taking the values, "secs," "mins," 
+\item{blockUnit}{Character string taking the values: "secs," "mins," 
 "hours," "days," or "weeks." Describes the temporal unit associated with
 each block. Defaults to "hours."}
+
+\item{distFunction}{Character string taking the values: "dist2All_df",
+or "dist2Area_df." Describes the contact-package function used to
+generate x.}
 }
 \value{
 Returns a data frame (or list of data frames if \code{x} is a 

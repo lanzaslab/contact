@@ -4,12 +4,26 @@
 \alias{randomizePaths}
 \title{Randomize or Pseudorandomize Individuals' Relocation Events}
 \usage{
-randomizePaths(x = NULL, id = NULL, dateTime = NULL,
-  point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE,
-  nCores = (parallel::detectCores()/2), dataType = "Point",
-  numVertices = 4, blocking = TRUE, blockUnit = "hours",
-  blockLength = 1, shuffle.type = 0, shuffleUnit = "days",
-  indivPaths = TRUE, numRandomizations = 1, reduceOutput = FALSE)
+randomizePaths(
+  x = NULL,
+  id = NULL,
+  dateTime = NULL,
+  point.x = NULL,
+  point.y = NULL,
+  poly.xy = NULL,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  dataType = "Point",
+  numVertices = 4,
+  blocking = TRUE,
+  blockUnit = "hours",
+  blockLength = 1,
+  shuffle.type = 0,
+  shuffleUnit = "days",
+  indivPaths = TRUE,
+  numRandomizations = 1,
+  reduceOutput = FALSE
+)
 }
 \arguments{
 \item{x}{Data frame containing real-time-location data.}
@@ -136,7 +150,7 @@ Randomizes or pseudorandomizes individuals' spatial locations. Randomized
 }
 \details{
 Paths can be randomized, or pseudorandomized differently according to what 
-   logical arguments are set to TRUE.
+   logical arguments are set to TRUE. 
 
 Detailed shuffle.type description:
    If shuffle.type == 0, within-block timepoints will be randomized by 

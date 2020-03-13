@@ -4,10 +4,20 @@
 \alias{dist2All_df}
 \title{Calculate Distances Between All Individuals}
 \usage{
-dist2All_df(x = NULL, id = NULL, dateTime = NULL, point.x = NULL,
-  point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE,
-  nCores = (parallel::detectCores()/2), dataType = "Point",
-  lonlat = FALSE, numVertices = 4)
+dist2All_df(
+  x = NULL,
+  id = NULL,
+  dateTime = NULL,
+  point.x = NULL,
+  point.y = NULL,
+  poly.xy = NULL,
+  elev = NULL,
+  parallel = FALSE,
+  nCores = (parallel::detectCores()/2),
+  dataType = "Point",
+  lonlat = FALSE,
+  numVertices = 4
+)
 }
 \arguments{
 \item{x}{Data frame or list of data frames containing real-time-location 

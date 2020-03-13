@@ -4,8 +4,14 @@
 \alias{findDistThresh}
 \title{Identify Point-Based Distance Threshold for Contact}
 \usage{
-findDistThresh(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL,
-  pWithin1 = 90, pWithin2 = NULL, spTh = 0.666)
+findDistThresh(
+  n = 1000,
+  acc.Dist1 = 0.5,
+  acc.Dist2 = NULL,
+  pWithin1 = 90,
+  pWithin2 = NULL,
+  spTh = 0.666
+)
 }
 \arguments{
 \item{n}{Numerical. Number of "in-contact" point-pairs used in the 
