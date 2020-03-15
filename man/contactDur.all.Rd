@@ -131,7 +131,7 @@ calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1,
     equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
     
 calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1,
-    sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1,
+    sec.threshold=10, blocking = FALSE, blockUnit = "hours", blockLength = 1,
     equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
 }
 \keyword{contact}
