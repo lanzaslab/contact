@@ -70,7 +70,7 @@
 #'                                  importBlocks = TRUE) #empirical contact summ.
 #' 
 #' 
-#' 
+#'
 #' calves.agg.rand<-randomizePaths(x = calves.agg, id = "id",
 #'                        dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL,
 #'                        parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE,
@@ -100,6 +100,10 @@
 
 contactCompare_mantel<-function(x.summary, y.summary, numPermutations = 1000, alternative.hyp = "two.sided", importBlocks = FALSE){
   
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  block <- NULL
+  
+  #define sub-function
   tryCatch.W.E <- function(expr) #this function comes from https://stat.ethz.ch/pipermail/r-help/2010-December/262626.html
   {
     W <- NULL
@@ -133,7 +137,7 @@ contactCompare_mantel<-function(x.summary, y.summary, numPermutations = 1000, al
     if(importBlocks == FALSE){ #if there ARE blocks in x.summary, but importBlocks == FALSE, we have to recreate x.summary without the bloking information.
       
       x.summaryRedac <- droplevels(x.summary[, - c(which(colnames(x.summary) == "block"):ncol(x.summary))]) #remove the block information (four columns: block, block.start, block.end, and numBlocks)
-      x.summary<- aggregate(x.summaryRedac[,-match("id", colnames(x.summary))], list(id = x.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
+      x.summary<- stats::aggregate(x.summaryRedac[,-match("id", colnames(x.summary))], list(id = x.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
       ###so now we have an x.summary object with no block information. However, we must recognize that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)
       ###below we recalculate the totalDegree for each individual. Note that this will be a different value depending on whether or not x.summary was based on dist2All or dist2Area outputs.
       indivSummaryTest.x<- ifelse(length(grep("contactDuration_Indiv", colnames(x.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
@@ -180,7 +184,7 @@ contactCompare_mantel<-function(x.summary, y.summary, numPermutations = 1000, al
     if(importBlocks == FALSE){ #if there ARE blocks in y.summary, but importBlocks == FALSE, we have to recreate y.summary without the bloking information.
       
       y.summaryRedac <- droplevels(y.summary[, - c(which(colnames(y.summary) == "block"):ncol(y.summary))]) #remove the block information (four columns: block, block.start, block.end, and numBlocks)
-      y.summary<- aggregate(y.summaryRedac[,-match("id", colnames(y.summary))], list(id = y.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
+      y.summary<- stats::aggregate(y.summaryRedac[,-match("id", colnames(y.summary))], list(id = y.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
       ###so now we have an y.summary object with no block information. However, we must recognize that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)     
       ###below we recalculate the totalDegree for each individual.Note that this will be a different value depending on whether or not y.summary was based on dist2All or dist2Area outputs.
       indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 

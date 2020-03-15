@@ -182,6 +182,12 @@
 
 repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, repositionAngle = 0, repositionDist = 1, immobThreshold = 0, parallel = FALSE, nCores = (parallel::detectCores()/2), modelOrientation = 90){ 
 
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  i <- NULL
+  j <- NULL
+  k <- NULL
+  l <- NULL
+  
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
     
     listBreak_reposition.generator <-function(x, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, nCores, modelOrientation){ #this function is exactly the same as what happens when the x input to the master function is a single data frame.

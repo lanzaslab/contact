@@ -76,6 +76,10 @@
 
 summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
   
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  i <- NULL
+  
+  #write sub-functions
   summaryAgg.block<-function(x,y){ #calculates the mean potential contacts by id and block. Using this apply function is faster than simply aggregating the data set by id and block
     sumTable<-y[which(y$block == unname(unlist(x[1]))),]
     
@@ -87,7 +91,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
       blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
       blockNum<- unique(sumTable$numBlocks)
       sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("numBlocks", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-      output<-aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+      output<-stats::aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
       output$block = unname(unlist(x[1])) #add this information back into the table
       output$block.start = blockStart #add this information back into the table
       output$block.end = blockEnd #add this information back into the table
@@ -305,7 +309,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
         sumTab <- apply(data.frame(blockSeq), 1, summaryAgg.block, y = full.summary, stringsAsFactors = TRUE)
         sumTab.agg <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE)
       }else{ #if importBlocks == FALSE
-        sumTab.agg<-aggregate(full.summary[,-match("id", colnames(full.summary))], list(id = full.summary$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+        sumTab.agg<-stats::aggregate(full.summary[,-match("id", colnames(full.summary))], list(id = full.summary$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
       }
       summary.output<-list(sumTab.agg, summaryList)
       names(summary.output)<-c("avg.","contactSummaries.")

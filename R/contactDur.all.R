@@ -107,6 +107,9 @@
 
 contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockLength = 1, blockUnit = "hours", equidistant.time = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), reportParameters = TRUE){ 
   
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  l <- NULL
+  k <- NULL
 
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
     

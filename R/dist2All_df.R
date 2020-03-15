@@ -102,6 +102,11 @@
 
 dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, elev = NULL, parallel = FALSE, nCores = (parallel::detectCores()/2), dataType = "Point", lonlat = FALSE, numVertices = 4){
   
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  i <- NULL
+  j <- NULL
+  k <- NULL
+  
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R treats dataframes as lists.
     
     listBreak_dist.generator <-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ #this function is exactly the same as what happens when the x input to the master function is a single data frame.

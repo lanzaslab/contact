@@ -99,6 +99,10 @@
 
 tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, secondAgg = 10, extrapolate.left = FALSE, extrapolate.right = FALSE, resolutionLevel = "full", parallel = FALSE, nCores = (parallel::detectCores()/2), na.rm = TRUE, smooth.type = 1) { #removed totalSecond = NULL argument on 01102019
 
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  l <- NULL
+  
+  #write sub-function
   Agg.generator<-function(x, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores){
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
       originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)

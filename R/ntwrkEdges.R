@@ -66,7 +66,12 @@
 #' @export
 
 ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
+  
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  i <- NULL
   dupAction<-removeDuplicates
+  
+  #write the sub-functions
   
   summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
     

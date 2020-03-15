@@ -67,7 +67,12 @@
 
 potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "hours", distFunction = "dist2All_df"){ 
   
-  #browser()
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  listBreak <- NULL
+  breakBlock <- NULL
+  j <- NULL
+  l <- NULL
+  m <- NULL
   
   thisEnvironment<-environment() #tag the environment of the parent function so that sub-functions may work within it.
   

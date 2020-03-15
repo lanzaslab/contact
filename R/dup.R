@@ -70,6 +70,11 @@
 #'    filterOutput = TRUE) #there were no duplicates to remove in the first place.
 
 dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, avg = TRUE, parallel = FALSE, nCores = (parallel::detectCores()/2), filterOutput = TRUE){
+
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  l <- NULL
+    
+  #write the sub-functions
   filter1.func<-function(x, id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores){
 
     idVec <- NULL

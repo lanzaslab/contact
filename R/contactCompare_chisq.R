@@ -216,6 +216,13 @@
 
 contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1, popLevelOutput = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
   
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  block <- NULL
+  j <- NULL
+  metric <-NULL
+  block.x<-NULL
+  
+  
   chisq.forLoop<-function(x, empirical, randomized, emp.potential, rand.potential){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work. Note "x" here is not x.summary or x.potential. Those are represented by the empirical and emp.potential arguments, respectively.
     
     tryCatch.W.E <- function(expr) #this function comes from https://stat.ethz.ch/pipermail/r-help/2010-December/262626.html
@@ -379,7 +386,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       blockStart<- unique(lubridate::as_datetime(sumTable$block.start)) #added 02/05/2019 - had to keep track of this new information ; updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
       blockEnd<- unique(lubridate::as_datetime(sumTable$block.end)) #added 02/05/2019 - had to keep track of this new information ;  updated 06/02/2019 - converted the factor data to POSIXct format in order to avoid a "length is too large for hashing" error.
       sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-      output<-aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+      output<-stats::aggregate(sumTable.redac, list(id = sumTable$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
       output$block = unname(unlist(x[1])) #add this information back into the table
       output$block.start = blockStart #add this information back into the table
       output$block.end = blockEnd #add this information back into the table
@@ -395,7 +402,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     }else{
       
       sumTable.redac<-sumTable[,-c(match("id", names(sumTable)), match("block", names(sumTable)), match("block.start", names(sumTable)), match("block.end", names(sumTable)), match("replicateID", names(sumTable)))]  #Remove the columns that cannot/shoud not be averaged.
-      output<-aggregate(sumTable.redac, list(id = sumTable$id), sum) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
+      output<-stats::aggregate(sumTable.redac, list(id = sumTable$id), sum) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
       output$potenDegree <- length(grep("potenContactDurations_", colnames(output))) #redefine the potential degree as the total number potentially-contactable entities present at in the data. Note that this is only accurate if y is derived from contact::dist2Area_df output. If y was instead derived from dist2All_df, then these values must have 1 subtracted from them. If this is the case, the subtraction will take place outside of this function. 
       
     }
@@ -427,7 +434,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     if(importBlocks == FALSE){ #if there ARE blocks in x.summary, but importBlocks == FALSE, we have to recreate x.summary without the bloking information.
       
       x.summaryRedac <- droplevels(x.summary[, - c(which(colnames(x.summary) == "block"):ncol(x.summary))]) #remove the block information (four columns: block, block.start, block.end, and numBlocks)
-      x.summary<- aggregate(x.summaryRedac[,-match("id", colnames(x.summary))], list(id = x.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
+      x.summary<- stats::aggregate(x.summaryRedac[,-match("id", colnames(x.summary))], list(id = x.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
       ###so now we have an x.summary object with no block information. However, we must recognize that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)
       ###below we recalculate the totalDegree for each individual. Note that this will be a different value depending on whether or not x.summary was based on dist2All or dist2Area outputs.
       indivSummaryTest.x<- ifelse(length(grep("contactDuration_Indiv", colnames(x.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
@@ -474,7 +481,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     if(importBlocks == FALSE){ #if there ARE blocks in y.summary, but importBlocks == FALSE, we have to recreate y.summary without the bloking information.
       
       y.summaryRedac <- droplevels(y.summary[, - c(which(colnames(y.summary) == "block"):ncol(y.summary))]) #remove the block information (four columns: block, block.start, block.end, and numBlocks)
-      y.summary<- aggregate(y.summaryRedac[,-match("id", colnames(y.summary))], list(id = y.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
+      y.summary<- stats::aggregate(y.summaryRedac[,-match("id", colnames(y.summary))], list(id = y.summaryRedac$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set.
       ###so now we have an y.summary object with no block information. However, we must recognize that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)     
       ###below we recalculate the totalDegree for each individual.Note that this will be a different value depending on whether or not y.summary was based on dist2All or dist2Area outputs.
       indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
@@ -540,7 +547,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
       }
       ##now we take the average across all replicateIDs
-      x.potential<-aggregate(x.potentialAgg[,-match("id", colnames(x.potentialAgg))], list(id = x.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+      x.potential<-stats::aggregate(x.potentialAgg[,-match("id", colnames(x.potentialAgg))], list(id = x.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
     }
     
   }else{ #if x.potential is only a single data frame
@@ -557,7 +564,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       if(length(x.potential$block) > 0){ #Alternatively, if there are blocked time sets in the empirical input, we need to dictate how to handle them.
         
-        x.potential<-aggregate(x.potential[,- c(match("id", colnames(x.potential)),match("block", colnames(x.potential)):ncol(x.potential))], list(id = x.potential$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+        x.potential<-stats::aggregate(x.potential[,- c(match("id", colnames(x.potential)),match("block", colnames(x.potential)):ncol(x.potential))], list(id = x.potential$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
         ### We must recognize, however, that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)
         ###below we recalculate the totalDegree for each individual.Note that this will be a different value depending on whether or not x.summary was based on dist2All or dist2Area outputs.
         indivSummaryTest.x<- ifelse(length(grep("contactDuration_Indiv", colnames(x.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
@@ -588,7 +595,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         warning("importBlocks set to TRUE, but no block column exists in y.potential. Proceding as if y.potential values are stable across time and relevant to EVERY block.")
         
         #return y.potential as if importBlocks == FALSE and no block column exists in y.potential then repeat it for each block
-        y.potential<-aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+        y.potential<-stats::aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
 
         y.potentialBlock<-NULL #create an empty object to contain new block information
         
@@ -629,7 +636,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           
       }
       ##now we take the average across all replicateIDs
-      y.potential<-aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+      y.potential<-stats::aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
 
     }
     
@@ -659,7 +666,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       if(length(y.potential$block) > 0){ #Alternatively, if there are blocked time sets in the empirical input, we need to dictate how to handle them.
         
-        y.potential<-aggregate(y.potential[,-c(match("id", colnames(y.potential)),match("block", colnames(y.potential)):ncol(y.potential))], list(id = y.potential$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
+        y.potential<-stats::aggregate(y.potential[,-c(match("id", colnames(y.potential)),match("block", colnames(y.potential)):ncol(y.potential))], list(id = y.potential$id), sum) #this not only sums each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
         ### We must recognize, however, that the "totalDegree" column cannot be summed like other columns can (it is the number of individuals/fixed areas that each unique individual was observed in contact with.)
         ###below we recalculate the totalDegree for each individual.Note that this will be a different value depending on whether or not x.summary was based on dist2All or dist2Area outputs.
         indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
