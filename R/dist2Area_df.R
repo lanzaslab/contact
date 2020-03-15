@@ -110,11 +110,11 @@
 #'   lonlat = FALSE, numVertices = NULL) 
 
 dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, poly.xy = NULL, parallel = FALSE, nCores = (parallel::detectCores()/2), dataType = "Point", lonlat = FALSE, numVertices = 4){
-  if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
+  if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R treats dataframes as lists.
     
     thisEnvironment<-environment() #tag the environment of the parent function so that sub-functions may work within it. This is done so that we don't have to clone the list of data frames in the various sub functions over and over again.
     
-    listBreak_dist.generator2 <-function(k, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, nCores, dataType, lonlat, numVertices, environmentTag = thisEnvironment){ #this function pulls each object from the list, and processes it as if x were a single data frame. Note that this processing takes place in the master-function environment to prevent cloning large data files.
+    listBreak_dist.generator2 <-function(k, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, nCores, dataType, lonlat, numVertices, environmentTag = thisEnvironment){ #this function pulls each object from the list, and processes it as if x were a single data frame. Note that this processing takes place in the master-function environment to prevent cloning large data files. #notice that x is not pulled in, but all other master-function inputs are
       
       assign("listBreak", k, envir = environmentTag) #assign a "listBreak" object in the parent environment
       
@@ -451,7 +451,12 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         originTab$date_hour <- paste(data.dates, lubridate::hour(originTab$dateTime), sep = "_") #create a tag for each unique date_hour combination in the data set
         date_hour.vec <- unique(originTab$date_hour)
         date.vec <- unique(data.dates)
-        data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+        
+        if(length(date_hour.vec) == 1){ #the processing step requires a list of data frames. If there's only a single hour represented in originTab, we can just create the list using the "list" function
+          data.list <- list(originTab)
+        }else{
+          data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+        }
         
         names(data.list)<-date_hour.vec #add names to list to pull for date lists below
         
@@ -812,7 +817,12 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
     originTab$date_hour <- paste(data.dates, lubridate::hour(originTab$dateTime), sep = "_") #create a tag for each unique date_hour combination in the data set
     date_hour.vec <- unique(originTab$date_hour)
     date.vec <- unique(data.dates)
-    data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+    
+    if(length(date_hour.vec) == 1){ #the processing step requires a list of data frames. If there's only a single hour represented in originTab, we can just create the list using the "list" function
+      data.list <- list(originTab)
+    }else{
+      data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+    }
     
     names(data.list)<-date_hour.vec #add names to list to pull for date lists below
     

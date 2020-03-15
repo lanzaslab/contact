@@ -372,7 +372,11 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
         date_hour.vec <- unique(originTab$date_hour)
         date.vec <- unique(data.dates)
         
-        data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+        if(length(date_hour.vec) == 1){ #the processing step requires a list of data frames. If there's only a single hour represented in originTab, we can just create the list using the "list" function
+          data.list <- list(originTab)
+        }else{
+          data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+        }
         
         names(data.list)<-date_hour.vec #add names to list to pull for date lists below
         
@@ -410,8 +414,6 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     #write all the sub-functions first
     
     dist.generator<-function(x,id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ 
-      
-      #browser()
       
       create.distFrame<- function(x,distMat, indivSeq, idSeq, timestepIndivSeq,time){
         
@@ -544,8 +546,6 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     
     day_listDistance <- function(x, data.list, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores){ #Because this function slows down when trying to process large data frames AND large list sets, we must concattenate both here. We did so to the former by breaking the data frame into hourly lists, and the latter by breaking these lists into daily subsets with this function.
       
-      #browser()
-      
       day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
       names(day_lists)<-NULL #ensure that list names do not mess up column names
       list.dist <- lapply(day_lists, dist.generator, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply.
@@ -665,7 +665,11 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     date_hour.vec <- unique(originTab$date_hour)
     date.vec <- unique(data.dates)
     
-    data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+    if(length(date_hour.vec) == 1){ #the processing step requires a list of data frames. If there's only a single hour represented in originTab, we can just create the list using the "list" function
+      data.list <- list(originTab)
+    }else{
+      data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+    }
     
     names(data.list)<-date_hour.vec #add names to list to pull for date lists below
     

@@ -155,8 +155,9 @@
 #'    \item{dt}{The the time between reported xy coordinates in row i to row 
 #'    i + 1 in each individuals' movement path.}
 #' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-#'    C. in Review. Accounting for space and uncertainty in real-time-location-
+#'    C. in Press. Accounting for space and uncertainty in real-time-location-
 #'    system-derived contact networks. Ecology and Evolution.
+#' @import foreach
 #' @export
 #' @examples
 #' \donttest{
@@ -170,7 +171,7 @@
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
 #'    na.rm = TRUE, smooth.type = 1) #smooth to 5-min fix intervals.
 #' 
-#' leftShoulder.point<-contact::repositionReferencePoint(x = calves.agg, 
+#' leftShoulder.point<-repositionReferencePoint(x = calves.agg, 
 #'    id = calves.agg$id, dateTime = calves.agg$dateTime, 
 #'    point.x = calves.agg$x, point.y = calves.agg$y, direction = NULL, 
 #'    repositionAngle = 180, repositionDist = 0.0835, immobThreshold = 0, parallel = FALSE, 
@@ -179,51 +180,410 @@
 
 repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, point.y = NULL, direction = NULL, repositionAngle = 0, repositionDist = 1, immobThreshold = 0, parallel = FALSE, nCores = (parallel::detectCores()/2), modelOrientation = 90){
 
-  reposition.generator<-function(x, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores){
-    euc=function(x) {
-      point1 = x.cor=unlist(c(x[1],x[2]))
-      point2 = x.cor=unlist(c(x[3],x[4]))
-      euc.dis = raster::pointDistance(p1 = point1, p2 = point2, lonlat = FALSE)
-      return(euc.dis)
-    }
-    translate<-function(x, y, eta, etaStar, theta, distV){
-      #(2*etaStar) - (theta + eta) #This is the angle of the new vertex relative to a clockwise direction from a point etaStar degrees from empirical points given in x
-      vertex.angle<- (360 - (etaStar - (theta + eta))) #This is the relative angle of the new vertex from the empirical points given in x
-      #simplify this value now
-      vertex.angle360s <- floor(vertex.angle/360) # determine how many times individuals turn in complete circles
-      vertex.angle.simplified <- vertex.angle - (vertex.angle360s*360) #this reduces direction values to between 0 and 359 
-      vertex.angle.simplified.rad<- vertex.angle.simplified / (180/pi) #convert back to radians
+  if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
+    
+    thisEnvironment<-environment() #tag the environment of the parent function so that sub-functions may work within it. This is done so that we don't have to clone the list of data frames in the various sub functions over and over again.
+    
+    listBreak_reposition.generator <-function(l, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, nCores, modelOrientation, environmentTag = thisEnvironment){ #this function pulls each object from the list, and processes it as if x were a single data frame. Note that this processing takes place in the master-function environment to prevent cloning large data files. #notice that x is not pulled in, but all other master-function inputs are
       
-      newX<- distV*cos(vertex.angle.simplified.rad) + x #identify the x coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical x
-      newY<- distV*sin((vertex.angle.simplified.rad)) + y #identify the y coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical y
+      assign("listBreak", l, envir = environmentTag) #assign a "listBreak" object in the parent environment
       
-      output<-data.frame(x.adjusted = newX, y.adjusted = newY)
-      return(output)
+      #ensure that the processes below are evaluated in the master-function environment by using the eval function
+      
+      eval(expr = {
+        
+        #define sub-functions
+        reposition.generator<-function(x, repositionAngle, repositionDist, immobThreshold, modelOrientation){
+          euc=function(x) {
+            point1 = x.cor=unlist(c(x[1],x[2]))
+            point2 = x.cor=unlist(c(x[3],x[4]))
+            euc.dis = raster::pointDistance(p1 = point1, p2 = point2, lonlat = FALSE)
+            return(euc.dis)
+          }
+          translate<-function(x, y, eta, etaStar, theta, distV){
+            #(2*etaStar) - (theta + eta) #This is the angle of the new vertex relative to a clockwise direction from a point etaStar degrees from empirical points given in x
+            vertex.angle<- (360 - (etaStar - (theta + eta))) #This is the relative angle of the new vertex from the empirical points given in x
+            #simplify this value now
+            vertex.angle360s <- floor(vertex.angle/360) # determine how many times individuals turn in complete circles
+            vertex.angle.simplified <- vertex.angle - (vertex.angle360s*360) #this reduces direction values to between 0 and 359 
+            vertex.angle.simplified.rad<- vertex.angle.simplified / (180/pi) #convert back to radians
+            
+            newX<- distV*cos(vertex.angle.simplified.rad) + x #identify the x coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical x
+            newY<- distV*sin((vertex.angle.simplified.rad)) + y #identify the y coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical y
+            
+            output<-data.frame(x.adjusted = newX, y.adjusted = newY)
+            return(output)
+          }
+          immobAdjustment.point = function(x, locMatrix, immobVec){
+            dur = 0
+            standDurTest <- FALSE
+            while (!standDurTest) { #This means when standDurTest == FALSE #This part of the function determines how long an individual has been immob.
+              standDurTest <- immobVec[(x[1] - (1 + dur))] == 0
+              standDurTest <- ifelse(is.na(standDurTest) == TRUE, TRUE, standDurTest) #This is for when x[1] -1 relates to the first observation for any individual (because those observations are NA)
+              dur = (dur + 1)
+            }
+            standFrame = data.frame(replaceRow = x[1], replacePoint.x = locMatrix$x.adjusted[(x[1] - dur)], replacePoint.y = locMatrix$y.adjusted[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep.
+            return(standFrame)
+          }
+          timeDifference = function(x){
+            t1 = x[1]
+            t2 = x[2]
+            dt = as.integer(difftime(time1 = t2, time2 = t1, units = "secs"))
+            return(dt)
+          }
+          
+          distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)])
+          
+          dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
+          dist = c(dist, NA) #to make dist the same length as nrow(x)
+          
+          dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
+          dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
+          
+          timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
+          
+          dt = apply(timesFrame, 1, timeDifference)
+          dt = c(dt, NA) #to make dt the same length as nrow(x)
+          
+          idVec = unique(x$id) ; idSeqVec = x$id; idVecForDtRemoval = idVec[-length(idVec)] #There's no need to remove the max point of the final id point b/c there's already an NA there.
+          for(a in idVecForDtRemoval){ #This loop removes the dt value at points describing the last point in each individual's path
+            dx[max(which(idSeqVec == a))] = NA
+            dy[max(which(idSeqVec == a))] = NA
+            dist[max(which(idSeqVec == a))] = NA
+            dt[max(which(idSeqVec == a))] = NA
+          }
+          x$dx = dx
+          x$dy = dy
+          x$dist = dist
+          x$dt = dt
+          
+          dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)])) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+          for(b in idVec){ #This code replaces dist, dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
+            dataShift[min(which(idSeqVec == b)),] = NA
+          }
+          
+          #eta was defined earlier and appended to x as part of the efficiency improvement implemented on 02/20. Here we vectorize it again here, and remove the appended column in x
+          if(length(x$eta..) > 0){ #the other x inputs are required, but direction is not
+            
+            eta <- x$eta..
+            x<- droplevels(x[,-match("eta..", colnames(x))])
+            
+          }else{ #if length(direction) == 0 in the master function input
+            eta <- atan2(dataShift$dy,dataShift$dx)*(180/pi) + 360 #calculate the relative angle of movements given point (x1,y1) lies on the axes' origin. Multiplying by 180/pi converts radians to degrees and adding 360 ensures positive values.
+          }
+          
+          #simplify eta (i.e., make all observations fall between 0 and 359)
+          eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+          eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+          
+          #translate the empirical coordinates to create the new ones
+          newCoordinates <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+          
+          RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18))) #One row for each observation, Columns listed below
+          colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
+          RepositionMatrix$id = x$id
+          RepositionMatrix$x.original = x$x
+          RepositionMatrix$y.original = x$y
+          RepositionMatrix$dist.original = x$dist
+          RepositionMatrix$dx.original = x$dx
+          RepositionMatrix$dy.original = x$dy
+          RepositionMatrix$movementDirection = eta.simplified
+          RepositionMatrix$repositionAngle = repositionAngle
+          RepositionMatrix$repositionDist = repositionDist
+          RepositionMatrix$immobThreshold = immobThreshold
+          RepositionMatrix$dateTime = x$dateTime
+          RepositionMatrix$dt = x$dt
+          RepositionMatrix$x.adjusted = newCoordinates$x.adjusted
+          RepositionMatrix$y.adjusted = newCoordinates$y.adjusted
+          RepositionMatrix$immob = ifelse(dataShift$dist > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
+          
+          standlist = which(RepositionMatrix$immob == 1)
+          
+          if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
+            
+            immobVec = RepositionMatrix$immob
+            immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.point(k, locMatrix = RepositionMatrix, immobVec)
+            immobFrame <- data.frame(data.table::rbindlist(immob.list))
+            
+            if(nrow(immobFrame) > 0){
+              RepositionMatrix[immobFrame$replaceRow,match("x.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.x
+              RepositionMatrix[immobFrame$replaceRow,match("y.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.y
+            }
+          }
+          
+          newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)])
+          
+          newDist = apply(newDistCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
+          newDist = c(newDist, NA)
+          
+          RepositionMatrix$dist.adjusted = newDist
+          
+          newdx = c((newDistCoordinates[,3] - newDistCoordinates[,1]),NA)
+          newdy = c((newDistCoordinates[,4] - newDistCoordinates[,2]),NA)
+          RepositionMatrix$dx.adjusted = newdx
+          RepositionMatrix$dy.adjusted = newdy
+          
+          return(RepositionMatrix)
+        }
+        
+        day_listReposition <- function(x, data.list, repositionAngle, repositionDist, immobThreshold, modelOrientation){ #Because this function slows down when trying to process large data frames AND large list sets, we must concattenate both here. We did so to the former by breaking the data frame into hourly lists, and the latter by breaking these lists into daily subsets with this function.
+          
+          day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
+          names(day_lists)<-NULL #ensure that list names do not mess up column names
+          list.reposition <- lapply(day_lists, reposition.generator, repositionAngle, repositionDist, immobThreshold, modelOrientation)
+          reposition.bind <- data.frame(data.table::rbindlist(list.reposition, fill = TRUE)) #bind these hours back together
+          
+          return(reposition.bind)
+        }
+        
+        date_hourSub.func<-function(x, data, date_hour){ #added 02/20/2020 #This function will be used to break down data sets into hourly time blocks prior to further processing to increase speed. Admittedly, this is not a pretty fix for increasing efficiency of processing large data sets, but it's a working fix nonetheless. 
+          date_hour1 <- droplevels(data[which(date_hour == unname(unlist(x[1]))),]) #subset data
+          return(date_hour1)
+        }
+        
+        listBreak.x <- x[[listBreak]] # pull the kth data frame from x.
+        
+        if(length(listBreak.x) > 0){ #for some reason using an "else" statement would always result in a table with 0 records...
+          
+          if(length(id) > 0){
+            if(length(id) == 1 && is.na(match(id[1], names(listBreak.x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than id being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "id" values (i.e., if the ids in different list entries are different)
+              listBreak.x$id <- listBreak.x[,match(id, names(listBreak.x))]
+            }else{ #if length(id) > 1
+              listBreak.x$id = id
+            }
+          }
+          if(length(point.x) > 0){
+            if(length(point.x) == 1 && is.na(match(point.x[1], names(listBreak.x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+              listBreak.x$x <- listBreak.x[,match(point.x, names(listBreak.x))]
+            }else{ #if length(point.x) > 1
+              listBreak.x$x = point.x
+            }
+          }
+          if(length(point.y) > 0){
+            if(length(point.y) == 1 && is.na(match(point.y[1], names(listBreak.x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+              listBreak.x$y <- listBreak.x[,match(point.y, names(listBreak.x))]
+            }else{ #if length(point.y) > 1
+              listBreak.x$y = point.y
+            }
+          }
+          if(length(dateTime) > 0){
+            if(length(dateTime) == 1 && is.na(match(dateTime[1], names(listBreak.x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+              listBreak.x$dateTime <- listBreak.x[,match(dateTime, names(listBreak.x))]
+            }else{ #if length(dateTime) > 1
+              listBreak.x$dateTime = dateTime
+            }
+          }
+        }
+        
+        if(length(direction) > 0){ #we create a disposable column in x to pull direction values into the generator function (this is required here because we break x into smaller lists below)
+          if(length(direction) == 1 && is.na(match(direction[1], names(listBreak.x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+            listBreak.x$eta.. <- listBreak.x[,match(direction, names(x))]
+          }else{ #if length(direction) > 1
+            listBreak.x$eta.. <- direction
+          }
+        }
+        
+        listBreak.x<-listBreak.x[order(listBreak.x$id, listBreak.x$dateTime),] #data tables should already be ordered like this, but because this function assumes this ordering scheme, I wanted to ensure it was so.
+        rownames(listBreak.x) <- seq(1, nrow(listBreak.x),1)
+        
+        data.dates<-lubridate::date(listBreak.x$dateTime) #now we can start concattenating the data by subsetting it into smaller lists
+        
+        date_hour <- paste(data.dates, lubridate::hour(listBreak.x$dateTime), sep = "_") #create a tag for each unique date_hour combination in the data set
+        date_hour.vec <- unique(date_hour)
+        date.vec <- unique(data.dates)
+        
+        if(length(date_hour.vec) == 1){ #the processing step requires a list of data frames. If there's only a single hour represented in x, we can just create the list using the "list" function
+          data.list <- list(listBreak.x)
+        }else{
+          data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, listBreak.x, date_hour)
+        }
+        
+        names(data.list)<-date_hour.vec #add names to list to pull for date lists below
+        
+        rm(list =  c("listBreak.x", "data.dates", "date_hour.vec")) #remove the unneeded objects to free up local memory
+        
+        if(parallel == TRUE){
+          
+          cl <- parallel::makeCluster(nCores)
+          doParallel::registerDoParallel(cl)
+          on.exit(parallel::stopCluster(cl))
+          repositions<-foreach::foreach(j = date.vec, .packages = 'foreach') %dopar% day_listReposition(j, data.list, repositionAngle, repositionDist, immobThreshold, modelOrientation) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops. Note that the parallel and nCores arguments here are artifacts of previous function iterations. They do not affect anything going forward.
+          
+        }else{ #if parallel == FALSE
+          
+          repositions<-foreach::foreach(j = date.vec, .packages = 'foreach') %do% day_listReposition(j, data.list, repositionAngle, repositionDist, immobThreshold, modelOrientation) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops. Note that the parallel and nCores arguments here are artifacts of previous function iterations. They do not affect anything going forward.
+          
+        }
+        
+        frame.rep<- data.frame(data.table::rbindlist(repositions, fill = TRUE))
+        
+      }, envir = environmentTag)
+      
+      return(frame.rep)
+      
     }
-    immobAdjustment.point = function(x, locMatrix, immobVec){
-      dur = 0
-      standDurTest <- FALSE
-      while (!standDurTest) { #This means when standDurTest == FALSE #This part of the function determines how long an individual has been immob.
-        standDurTest <- immobVec[(x[1] - (1 + dur))] == 0
-        standDurTest <- ifelse(is.na(standDurTest) == TRUE, TRUE, standDurTest) #This is for when x[1] -1 relates to the first observation for any individual (because those observations are NA)
-        dur = (dur + 1)
-      }
-      standFrame = data.frame(replaceRow = x[1], replacePoint.x = locMatrix$x.adjusted[(x[1] - dur)], replacePoint.y = locMatrix$y.adjusted[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep.
-      return(standFrame)
-    }
-    timeDifference = function(x){
-      t1 = x[1]
-      t2 = x[2]
-      dt = as.integer(difftime(time1 = t2, time2 = t1, units = "secs"))
-      return(dt)
-    }
+    
+    list.rep<- foreach::foreach(l = 1:length(x), .packages = 'foreach') %do% listBreak_reposition.generator(l, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, nCores, modelOrientation, environmentTag = thisEnvironment) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops
+    
+    return(list.rep)
 
+  }else{ #if x is a dataFrame
+
+    #define sub-functions
+    reposition.generator<-function(x, repositionAngle, repositionDist, immobThreshold, modelOrientation){
+      euc=function(x) {
+        point1 = x.cor=unlist(c(x[1],x[2]))
+        point2 = x.cor=unlist(c(x[3],x[4]))
+        euc.dis = raster::pointDistance(p1 = point1, p2 = point2, lonlat = FALSE)
+        return(euc.dis)
+      }
+      translate<-function(x, y, eta, etaStar, theta, distV){
+        #(2*etaStar) - (theta + eta) #This is the angle of the new vertex relative to a clockwise direction from a point etaStar degrees from empirical points given in x
+        vertex.angle<- (360 - (etaStar - (theta + eta))) #This is the relative angle of the new vertex from the empirical points given in x
+        #simplify this value now
+        vertex.angle360s <- floor(vertex.angle/360) # determine how many times individuals turn in complete circles
+        vertex.angle.simplified <- vertex.angle - (vertex.angle360s*360) #this reduces direction values to between 0 and 359 
+        vertex.angle.simplified.rad<- vertex.angle.simplified / (180/pi) #convert back to radians
+        
+        newX<- distV*cos(vertex.angle.simplified.rad) + x #identify the x coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical x
+        newY<- distV*sin((vertex.angle.simplified.rad)) + y #identify the y coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical y
+        
+        output<-data.frame(x.adjusted = newX, y.adjusted = newY)
+        return(output)
+      }
+      immobAdjustment.point = function(x, locMatrix, immobVec){
+        dur = 0
+        standDurTest <- FALSE
+        while (!standDurTest) { #This means when standDurTest == FALSE #This part of the function determines how long an individual has been immob.
+          standDurTest <- immobVec[(x[1] - (1 + dur))] == 0
+          standDurTest <- ifelse(is.na(standDurTest) == TRUE, TRUE, standDurTest) #This is for when x[1] -1 relates to the first observation for any individual (because those observations are NA)
+          dur = (dur + 1)
+        }
+        standFrame = data.frame(replaceRow = x[1], replacePoint.x = locMatrix$x.adjusted[(x[1] - dur)], replacePoint.y = locMatrix$y.adjusted[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep.
+        return(standFrame)
+      }
+      timeDifference = function(x){
+        t1 = x[1]
+        t2 = x[2]
+        dt = as.integer(difftime(time1 = t2, time2 = t1, units = "secs"))
+        return(dt)
+      }
+      
+      distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)])
+
+      dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
+      dist = c(dist, NA) #to make dist the same length as nrow(x)
+      
+      dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
+      dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
+      
+      timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
+
+      dt = apply(timesFrame, 1, timeDifference)
+      dt = c(dt, NA) #to make dt the same length as nrow(x)
+
+      idVec = unique(x$id) ; idSeqVec = x$id; idVecForDtRemoval = idVec[-length(idVec)] #There's no need to remove the max point of the final id point b/c there's already an NA there.
+      for(a in idVecForDtRemoval){ #This loop removes the dt value at points describing the last point in each individual's path
+        dx[max(which(idSeqVec == a))] = NA
+        dy[max(which(idSeqVec == a))] = NA
+        dist[max(which(idSeqVec == a))] = NA
+        dt[max(which(idSeqVec == a))] = NA
+      }
+      x$dx = dx
+      x$dy = dy
+      x$dist = dist
+      x$dt = dt
+      
+      dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)])) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+      for(b in idVec){ #This code replaces dist, dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
+        dataShift[min(which(idSeqVec == b)),] = NA
+      }
+  
+      #eta was defined earlier and appended to x as part of the efficiency improvement implemented on 02/20. Here we vectorize it again here, and remove the appended column in x
+      if(length(x$eta..) > 0){ #the other x inputs are required, but direction is not
+        
+        eta <- x$eta..
+        x<- droplevels(x[,-match("eta..", colnames(x))])
+        
+      }else{ #if length(direction) == 0 in the master function input
+        eta <- atan2(dataShift$dy,dataShift$dx)*(180/pi) + 360 #calculate the relative angle of movements given point (x1,y1) lies on the axes' origin. Multiplying by 180/pi converts radians to degrees and adding 360 ensures positive values.
+      }
+      
+      #simplify eta (i.e., make all observations fall between 0 and 359)
+      eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+      eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+      
+      #translate the empirical coordinates to create the new ones
+      newCoordinates <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+      
+      RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18))) #One row for each observation, Columns listed below
+      colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
+      RepositionMatrix$id = x$id
+      RepositionMatrix$x.original = x$x
+      RepositionMatrix$y.original = x$y
+      RepositionMatrix$dist.original = x$dist
+      RepositionMatrix$dx.original = x$dx
+      RepositionMatrix$dy.original = x$dy
+      RepositionMatrix$movementDirection = eta.simplified
+      RepositionMatrix$repositionAngle = repositionAngle
+      RepositionMatrix$repositionDist = repositionDist
+      RepositionMatrix$immobThreshold = immobThreshold
+      RepositionMatrix$dateTime = x$dateTime
+      RepositionMatrix$dt = x$dt
+      RepositionMatrix$x.adjusted = newCoordinates$x.adjusted
+      RepositionMatrix$y.adjusted = newCoordinates$y.adjusted
+      RepositionMatrix$immob = ifelse(dataShift$dist > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
+      
+      standlist = which(RepositionMatrix$immob == 1)
+      
+      if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
+        
+        immobVec = RepositionMatrix$immob
+        immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.point(k, locMatrix = RepositionMatrix, immobVec)
+        immobFrame <- data.frame(data.table::rbindlist(immob.list))
+        
+        if(nrow(immobFrame) > 0){
+          RepositionMatrix[immobFrame$replaceRow,match("x.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.x
+          RepositionMatrix[immobFrame$replaceRow,match("y.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.y
+        }
+      }
+      
+      newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)])
+      
+      newDist = apply(newDistCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
+      newDist = c(newDist, NA)
+      
+      RepositionMatrix$dist.adjusted = newDist
+      
+      newdx = c((newDistCoordinates[,3] - newDistCoordinates[,1]),NA)
+      newdy = c((newDistCoordinates[,4] - newDistCoordinates[,2]),NA)
+      RepositionMatrix$dx.adjusted = newdx
+      RepositionMatrix$dy.adjusted = newdy
+      
+      return(RepositionMatrix)
+    }
+    
+    day_listReposition <- function(x, data.list, repositionAngle, repositionDist, immobThreshold, modelOrientation){ #Because this function slows down when trying to process large data frames AND large list sets, we must concattenate both here. We did so to the former by breaking the data frame into hourly lists, and the latter by breaking these lists into daily subsets with this function.
+      
+      day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
+      names(day_lists)<-NULL #ensure that list names do not mess up column names
+      list.reposition <- lapply(day_lists, reposition.generator, repositionAngle, repositionDist, immobThreshold, modelOrientation)
+      reposition.bind <- data.frame(data.table::rbindlist(list.reposition, fill = TRUE)) #bind these hours back together
+      
+      return(reposition.bind)
+    }
+    
+    date_hourSub.func<-function(x, data, date_hour){ #added 02/20/2020 #This function will be used to break down data sets into hourly time blocks prior to further processing to increase speed. Admittedly, this is not a pretty fix for increasing efficiency of processing large data sets, but it's a working fix nonetheless. 
+      date_hour1 <- droplevels(data[which(date_hour == unname(unlist(x[1]))),]) #subset data
+      return(date_hour1)
+    }
+    
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors.
       x <- data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
     }
-
+    
     if(length(x) > 0){ #for some reason using an "else" statement would always result in a table with 0 records...
-
+      
       if(length(id) > 0){
         if(length(id) == 1 && is.na(match(id[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than id being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "id" values (i.e., if the ids in different list entries are different)
           x$id <- x[,match(id, names(x))]
@@ -254,135 +614,48 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       }
     }
     
+    if(length(direction) > 0){ #we create a disposable column in x to pull direction values into the generator function (this is required here because we break x into smaller lists below)
+      if(length(direction) == 1 && is.na(match(direction[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
+        x$eta.. <- x[,match(direction, names(x))]
+      }else{ #if length(direction) > 1
+        x$eta.. <- direction
+      }
+    }
+    
     x<-x[order(x$id, x$dateTime),] #data tables should already be ordered like this, but because this function assumes this ordering scheme, I wanted to ensure it was so.
     rownames(x) <- seq(1, nrow(x),1)
-
-    distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)])
-    if(parallel == TRUE){ #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
-      cl<-parallel::makeCluster(nCores)
-      on.exit(parallel::stopCluster(cl))
-      dist = parallel::parApply(cl, distCoordinates,1,euc)
-      dist = c(dist, NA) #to make dist the same length as nrow(x)
-    }else{
-      dist = apply(distCoordinates,1,euc)
-      dist = c(dist, NA) #to make dist the same length as nrow(x)
-    }
-
-    dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
-    dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
     
-    timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
+    data.dates<-lubridate::date(x$dateTime) #now we can start concattenating the data by subsetting it into smaller lists
+    
+    date_hour <- paste(data.dates, lubridate::hour(x$dateTime), sep = "_") #create a tag for each unique date_hour combination in the data set
+    date_hour.vec <- unique(date_hour)
+    date.vec <- unique(data.dates)
+    
+    if(length(date_hour.vec) == 1){ #the processing step requires a list of data frames. If there's only a single hour represented in x, we can just create the list using the "list" function
+      data.list <- list(x)
+    }else{
+      data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, x, date_hour)
+    }
+    
+    names(data.list)<-date_hour.vec #add names to list to pull for date lists below
+    
+    rm(list =  c("x", "data.dates", "date_hour.vec")) #remove the unneeded objects to free up memory
+    
     if(parallel == TRUE){
-      dt = parallel::parApply(cl, timesFrame, 1, timeDifference) #see that cl was created above
-      dt = c(dt, NA) #to make dt the same length as nrow(x)
-    }else{
-      dt = apply(timesFrame, 1, timeDifference)
-      dt = c(dt, NA) #to make dt the same length as nrow(x)
-    }
-
-    idVec = unique(x$id) ; idSeqVec = x$id; idVecForDtRemoval = idVec[-length(idVec)] #There's no need to remove the max point of the final id point b/c there's already an NA there.
-    for(a in idVecForDtRemoval){ #This loop removes the dt value at points describing the last point in each individual's path
-      dx[max(which(idSeqVec == a))] = NA
-      dy[max(which(idSeqVec == a))] = NA
-      dist[max(which(idSeqVec == a))] = NA
-      dt[max(which(idSeqVec == a))] = NA
-    }
-    x$dx = dx
-    x$dy = dy
-    x$dist = dist
-    x$dt = dt
-
-    dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)])) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
-    for(b in idVec){ #This code replaces dist, dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
-      dataShift[min(which(idSeqVec == b)),] = NA
-    }
-
-    if(length(direction) > 0){ #the other x inputs are required, but direction is not
-      if(length(direction) == 1 && is.na(match(direction[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
-        eta <- x[,match(direction, names(x))]
-      }else{ #if length(direction) > 1
-        eta <- direction
-      }
-    }else{ #if length(direction) == 0
-      eta <- atan2(dataShift$dy,dataShift$dx)*(180/pi) + 360 #calculate the relative angle of movements given point (x1,y1) lies on the axes' origin. Multiplying by 180/pi converts radians to degrees and adding 360 ensures positive values.
+      
+      cl <- parallel::makeCluster(nCores)
+      doParallel::registerDoParallel(cl)
+      on.exit(parallel::stopCluster(cl))
+      repositions<-foreach::foreach(j = date.vec, .packages = 'foreach') %dopar% day_listReposition(j, data.list, repositionAngle, repositionDist, immobThreshold, modelOrientation) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops. Note that the parallel and nCores arguments here are artifacts of previous function iterations. They do not affect anything going forward.
+      
+    }else{ #if parallel == FALSE
+      
+      repositions<-foreach::foreach(j = date.vec, .packages = 'foreach') %do% day_listReposition(j, data.list, repositionAngle, repositionDist, immobThreshold, modelOrientation) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops. Note that the parallel and nCores arguments here are artifacts of previous function iterations. They do not affect anything going forward.
+      
     }
     
-    #simplify eta (i.e., make all observations fall between 0 and 359)
-    eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
-    eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+    frame.rep<- data.frame(data.table::rbindlist(repositions, fill = TRUE))
     
-    #translate the empirical coordinates to create the new ones
-    newCoordinates <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
-    
-    RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18))) #One row for each observation, Columns listed below
-    colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
-    RepositionMatrix$id = x$id
-    RepositionMatrix$x.original = x$x
-    RepositionMatrix$y.original = x$y
-    RepositionMatrix$dist.original = x$dist
-    RepositionMatrix$dx.original = x$dx
-    RepositionMatrix$dy.original = x$dy
-    RepositionMatrix$movementDirection = eta.simplified
-    RepositionMatrix$repositionAngle = repositionAngle
-    RepositionMatrix$repositionDist = repositionDist
-    RepositionMatrix$immobThreshold = immobThreshold
-    RepositionMatrix$dateTime = x$dateTime
-    RepositionMatrix$dt = x$dt
-    RepositionMatrix$x.adjusted = newCoordinates$x.adjusted
-    RepositionMatrix$y.adjusted = newCoordinates$y.adjusted
-    RepositionMatrix$immob = ifelse(dataShift$dist > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
-
-    standlist = which(RepositionMatrix$immob == 1)
-
-    if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
-
-      immobVec = RepositionMatrix$immob
-      standlistFrame = data.frame(immob = standlist)
-
-      if(parallel == TRUE){
-        immobFrame = data.frame(data.table::rbindlist(parallel::parApply(cl, standlistFrame, 1, immobAdjustment.point, locMatrix = RepositionMatrix, immobVec))) #see that cl was created above
-      }else{
-        immobFrame = data.frame(data.table::rbindlist(apply(standlistFrame, 1, immobAdjustment.point, locMatrix = RepositionMatrix, immobVec)))
-      }
-      if(nrow(immobFrame) > 0){
-        RepositionMatrix[immobFrame$replaceRow,match("x.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.x
-        RepositionMatrix[immobFrame$replaceRow,match("y.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.y
-      }
-    }
-
-    newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)])
-
-    if(parallel == TRUE){ #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
-      newDist = parallel::parApply(cl, newDistCoordinates,1,euc); newDist = c(newDist, NA) #see that cl was created above
-    }else{
-      newDist = apply(newDistCoordinates,1,euc); newDist = c(newDist, NA)
-    }
-
-    RepositionMatrix$dist.adjusted = newDist
-
-    newdx = c((newDistCoordinates[,3] - newDistCoordinates[,1]),NA)
-    newdy = c((newDistCoordinates[,4] - newDistCoordinates[,2]),NA)
-    RepositionMatrix$dx.adjusted = newdx
-    RepositionMatrix$dy.adjusted = newdy
-
-    return(RepositionMatrix)
-  }
-  list.breaker<-function(x, y, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores){
-    input<- data.frame(y[[unname(unlist(x[1]))]])
-    reposition<-reposition.generator(input,id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores)
-    return(reposition)
-  }
-
-  if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
-    breakFrame<- data.frame(seq(1,length(x),1))
-    list.rep <- apply(breakFrame, 1, list.breaker,y = x, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
-
-    return(list.rep)
-
-  }else{ #if x is a dataFrame
-
-    frame.rep<- reposition.generator(x, id, dateTime, point.x, point.y, direction, repositionAngle, repositionDist, immobThreshold, parallel, modelOrientation, nCores)
-
     return(frame.rep)
   }
 
