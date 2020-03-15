@@ -58,7 +58,7 @@ system.time(randomizedValues<-contact::randomizeFeature(x = calves,
    feature = c("calftag", "date"), shuffle = TRUE, maintainDistr = TRUE, 
    numRandomizations = 3)) 
    
-randomizedFrame<-data.frame(randomizedValues[[1]])
+randomizedFrame<-data.frame(randomizedValues[[1]], stringsAsFactors = TRUE)
 
 head(randomizedFrame) #see that randomized-value columns have been appended.
 }

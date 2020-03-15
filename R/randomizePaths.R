@@ -186,12 +186,12 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
       idVecSeq <- 1
     }
     numids <- length(idVecSeq)
-    idTab<- data.frame(idVecSeq)
+    idTab<- data.frame(idVecSeq, stringsAsFactors = TRUE)
     randomness<- apply(idTab,1,datasub.func, y, numids, blocking, shuffle.type, dataType, shuffleUnit, blockUnit, blockLength) #prior to 01/31, this was missing the "blockUnit" argument, resulting in an error. Obviously, this is now fixed.
     if(is.data.frame(randomness) == TRUE){
       randomxyCoords<-randomness
     }else{
-      randomxyCoords<-data.frame(data.table::rbindlist(randomness))
+      randomxyCoords<-data.frame(data.table::rbindlist(randomness), stringsAsFactors = TRUE)
     }
     
     if(blocking == TRUE & shuffle.type == 2){ #To account for potential length differences in blocks if shuffle.type ==2, the outputTab is essentially compiled earlier on in the function (in the datasub.func subfunction) 
@@ -203,7 +203,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     outputTab$rand.rep = unlist(unname(x[1]))
     
     if(reduceOutput == TRUE){
-      outputTab <- data.frame(id = outputTab$id, x.rand = outputTab$x.rand, y.rand = outputTab$y.rand, dateTime = outputTab$dateTime, rand.rep = outputTab$rand.rep)
+      outputTab <- data.frame(id = outputTab$id, x.rand = outputTab$x.rand, y.rand = outputTab$y.rand, dateTime = outputTab$dateTime, rand.rep = outputTab$rand.rep, stringsAsFactors = TRUE)
     }else{
       rownames(outputTab)<- seq(1, nrow(outputTab), 1) #ensure rownames are sequential. If output was reduced, this happened automatically.
     }
@@ -219,16 +219,16 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(blocking == TRUE){
       if(shuffle.type == 0){ #This is the same as shuffle == FALSE. Blocks maintain their order in the dataset, but the xy locations within each block are randomized.
         blockSeq <-unique(idFrame$block)
-        blockTab <-data.frame(blockSeq)
+        blockTab <-data.frame(blockSeq, stringsAsFactors = TRUE)
         rand <-apply(blockTab,1,xy.assignNoShuff, idFrame, dataType, numVertices)
-        randomxy <- data.frame(data.table::rbindlist(rand))
+        randomxy <- data.frame(data.table::rbindlist(rand), stringsAsFactors = TRUE)
       }
       if(shuffle.type == 1){ #This rearranges the order of blocks in the dataset. xycoordinates within each block remain unchanged.
         blockSeq <-unique(idFrame$block)
         rand.block <- sample(blockSeq,length(blockSeq), replace = FALSE)
-        rand.blockTab <- data.frame(rand.block)
+        rand.blockTab <- data.frame(rand.block, stringsAsFactors = TRUE)
         rand <-apply(rand.blockTab,1,xy.assignShuff, idFrame, dataType, numVertices)
-        randomxy <- data.frame(data.table::rbindlist(rand))
+        randomxy <- data.frame(data.table::rbindlist(rand), stringsAsFactors = TRUE)
       }
       if(shuffle.type == 2){ #This potentially replaces each block in the dataset with one of the blocks from a distribution described by shuffleUnit. Each block has the potential to appear in the dataset up to numShuffUnit times.
         
@@ -292,9 +292,9 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
           randomxy <-NULL
         }else{ #if there was at least one populated block
           
-          rand.blockTab <- data.frame(randVec1)
+          rand.blockTab <- data.frame(randVec1, stringsAsFactors = TRUE)
           rand <-apply(rand.blockTab,1,xy.assignShuff, idFrame, dataType, numVertices)
-          randCoord<- data.frame(data.table::rbindlist(rand))
+          randCoord<- data.frame(data.table::rbindlist(rand), stringsAsFactors = TRUE)
           
           blockFrame.full<-subset(y, block <= blocksPerUnit)
           
@@ -302,23 +302,23 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
             timestep.per.block <- length(unique(blockFrame.full$dateTime))/length(unique(blockFrame.full$block)) #pulls the number of timesteps per block. In the event that randVec pulls a starting block(s) that does not exist for the individual, NAs will be returned. Assuming that all timesteps are equidistant (as they should be when shuffleType == 2), this can only be the case if a block is pulled from a time before the individual began reporting tracks.
             for(a in blockAbsence){ #Put NAs into randCoord where needed
               randCoord.brkPt <-timestep.per.block*(a-1) #Identifies the row immediately prior to where NAs will be placed
-              naBlock<-data.frame(x.rand<-rep(NA, timestep.per.block), y.rand<-rep(NA, timestep.per.block)) #add NAs to columns when applicable
+              naBlock<-data.frame(x.rand<-rep(NA, timestep.per.block), y.rand<-rep(NA, timestep.per.block), stringsAsFactors = TRUE) #add NAs to columns when applicable
               if(randCoord.brkPt == 0){ #if the first block is missing
-                randCoord<-data.frame(data.table::rbindlist(list(naBlock, randCoord)))
+                randCoord<-data.frame(data.table::rbindlist(list(naBlock, randCoord)), stringsAsFactors = TRUE)
               }else{ #if a block other than the 1st block is missing
                 if(a < length(randVec1)){ #if the missing block is not the last recorded one
                   preNACoord<- randCoord[1:randCoord.brkPt,]
                   postNACoord<- randCoord[(randCoord.brkPt+1):ncol(randCoord),]
-                  randCoord<-data.frame(data.table::rbindlist(list(preNACoord, naBlock, postNACoord)))
+                  randCoord<-data.frame(data.table::rbindlist(list(preNACoord, naBlock, postNACoord)), stringsAsFactors = TRUE)
                 }
                 if(a == length(randVec1)){ #if the missing block IS the last recorded one
-                  randCoord<-data.frame(data.table::rbindlist(list(randCoord, naBlock)))
+                  randCoord<-data.frame(data.table::rbindlist(list(randCoord, naBlock)), stringsAsFactors = TRUE)
                 }              
               }
             }
           }
           #outTable<- idFrame[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
-          outTable<-data.frame(id = unname(unlist(x[1])), dateTime = unique(blockFrame.full$dateTime), blockLength = unique(blockFrame.full$blockLength)) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
+          outTable<-data.frame(id = unname(unlist(x[1])), dateTime = unique(blockFrame.full$dateTime), blockLength = unique(blockFrame.full$blockLength), stringsAsFactors = TRUE) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
           outTable<- outTable[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
           
           #now we have to redefine block information for the single shuffleUnit (so that users can recall the block information they set)
@@ -332,18 +332,18 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
         rand.noblock <- sample(seq(1,nrow(idFrame),1), nrow(idFrame), replace = FALSE)
         rand.x <- idFrame$x[rand.noblock]
         rand.y <- idFrame$y[rand.noblock]
-        randomxy <- data.frame(x = rand.x, y = rand.y)
+        randomxy <- data.frame(x = rand.x, y = rand.y, stringsAsFactors = TRUE)
         colnames(randomxy) <- c("x.rand","y.rand")
       }
       if(dataType == "Polygon" || dataType == "POLYGON" || dataType == "polygon"){
         rand.noblock <- sample(seq(1,nrow(idFrame),1), nrow(idFrame), replace = FALSE)
-        rand.poly <- data.frame(matrix(ncol = 0, nrow = length(rand.noblock)))
+        rand.poly <- data.frame(matrix(ncol = 0, nrow = length(rand.noblock)), stringsAsFactors = TRUE)
         vertex <-1 #This is the base column number that, if added to "a" in the following loop will call the appropriate xy coordinates.
         for(a in 1:numVertices){
           rand.x <- idFrame[c(rand.noblock),(vertex+a)]
           rand.y <- idFrame[c(rand.noblock),(vertex+a+1)]
           vertex<- vertex+1
-          rand.point <-data.frame(rand.x, rand.y)
+          rand.point <-data.frame(rand.x, rand.y, stringsAsFactors = TRUE)
           colnames(rand.point)<- c(paste("point",a,".x", sep = ""), paste("point",a,".y", sep = ""))
           bindlist <-list(rand.poly, rand.point)
           rand.poly <- do.call("cbind", bindlist)
@@ -357,19 +357,19 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(dataType == "Point" || dataType == "POINT" || dataType == "point"){
       xVec <-y$x[which(y$block == unlist(unname(x[1])))]
       yVec <-y$y[which(y$block == unlist(unname(x[1])))]
-      xyrand <- data.frame(x.rand = xVec, y.rand = yVec)
+      xyrand <- data.frame(x.rand = xVec, y.rand = yVec, stringsAsFactors = TRUE)
     }
     if(dataType == "Polygon" || dataType == "POLYGON" || dataType == "polygon"){
       xTab <-y[which(y$block == x[1]),c(seq(2,(numVertices*2),2))]
       yTab <-y[which(y$block == x[1]),c(seq(3,(numVertices*2)+1,2))]
-      polygon <- data.frame(xTab[,1], yTab[,1]) #start making the polygon by adding the first vertex
+      polygon <- data.frame(xTab[,1], yTab[,1], stringsAsFactors = TRUE) #start making the polygon by adding the first vertex
       for(i in 2:numVertices){
         vert.x <-xTab[,i]
         vert.y <-yTab[,i]
         bindlist <-list(polygon,vert.x,vert.y)
         polygon<-do.call("cbind", bindlist)
       }
-      xyrand <- data.frame(polygon)
+      xyrand <- data.frame(polygon, stringsAsFactors = TRUE)
       colnames(xyrand)[c(seq(1,(numVertices*2)-1,2))]<-paste("point",seq(1,numVertices,1),".x_rand",sep ="")
       colnames(xyrand)[c(seq(2,(numVertices*2),2))]<-paste("point",seq(1,numVertices,1),".y_rand",sep ="")
     }
@@ -382,20 +382,20 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(dataType == "Point" || dataType == "POINT" || dataType == "point"){
       xVec <-blockFrame$x[randSeq]
       yVec <-blockFrame$y[randSeq]
-      xyrand <- data.frame(x = xVec, y = yVec)
+      xyrand <- data.frame(x = xVec, y = yVec, stringsAsFactors = TRUE)
       colnames(xyrand) <- c("x.rand","y.rand")
     }
     if(dataType == "Polygon" || dataType == "POLYGON" || dataType == "polygon"){
       xTab <-blockFrame[randSeq,c(seq(2,(numVertices*2),2))]
       yTab <-blockFrame[randSeq,c(seq(3,(numVertices*2)+1,2))]
-      polygon <- data.frame(xTab[,1], yTab[,1]) #start making the polygon by adding the first vertex
+      polygon <- data.frame(xTab[,1], yTab[,1], stringsAsFactors = TRUE) #start making the polygon by adding the first vertex
       for(i in 2:numVertices){
         vert.x <-xTab[,i]
         vert.y <-yTab[,i]
         bindlist <-list(polygon,vert.x,vert.y)
         polygon<-do.call("cbind", bindlist)
       }
-      xyrand <- data.frame(polygon)
+      xyrand <- data.frame(polygon, stringsAsFactors = TRUE)
       colnames(xyrand)[c(seq(1,(numVertices*2)-1,2))]<-paste("point",seq(1,numVertices,1),".x_rand",sep ="")
       colnames(xyrand)[c(seq(2,(numVertices*2),2))]<-paste("point",seq(1,numVertices,1),".y_rand",sep ="")
     }
@@ -404,16 +404,16 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
   
   if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
     if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
-      originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+      originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
     }
     if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
-      originTab = data.frame(matrix(ncol = 0, nrow = length(id)))
+      originTab = data.frame(matrix(ncol = 0, nrow = length(id)), stringsAsFactors = TRUE)
       originTab$id = id
       colnames(poly.xy)[seq(1,(ncol(poly.xy) - 1),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".x", sep = "")
       colnames(poly.xy)[seq(2,ncol(poly.xy),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".y", sep = "")
-      dateFrame = data.frame(dateTime = dateTime)
+      dateFrame = data.frame(dateTime = dateTime, stringsAsFactors = TRUE)
       bindlist = list(originTab,poly.xy,dateFrame)
-      originTab = data.frame(do.call("cbind", bindlist))
+      originTab = data.frame(do.call("cbind", bindlist), stringsAsFactors = TRUE)
     }
   }
   
@@ -442,7 +442,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
           x$y = point.y
         }
       }
-      xyFrame1<- data.frame(x = x$x, y = x$y)
+      xyFrame1<- data.frame(x = x$x, y = x$y, stringsAsFactors = TRUE)
     }
     
     if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -451,7 +451,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
         if(length(as.matrix(poly.xy)) == (numVertices*2) && length(which(is.na(match(as.matrix(poly.xy), names(x)))) == TRUE) == 0){ 
           xyFrame1<-x[,match(poly.xy,names(x))] 
         }else{
-          xyFrame1<- data.frame(poly.xy)
+          xyFrame1<- data.frame(poly.xy, stringsAsFactors = TRUE)
         }
       }else{ #if length(poly.xy == 0)
         xyFrame1 <-  x[,(match("point1.x", names(x))):((2*numVertices) + (match("point1.x", names(x)) -1))] #if there is no poly.xy input, the code assumes the input is output from referencePointToPolygon function, and therefore, the first point of interest would be "point1.x"
@@ -522,7 +522,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
   originTab <- originTab[order(originTab$id, originTab$dateTime),] #order by id, then dateTime
   
   if(numRandomizations > 1){
-    repeatTab<- data.frame(seq(1,numRandomizations, 1))
+    repeatTab<- data.frame(seq(1,numRandomizations, 1), stringsAsFactors = TRUE)
     repeatTab$dataType = dataType
     repeatTab$numVertices = numVertices
     repeatTab$shuffle.type = shuffle.type
@@ -549,7 +549,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
       idVecSeq <- 1
     }
     numids <- length(idVecSeq)
-    idTab<- data.frame(idVecSeq)
+    idTab<- data.frame(idVecSeq, stringsAsFactors = TRUE)
     
     if(parallel == TRUE){
       cl<-parallel::makeCluster(nCores)
@@ -562,7 +562,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     if(is.data.frame(randomness) == TRUE){
       randomxyCoords<-randomness
     }else{
-      randomxyCoords<-data.frame(data.table::rbindlist(randomness))
+      randomxyCoords<-data.frame(data.table::rbindlist(randomness), stringsAsFactors = TRUE)
     }
     
     if(blocking == TRUE & shuffle.type == 2){ #To account for potential length differences in blocks if shuffle.type ==2, the outputTab is compiled earlier on in the function (in the datasub.func subfunction) 
@@ -579,7 +579,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     outputTab$rand.rep = 1    
     
     if(reduceOutput == TRUE){
-      outputTab <- data.frame(id = outputTab$id, x.rand = outputTab$x.rand, y.rand = outputTab$y.rand, dateTime = outputTab$dateTime, rand.rep = outputTab$rand.rep)
+      outputTab <- data.frame(id = outputTab$id, x.rand = outputTab$x.rand, y.rand = outputTab$y.rand, dateTime = outputTab$dateTime, rand.rep = outputTab$rand.rep, stringsAsFactors = TRUE)
     }else{
       rownames(outputTab)<- seq(1, nrow(outputTab), 1) #ensure rownames are sequential. If output was reduced, this happened automatically.
     }

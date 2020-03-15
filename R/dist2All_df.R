@@ -112,7 +112,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
         
         create.distFrame<- function(x,distMat, indivSeq, idSeq, timestepIndivSeq,time){
           
-          dist = data.frame(matrix(ncol = (length(indivSeq) + 4), nrow = 1))
+          dist = data.frame(matrix(ncol = (length(indivSeq) + 4), nrow = 1), stringsAsFactors = TRUE)
           colnames(dist) = c("dateTime","totalIndividuals","individualsAtTimestep","id", paste("dist.to.indiv_", idSeq, sep = ""))
           dist$dateTime = time
           dist$totalIndividuals = length(indivSeq)
@@ -142,8 +142,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
           dist[1,5:ncol(dist)] = col.fill
           return(dist)
         }
-        
-        
+
         if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
           
           x<-x[order(x$id, x$dateTime),]
@@ -166,19 +165,19 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
                   return(de)
                 }
                 elevVec <- unname(unlist(timestep$elev))
-                elevFrame <- data.frame(elevVec)
+                elevFrame <- data.frame(elevVec, stringsAsFactors = TRUE)
                 elev.dif<-apply(elevFrame, 1, elevDifference, elevVec)
                 distMat<-distMat + elev.dif #adds the difference in elevations to the linear distances previously calculated. Note that the elev distance units must be in meters, as that is the unit of distMat values. 
               }
-              timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
-              distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)))
+              timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ, stringsAsFactors = TRUE) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
+              distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)), stringsAsFactors = TRUE)
               return(distTab)
             }
           }
           
           distTab <- foreach::foreach(i = unique(x$dateTime), .packages = 'foreach') %do% dist.process.point(i, y = x, indivSeq,idSeq, dist.measurement, elev.calc)
           
-          dist.all = data.frame(data.table::rbindlist(distTab))
+          dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE)
         }
         
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -204,7 +203,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
             if(nrow(timestep) > 1){ #If there's only one record in timestep, any distMat produced will only denote the distance between an individual and itself (which isn't useful), so it's more time efficient to skip forward nrow(timestep <= 1)
               
               timestepIndivSeq.integ = unique(timestep$integ.ID)
-              makePolyFrame<-data.frame(seq(1,length(timestepIndivSeq.integ),1))
+              makePolyFrame<-data.frame(seq(1,length(timestepIndivSeq.integ),1), stringsAsFactors = TRUE)
               spatialPolygons <- apply(makePolyFrame,1,create.poly1,timestep,numVertices)
               sPolys = sp::SpatialPolygons(spatialPolygons,timestepIndivSeq.integ) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
               distMat = rgeos::gDistance(sPolys, byid = TRUE)
@@ -216,20 +215,20 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
                   return(de)
                 }
                 elevVec <- unname(unlist(timestep$elev))
-                elevFrame <- data.frame(elevVec)
+                elevFrame <- data.frame(elevVec, stringsAsFactors = TRUE)
                 elev.dif<-apply(elevFrame, 1, elevDifference, elevVec)
                 distMat<-distMat + elev.dif #adds the difference in elevations to the linear distances previously calculated. Note that the elev distance units must be in meters, as that is the unit of distMat values. 
               }
               
-              timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
-              distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)))
+              timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ, stringsAsFactors = TRUE) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
+              distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)), stringsAsFactors = TRUE)
               return(distTab)
             }
           }
           
           distTab <- foreach::foreach(i = unique(x$dateTime), .packages = 'foreach') %do% dist.process.poly(i, y = x, indivSeq, idSeq, numVertices, elev.calc)
           
-          dist.all = data.frame(data.table::rbindlist(distTab))
+          dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE)
         }
         return(dist.all)
       }
@@ -244,7 +243,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
         day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
         names(day_lists)<-NULL #ensure that list names do not mess up column names
         list.dist <- lapply(day_lists, dist.generator, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply.
-        dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE)) #bind these hours back together
+        dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
         
         return(dist.bind)
       }
@@ -252,17 +251,17 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       idVec1=NULL #added in the case that idVec1 isn't created when x isn't specified
       if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
         if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
-          originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+          originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
         }
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
           
-          originTab = data.frame(matrix(ncol = 0, nrow = length(id)))
+          originTab = data.frame(matrix(ncol = 0, nrow = length(id)), stringsAsFactors = TRUE)
           originTab$id = id
           colnames(poly.xy)[seq(1,(ncol(poly.xy) - 1),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".x", sep = "")
           colnames(poly.xy)[seq(2,ncol(poly.xy),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".y", sep = "")
-          dateFrame = data.frame(dateTime = dateTime)
+          dateFrame = data.frame(dateTime = dateTime, stringsAsFactors = TRUE)
           bindlist = list(originTab,poly.xy,dateFrame)
-          originTab = data.frame(do.call("cbind", bindlist))
+          originTab = data.frame(do.call("cbind", bindlist), stringsAsFactors = TRUE)
         }
       }
       
@@ -295,7 +294,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
               x$y = point.y
             }
           }
-          xyFrame1<- data.frame(x = x$x, y = x$y)
+          xyFrame1<- data.frame(x = x$x, y = x$y, stringsAsFactors = TRUE)
         }
         
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -305,7 +304,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
               xyFrame1<-x[,match(poly.xy,names(x))]
             }else{
               #x[,2:(1 + length(poly.xy))] = poly.xy
-              xyFrame1<- data.frame(poly.xy)
+              xyFrame1<- data.frame(poly.xy, stringsAsFactors = TRUE)
             }
           }else{ #if length(poly.xy == 0)
             xyFrame1 <-  x[,(match("point1.x", names(x))):((2*numVertices) + (match("point1.x", names(x)) -1))] #if there is no poly.xy input, the code assumes the input is output from referencePointToPolygon function, and therefore, the first point of interest would be "point1.x"
@@ -370,9 +369,6 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       
       rm(list =  c("originTab", "data.dates", "date_hour.vec")) #remove the unneeded objects to free up memory
       
-      #distances<-apply(data.frame(date.vec), 1, day_listDistance, data.list, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores)
-      #browser()
-      
       if(parallel == TRUE){
         
         cl <- parallel::makeCluster(nCores)
@@ -386,7 +382,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
         
       }
       
-      frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE))
+      frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE), stringsAsFactors = TRUE)
       
       return(frame.dist)
       
@@ -404,7 +400,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       
       create.distFrame<- function(x,distMat, indivSeq, idSeq, timestepIndivSeq,time){
         
-        dist = data.frame(matrix(ncol = (length(indivSeq) + 4), nrow = 1))
+        dist = data.frame(matrix(ncol = (length(indivSeq) + 4), nrow = 1), stringsAsFactors = TRUE)
         colnames(dist) = c("dateTime","totalIndividuals","individualsAtTimestep","id", paste("dist.to.indiv_", idSeq, sep = ""))
         dist$dateTime = time
         dist$totalIndividuals = length(indivSeq)
@@ -458,19 +454,19 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
                 return(de)
               }
               elevVec <- unname(unlist(timestep$elev))
-              elevFrame <- data.frame(elevVec)
+              elevFrame <- data.frame(elevVec, stringsAsFactors = TRUE)
               elev.dif<-apply(elevFrame, 1, elevDifference, elevVec)
               distMat<-distMat + elev.dif #adds the difference in elevations to the linear distances previously calculated. Note that the elev distance units must be in meters, as that is the unit of distMat values. 
             }
-            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
-            distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)))
+            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ, stringsAsFactors = TRUE) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
+            distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)), stringsAsFactors = TRUE)
             return(distTab)
           }
         }
         
         distTab <- foreach::foreach(i = unique(x$dateTime), .packages = 'foreach') %do% dist.process.point(i, y = x, indivSeq,idSeq, dist.measurement, elev.calc)
         
-        dist.all = data.frame(data.table::rbindlist(distTab))
+        dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE)
       }
       
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -496,7 +492,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
           if(nrow(timestep) > 1){ #If there's only one record in timestep, any distMat produced will only denote the distance between an individual and itself (which isn't useful), so it's more time efficient to skip forward nrow(timestep <= 1)
             
             timestepIndivSeq.integ = unique(timestep$integ.ID)
-            makePolyFrame<-data.frame(seq(1,length(timestepIndivSeq.integ),1))
+            makePolyFrame<-data.frame(seq(1,length(timestepIndivSeq.integ),1), stringsAsFactors = TRUE)
             spatialPolygons <- apply(makePolyFrame,1,create.poly1,timestep,numVertices)
             sPolys = sp::SpatialPolygons(spatialPolygons,timestepIndivSeq.integ) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
             distMat = rgeos::gDistance(sPolys, byid = TRUE)
@@ -508,20 +504,20 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
                 return(de)
               }
               elevVec <- unname(unlist(timestep$elev))
-              elevFrame <- data.frame(elevVec)
+              elevFrame <- data.frame(elevVec, stringsAsFactors = TRUE)
               elev.dif<-apply(elevFrame, 1, elevDifference, elevVec)
               distMat<-distMat + elev.dif #adds the difference in elevations to the linear distances previously calculated. Note that the elev distance units must be in meters, as that is the unit of distMat values. 
             }
             
-            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
-            distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)))
+            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), timestepIndivSeq.integ, stringsAsFactors = TRUE) #Note that colnum will not necessarily be the same as timestepIndivSeq.integ because y has been previously ordered
+            distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, idSeq, timestepIndivSeq.integ,time)), stringsAsFactors = TRUE)
             return(distTab)
           }
         }
         
         distTab <- foreach::foreach(i = unique(x$dateTime), .packages = 'foreach') %do% dist.process.poly(i, y = x, indivSeq, idSeq, numVertices, elev.calc)
         
-        dist.all = data.frame(data.table::rbindlist(distTab))
+        dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE)
       }
       return(dist.all)
     }
@@ -536,7 +532,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
       names(day_lists)<-NULL #ensure that list names do not mess up column names
       list.dist <- lapply(day_lists, dist.generator, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply.
-      dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE)) #bind these hours back together
+      dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
       
       return(dist.bind)
     }
@@ -544,17 +540,17 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     idVec1=NULL #added in the case that idVec1 isn't created when x isn't specified
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
       if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
-        originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+        originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
       }
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
         
-        originTab = data.frame(matrix(ncol = 0, nrow = length(id)))
+        originTab = data.frame(matrix(ncol = 0, nrow = length(id)), stringsAsFactors = TRUE)
         originTab$id = id
         colnames(poly.xy)[seq(1,(ncol(poly.xy) - 1),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".x", sep = "")
         colnames(poly.xy)[seq(2,ncol(poly.xy),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".y", sep = "")
-        dateFrame = data.frame(dateTime = dateTime)
+        dateFrame = data.frame(dateTime = dateTime, stringsAsFactors = TRUE)
         bindlist = list(originTab,poly.xy,dateFrame)
-        originTab = data.frame(do.call("cbind", bindlist))
+        originTab = data.frame(do.call("cbind", bindlist), stringsAsFactors = TRUE)
       }
     }
     
@@ -587,7 +583,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
             x$y = point.y
           }
         }
-        xyFrame1<- data.frame(x = x$x, y = x$y)
+        xyFrame1<- data.frame(x = x$x, y = x$y, stringsAsFactors = TRUE)
       }
       
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -597,7 +593,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
             xyFrame1<-x[,match(poly.xy,names(x))]
           }else{
             #x[,2:(1 + length(poly.xy))] = poly.xy
-            xyFrame1<- data.frame(poly.xy)
+            xyFrame1<- data.frame(poly.xy, stringsAsFactors = TRUE)
           }
         }else{ #if length(poly.xy == 0)
           xyFrame1 <-  x[,(match("point1.x", names(x))):((2*numVertices) + (match("point1.x", names(x)) -1))] #if there is no poly.xy input, the code assumes the input is output from referencePointToPolygon function, and therefore, the first point of interest would be "point1.x"
@@ -662,9 +658,6 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     
     rm(list =  c("originTab", "data.dates", "date_hour.vec")) #remove the unneeded objects to free up memory
     
-    #distances<-apply(data.frame(date.vec), 1, day_listDistance, data.list, id, dateTime, point.x, point.y, poly.xy, elev, parallel, dataType, lonlat, numVertices, nCores)
-    #browser()
-    
     if(parallel == TRUE){
       
       cl <- parallel::makeCluster(nCores)
@@ -678,7 +671,7 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       
     }
     
-    frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE))
+    frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE), stringsAsFactors = TRUE)
     
     return(frame.dist)
   }

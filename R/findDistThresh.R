@@ -24,7 +24,7 @@
 #'    threshold for contact.
 #' @keywords contact location point
 #' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-#'    C. in Review. Accounting for space and uncertainty in real-time-location-
+#'    C. in Press. Accounting for space and uncertainty in real-time-location-
 #'    system-derived contact networks. Ecology and Evolution.
 #' @export
 #' @return Output is a named vector with 22 observations describing the mean, 
@@ -49,13 +49,24 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     
     conf1.1 <- (1 - unname(unlist(x[4]))/100)/2 #calculate alpha/2 for the accuracy distribution
     conf1.2<-unlist(ifelse(conf1.1 >0, conf1.1,0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)) #if conf = 0, it is replaced with this value which is extremely close to 0, so that qnorm doesn't return an inf value
+    if(conf1.2 == 0){ #Ensure that users know that users know if conf1.1 was changed
+      
+      warning("pWithin1 == 1. To prevent an error here, probability of true locations falling outside of an acc.Dist1 radius around reported point locations changed from 0 to 9.999889e-320. As a result, spTh estimates may be inflated.")
+      
+    }
     zscore1<-abs(stats::qnorm(conf1.2)) #calculate z-score
   
     conf2.1<- (1 - unname(unlist(x[5]))/100)/2 
     conf2.2<-unlist(ifelse(conf2.1 >0, conf2.1,0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)) #if conf = 0, it is replaced with this value which is extremely close to 0, so that qnorm doesn't return an inf value
+    if(conf2.2 == 0){ #Ensure that users know that users know if conf1.1 was changed
+      
+      warning("pWithin2 == 1. To prevent an error here, probability of true locations falling outside of an acc.Dist2 radius around reported point locations changed from 0 to 9.999889e-320. As a result, spTh estimates may be inflated.")
+      
+    }
+    
     zscore2<-abs(stats::qnorm(conf2.2)) #calculate z-score
   
-    x1<-data.frame(p1.x = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p1.y = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p2.x = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[3]))/zscore2),p2.y = stats::rnorm(unname(unlist(x[1])), mean = 1+unname(unlist(x[6])), sd = unname(unlist(x[3]))/zscore2)) #note that one of the points is spTh-m away from the other
+    x1<-data.frame(p1.x = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p1.y = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[2]))/zscore1),p2.x = stats::rnorm(unname(unlist(x[1])), mean = 1, sd = unname(unlist(x[3]))/zscore2),p2.y = stats::rnorm(unname(unlist(x[1])), mean = 1+unname(unlist(x[6])), sd = unname(unlist(x[3]))/zscore2), stringsAsFactors = TRUE) #note that one of the points is spTh-m away from the other
     dist.distr<-apply(x1,1,euc)
     dist.mean<-mean(dist.distr)
     dist.sd<-stats::sd(dist.distr)
@@ -79,7 +90,7 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
   if(is.null(pWithin2) == TRUE){pWithin2 = pWithin1} #If == NULL, defaults to pWithin1 value.
   if(is.null(acc.Dist2) == TRUE){acc.Dist2 = acc.Dist1} #If == NULL, defaults to acc.Dist1 value.
   
-  inputFrame<-data.frame(matrix(ncol =6, nrow = 1))
+  inputFrame<-data.frame(matrix(ncol =6, nrow = 1), stringsAsFactors = TRUE)
   inputFrame[,1]<-n
   inputFrame[,2]<-acc.Dist1
   inputFrame[,3]<-acc.Dist2

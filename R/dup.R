@@ -179,7 +179,7 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
               return(newCoord)
             }
           
-            dupFrame = data.frame(unique(x$indiv_dateTimes[duplicates.adjusted]))
+            dupFrame = data.frame(unique(x$indiv_dateTimes[duplicates.adjusted]), stringsAsFactors = TRUE)
             originTab = x
           
             if(parallel == TRUE){
@@ -199,7 +199,7 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
           x <- droplevels(x[-dupRemove,]) 
         
         if(avg == TRUE){
-          x = data.frame(data.table::rbindlist(list(x,replaceTab)))
+          x = data.frame(data.table::rbindlist(list(x,replaceTab)), stringsAsFactors = TRUE)
 
           if(length(colname.x) > 0){ #colname.x and colname.y are the modified columns, yet these columns are artifacts of this function that will ultimately be removed. This step ensures that the relevant permanent columns are modified as well.
             x[,match(colname.x,names(x))] <- x$xVec1
@@ -219,7 +219,7 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
         x$duplicated[dupRemove] = 1
         if(length(exactDuplicates) > 0){ #if there were exact duplicates, then they are indicated as well.
           exactDup.values$duplicated <- 1
-          x <- data.frame(data.table::rbindlist(list(x, exactDup.values))) #bind x and exactDup.values
+          x <- data.frame(data.table::rbindlist(list(x, exactDup.values)), stringsAsFactors = TRUE) #bind x and exactDup.values
           x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
           x$duplicated[exactDuplicates -1] <- 1
         }
@@ -228,7 +228,7 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
         if(filterOutput == FALSE){ #in this case ALL duplicates were exact duplicates
           x$duplicated = 0
           exactDup.values$duplicated <- 1
-          x <- data.frame(data.table::rbindlist(list(x, exactDup.values))) #bind x and exactDup.values
+          x <- data.frame(data.table::rbindlist(list(x, exactDup.values)), stringsAsFactors = TRUE) #bind x and exactDup.values
           x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
           x$duplicated[exactDuplicates -1] <- 1
         }

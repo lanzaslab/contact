@@ -175,7 +175,7 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     indivDist <- function(x, y, dist.measurement){
       xytab = y[which(y$idVec1 == x[1]),]
       if(nrow(xytab) > 1){
-        distCoordinates = data.frame(xytab$xVec1[1:(nrow(xytab) - 1)], xytab$yVec1[1:(nrow(xytab) - 1)], xytab$xVec1[2:nrow(xytab)], xytab$yVec1[2:nrow(xytab)])
+        distCoordinates = data.frame(xytab$xVec1[1:(nrow(xytab) - 1)], xytab$yVec1[1:(nrow(xytab) - 1)], xytab$xVec1[2:nrow(xytab)], xytab$yVec1[2:nrow(xytab)], stringsAsFactors = TRUE)
         dist = apply(distCoordinates,1,euc, dist.measurement)
         dist1 = c(NA, dist)
       }else{#if nrow(xytab) == 0 or 1.
@@ -185,7 +185,7 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     }
     dist.measurement = lonlat
     rownames(x) <-seq(1,nrow(x),1) #This renames the rownames because they may no longer be sequential following the confinementFilter
-    indivSeqFrame=data.frame(unique(x$idVec1)) #The list of individual IDs.
+    indivSeqFrame=data.frame(unique(x$idVec1), stringsAsFactors = TRUE) #The list of individual IDs.
     if(parallel == TRUE){
       cl<-parallel::makeCluster(nCores)
       on.exit(parallel::stopCluster(cl))

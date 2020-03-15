@@ -58,7 +58,7 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
   }
   
   if(length(x) == 0){ #if there is no x input (i.e., x == NULL), #assumes that if x == NULL, dateTime does not.
-    x<- data.frame(dateTime = dateTime)
+    x<- data.frame(dateTime = dateTime, stringsAsFactors = TRUE)
   }else{ # length(x) > 0
     if(length(dateTime) > 0){ #dateTime == NULL, the function assumes that there is a "dateTime" column in x.
       if(length(dateTime) == 1 && is.na(match(dateTime[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)

@@ -210,7 +210,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
             dur = (dur + 1)
           }
           
-          standFrame = data.frame(replaceRow = x[1], replacePoint2.x = locMatrix$cornerPoint2.x[(x[1] - dur)], replacePoint2.y = locMatrix$cornerPoint2.y[(x[1] - dur)], replacePoint3.x = locMatrix$cornerPoint3.x[(x[1] - dur)], replacePoint3.y = locMatrix$cornerPoint3.y[(x[1] - dur)], replacePoint4.x = locMatrix$cornerPoint4.x[(x[1] - dur)], replacePoint4.y = locMatrix$cornerPoint4.y[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep. There's no need to replace point1 because it is the pre-translated (a.k.a. original) location of the individual.
+          standFrame = data.frame(replaceRow = x[1], replacePoint2.x = locMatrix$cornerPoint2.x[(x[1] - dur)], replacePoint2.y = locMatrix$cornerPoint2.y[(x[1] - dur)], replacePoint3.x = locMatrix$cornerPoint3.x[(x[1] - dur)], replacePoint3.y = locMatrix$cornerPoint3.y[(x[1] - dur)], replacePoint4.x = locMatrix$cornerPoint4.x[(x[1] - dur)], replacePoint4.y = locMatrix$cornerPoint4.y[(x[1] - dur)], stringsAsFactors = TRUE) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep. There's no need to replace point1 because it is the pre-translated (a.k.a. original) location of the individual.
           
           return(standFrame)
         }
@@ -225,11 +225,11 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
           newX<- distV*cos(vertex.angle.simplified.rad) + x #identify the x coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical x
           newY<- distV*sin((vertex.angle.simplified.rad)) + y #identify the y coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical y
           
-          output<-data.frame(x.adjusted = newX, y.adjusted = newY)
+          output<-data.frame(x.adjusted = newX, y.adjusted = newY, stringsAsFactors = TRUE)
           return(output)
         }
         
-        distCoordinates = data.frame(x1 = x$x[1:(nrow(x) - 1)], y1 = x$y[1:(nrow(x) - 1)], x2 = x$x[2:nrow(x)], y2 = x$y[2:nrow(x)])
+        distCoordinates = data.frame(x1 = x$x[1:(nrow(x) - 1)], y1 = x$y[1:(nrow(x) - 1)], x2 = x$x[2:nrow(x)], y2 = x$y[2:nrow(x)], stringsAsFactors = TRUE)
         
         dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
         dist = c(dist, NA) #to make dist the same length as nrow(x)
@@ -237,7 +237,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
         dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
         
-        timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
+        timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
         
         dt = apply(timesFrame, 1, timeDifference)
         dt = c(dt, NA)  #to make length(dt) == nrow(x)
@@ -255,7 +255,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         x$dt = dt
         x$dist<-dist
         
-        dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)])) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+        dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
         
         for(b in idVec){ #This code replaces dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
           dataShift[min(which(idSeqVec == b)),] = NA
@@ -306,7 +306,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         }
         
         
-        polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27)) #One row for each observation, Columns listed below
+        polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
         colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
         
         polygonMatrix$id = x$id
@@ -334,7 +334,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
           
           immobVec = polygonMatrix$immob
           immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.polygon(k, locMatrix = polygonMatrix, immobVec)
-          immobFrame <- data.frame(data.table::rbindlist(immob.list))
+          immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
           
           if(nrow(immobFrame) > 0){
             polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.x", names(polygonMatrix))] = immobFrame$replacePoint2.x
@@ -370,7 +370,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
         names(day_lists)<-NULL #ensure that list names do not mess up column names
         list.poly <- lapply(day_lists, poly.generator, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, modelOrientation)
-        poly.bind <- data.frame(data.table::rbindlist(list.poly, fill = TRUE)) #bind these hours back together
+        poly.bind <- data.frame(data.table::rbindlist(list.poly, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
         
         return(poly.bind)
       }
@@ -381,7 +381,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
       }
       
       if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors.
-        x = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+        x = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
       }
       
       if(length(x) > 0){ #for some reason using an "else" statement would always result in a table with 0 records...
@@ -457,7 +457,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         
       }
       
-      frame.poly<- data.frame(data.table::rbindlist(polys, fill = TRUE))
+      frame.poly<- data.frame(data.table::rbindlist(polys, fill = TRUE), stringsAsFactors = TRUE)
       
       return(frame.poly)
       
@@ -494,7 +494,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
           dur = (dur + 1)
         }
         
-        standFrame = data.frame(replaceRow = x[1], replacePoint2.x = locMatrix$cornerPoint2.x[(x[1] - dur)], replacePoint2.y = locMatrix$cornerPoint2.y[(x[1] - dur)], replacePoint3.x = locMatrix$cornerPoint3.x[(x[1] - dur)], replacePoint3.y = locMatrix$cornerPoint3.y[(x[1] - dur)], replacePoint4.x = locMatrix$cornerPoint4.x[(x[1] - dur)], replacePoint4.y = locMatrix$cornerPoint4.y[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep. There's no need to replace point1 because it is the pre-translated (a.k.a. original) location of the individual.
+        standFrame = data.frame(replaceRow = x[1], replacePoint2.x = locMatrix$cornerPoint2.x[(x[1] - dur)], replacePoint2.y = locMatrix$cornerPoint2.y[(x[1] - dur)], replacePoint3.x = locMatrix$cornerPoint3.x[(x[1] - dur)], replacePoint3.y = locMatrix$cornerPoint3.y[(x[1] - dur)], replacePoint4.x = locMatrix$cornerPoint4.x[(x[1] - dur)], replacePoint4.y = locMatrix$cornerPoint4.y[(x[1] - dur)], stringsAsFactors = TRUE) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep. There's no need to replace point1 because it is the pre-translated (a.k.a. original) location of the individual.
         
         return(standFrame)
       }
@@ -509,11 +509,11 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         newX<- distV*cos(vertex.angle.simplified.rad) + x #identify the x coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical x
         newY<- distV*sin((vertex.angle.simplified.rad)) + y #identify the y coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical y
         
-        output<-data.frame(x.adjusted = newX, y.adjusted = newY)
+        output<-data.frame(x.adjusted = newX, y.adjusted = newY, stringsAsFactors = TRUE)
         return(output)
       }
       
-      distCoordinates = data.frame(x1 = x$x[1:(nrow(x) - 1)], y1 = x$y[1:(nrow(x) - 1)], x2 = x$x[2:nrow(x)], y2 = x$y[2:nrow(x)])
+      distCoordinates = data.frame(x1 = x$x[1:(nrow(x) - 1)], y1 = x$y[1:(nrow(x) - 1)], x2 = x$x[2:nrow(x)], y2 = x$y[2:nrow(x)], stringsAsFactors = TRUE)
       
       dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
       dist = c(dist, NA) #to make dist the same length as nrow(x)
@@ -521,7 +521,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
       dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
       dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
       
-      timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
+      timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
       
       dt = apply(timesFrame, 1, timeDifference)
       dt = c(dt, NA)  #to make length(dt) == nrow(x)
@@ -539,7 +539,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
       x$dt = dt
       x$dist<-dist
       
-      dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)])) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+      dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
       
       for(b in idVec){ #This code replaces dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
         dataShift[min(which(idSeqVec == b)),] = NA
@@ -590,7 +590,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
       }
       
       
-      polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27)) #One row for each observation, Columns listed below
+      polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
       colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
       
       polygonMatrix$id = x$id
@@ -618,7 +618,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         
         immobVec = polygonMatrix$immob
         immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.polygon(k, locMatrix = polygonMatrix, immobVec)
-        immobFrame <- data.frame(data.table::rbindlist(immob.list))
+        immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
         
         if(nrow(immobFrame) > 0){
           polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.x", names(polygonMatrix))] = immobFrame$replacePoint2.x
@@ -654,7 +654,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
       day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
       names(day_lists)<-NULL #ensure that list names do not mess up column names
       list.poly <- lapply(day_lists, poly.generator, StartLocation, UpDownRepositionLen, LeftRightRepositionLen, CenterPoint, MidPoints, immobThreshold, modelOrientation)
-      poly.bind <- data.frame(data.table::rbindlist(list.poly, fill = TRUE)) #bind these hours back together
+      poly.bind <- data.frame(data.table::rbindlist(list.poly, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
       
       return(poly.bind)
     }
@@ -665,7 +665,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
     }
     
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors.
-      x = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+      x = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
     }
     
     if(length(x) > 0){ #for some reason using an "else" statement would always result in a table with 0 records...
@@ -741,7 +741,7 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
       
     }
     
-    frame.poly<- data.frame(data.table::rbindlist(polys, fill = TRUE))
+    frame.poly<- data.frame(data.table::rbindlist(polys, fill = TRUE), stringsAsFactors = TRUE)
     
     return(frame.poly)
   }

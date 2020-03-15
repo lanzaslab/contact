@@ -58,7 +58,7 @@ findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL,
 }
 \references{
 Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-   C. in Review. Accounting for space and uncertainty in real-time-location-
+   C. in Press. Accounting for space and uncertainty in real-time-location-
    system-derived contact networks. Ecology and Evolution.
 }
 \keyword{contact}

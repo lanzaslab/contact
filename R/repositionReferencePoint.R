@@ -205,7 +205,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
           newX<- distV*cos(vertex.angle.simplified.rad) + x #identify the x coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical x
           newY<- distV*sin((vertex.angle.simplified.rad)) + y #identify the y coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical y
           
-          output<-data.frame(x.adjusted = newX, y.adjusted = newY)
+          output<-data.frame(x.adjusted = newX, y.adjusted = newY, stringsAsFactors = TRUE)
           return(output)
         }
         immobAdjustment.point = function(x, locMatrix, immobVec){
@@ -216,7 +216,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
             standDurTest <- ifelse(is.na(standDurTest) == TRUE, TRUE, standDurTest) #This is for when x[1] -1 relates to the first observation for any individual (because those observations are NA)
             dur = (dur + 1)
           }
-          standFrame = data.frame(replaceRow = x[1], replacePoint.x = locMatrix$x.adjusted[(x[1] - dur)], replacePoint.y = locMatrix$y.adjusted[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep.
+          standFrame = data.frame(replaceRow = x[1], replacePoint.x = locMatrix$x.adjusted[(x[1] - dur)], replacePoint.y = locMatrix$y.adjusted[(x[1] - dur)], stringsAsFactors = TRUE) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep.
           return(standFrame)
         }
         timeDifference = function(x){
@@ -226,7 +226,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
           return(dt)
         }
         
-        distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)])
+        distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)], stringsAsFactors = TRUE)
         
         dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
         dist = c(dist, NA) #to make dist the same length as nrow(x)
@@ -234,7 +234,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
         dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
         
-        timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
+        timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
         
         dt = apply(timesFrame, 1, timeDifference)
         dt = c(dt, NA) #to make dt the same length as nrow(x)
@@ -251,7 +251,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         x$dist = dist
         x$dt = dt
         
-        dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)])) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+        dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
         for(b in idVec){ #This code replaces dist, dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
           dataShift[min(which(idSeqVec == b)),] = NA
         }
@@ -273,7 +273,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         #translate the empirical coordinates to create the new ones
         newCoordinates <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
         
-        RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18))) #One row for each observation, Columns listed below
+        RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
         colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
         RepositionMatrix$id = x$id
         RepositionMatrix$x.original = x$x
@@ -297,7 +297,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
           
           immobVec = RepositionMatrix$immob
           immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.point(k, locMatrix = RepositionMatrix, immobVec)
-          immobFrame <- data.frame(data.table::rbindlist(immob.list))
+          immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
           
           if(nrow(immobFrame) > 0){
             RepositionMatrix[immobFrame$replaceRow,match("x.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.x
@@ -305,7 +305,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
           }
         }
         
-        newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)])
+        newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)], stringsAsFactors = TRUE)
         
         newDist = apply(newDistCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
         newDist = c(newDist, NA)
@@ -325,7 +325,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
         names(day_lists)<-NULL #ensure that list names do not mess up column names
         list.reposition <- lapply(day_lists, reposition.generator, repositionAngle, repositionDist, immobThreshold, modelOrientation)
-        reposition.bind <- data.frame(data.table::rbindlist(list.reposition, fill = TRUE)) #bind these hours back together
+        reposition.bind <- data.frame(data.table::rbindlist(list.reposition, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
         
         return(reposition.bind)
       }
@@ -336,7 +336,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       }
       
       if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors.
-        x <- data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+        x <- data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
       }
       
       if(length(x) > 0){ #for some reason using an "else" statement would always result in a table with 0 records...
@@ -411,7 +411,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         
       }
       
-      frame.rep<- data.frame(data.table::rbindlist(repositions, fill = TRUE))
+      frame.rep<- data.frame(data.table::rbindlist(repositions, fill = TRUE), stringsAsFactors = TRUE)
       
       return(frame.rep)
       
@@ -442,7 +442,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         newX<- distV*cos(vertex.angle.simplified.rad) + x #identify the x coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical x
         newY<- distV*sin((vertex.angle.simplified.rad)) + y #identify the y coordinate that lies distV units in the vertex.angle.simplified.rad direction from the empirical y
         
-        output<-data.frame(x.adjusted = newX, y.adjusted = newY)
+        output<-data.frame(x.adjusted = newX, y.adjusted = newY, stringsAsFactors = TRUE)
         return(output)
       }
       immobAdjustment.point = function(x, locMatrix, immobVec){
@@ -453,7 +453,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
           standDurTest <- ifelse(is.na(standDurTest) == TRUE, TRUE, standDurTest) #This is for when x[1] -1 relates to the first observation for any individual (because those observations are NA)
           dur = (dur + 1)
         }
-        standFrame = data.frame(replaceRow = x[1], replacePoint.x = locMatrix$x.adjusted[(x[1] - dur)], replacePoint.y = locMatrix$y.adjusted[(x[1] - dur)]) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep.
+        standFrame = data.frame(replaceRow = x[1], replacePoint.x = locMatrix$x.adjusted[(x[1] - dur)], replacePoint.y = locMatrix$y.adjusted[(x[1] - dur)], stringsAsFactors = TRUE) #if individuals are immob, their location at a given timestep will be the same as at the previous timestep.
         return(standFrame)
       }
       timeDifference = function(x){
@@ -463,7 +463,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         return(dt)
       }
       
-      distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)])
+      distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)], stringsAsFactors = TRUE)
 
       dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
       dist = c(dist, NA) #to make dist the same length as nrow(x)
@@ -471,7 +471,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
       dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
       
-      timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)])
+      timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
 
       dt = apply(timesFrame, 1, timeDifference)
       dt = c(dt, NA) #to make dt the same length as nrow(x)
@@ -488,7 +488,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       x$dist = dist
       x$dt = dt
       
-      dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)])) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+      dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
       for(b in idVec){ #This code replaces dist, dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
         dataShift[min(which(idSeqVec == b)),] = NA
       }
@@ -510,7 +510,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       #translate the empirical coordinates to create the new ones
       newCoordinates <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
       
-      RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18))) #One row for each observation, Columns listed below
+      RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
       colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
       RepositionMatrix$id = x$id
       RepositionMatrix$x.original = x$x
@@ -534,7 +534,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         
         immobVec = RepositionMatrix$immob
         immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.point(k, locMatrix = RepositionMatrix, immobVec)
-        immobFrame <- data.frame(data.table::rbindlist(immob.list))
+        immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
         
         if(nrow(immobFrame) > 0){
           RepositionMatrix[immobFrame$replaceRow,match("x.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.x
@@ -542,7 +542,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         }
       }
       
-      newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)])
+      newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)], stringsAsFactors = TRUE)
       
       newDist = apply(newDistCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
       newDist = c(newDist, NA)
@@ -562,7 +562,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
       names(day_lists)<-NULL #ensure that list names do not mess up column names
       list.reposition <- lapply(day_lists, reposition.generator, repositionAngle, repositionDist, immobThreshold, modelOrientation)
-      reposition.bind <- data.frame(data.table::rbindlist(list.reposition, fill = TRUE)) #bind these hours back together
+      reposition.bind <- data.frame(data.table::rbindlist(list.reposition, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
       
       return(reposition.bind)
     }
@@ -573,7 +573,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
     }
     
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors.
-      x <- data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+      x <- data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
     }
     
     if(length(x) > 0){ #for some reason using an "else" statement would always result in a table with 0 records...
@@ -648,7 +648,7 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       
     }
     
-    frame.rep<- data.frame(data.table::rbindlist(repositions, fill = TRUE))
+    frame.rep<- data.frame(data.table::rbindlist(repositions, fill = TRUE), stringsAsFactors = TRUE)
     
     return(frame.rep)
   }

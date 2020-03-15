@@ -163,10 +163,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
               dyad = paste(member1,"-",member2,sep="")
               times.start <- timeVec1[contact.start]
               times.finish <- timeVec1[contact.finish]
-              durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish)
+              durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish, stringsAsFactors = TRUE)
               
             }else{ #If there were no recorded contacts
-              durationTab <- data.frame(matrix(ncol = 6, nrow = 0))
+              durationTab <- data.frame(matrix(ncol = 6, nrow = 0), stringsAsFactors = TRUE)
               colnames(durationTab) <- c("indiv.id","area.id","contact.id", "contactDuration", "contactStartTime", "contactEndTime")
             }
             return(durationTab)
@@ -181,10 +181,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
             distmat.noNA <-ifelse(is.na(distmat) == TRUE,1000000000,distmat)
             distthreshold<-ifelse(distmat.noNA<=as.numeric(unlist(unname(x[2]))),1,0)
             colnames(distthreshold)<-areaIDVec #relate the distance threshold columns to each area id
-            idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))))  
+            idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))), stringsAsFactors = TRUE)  
             timeVec <- unname(spec.dist[,match("dateTime", colnames(spec.dist))])
-            dateTimeFrame <- data.frame(timeVec)
-            idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)))
+            dateTimeFrame <- data.frame(timeVec, stringsAsFactors = TRUE)
+            idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)), stringsAsFactors = TRUE)
             return(idDurations)
           }
           
@@ -196,7 +196,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
             if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
               dist.all$dt = 0
             }else{ #if there's more than one row in dist.all
-              timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)])
+              timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
               
               if (parallel == TRUE){
                 cl<-parallel::makeCluster(nCores)
@@ -208,14 +208,14 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
               }
             }
           }
-          comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold)
+          comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
           
           if (parallel == TRUE){
             duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all) #note that cl is defined above
           }else{
             duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)
           }
-          durationTable = data.frame(data.table::rbindlist(duration))
+          durationTable = data.frame(data.table::rbindlist(duration), stringsAsFactors = TRUE)
           
         }, envir = environmentTag)
         
@@ -265,10 +265,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
             dyad = paste(member1,"-",member2,sep="")
             times.start <- timeVec1[contact.start]
             times.finish <- timeVec1[contact.finish]
-            durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish)
+            durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish, stringsAsFactors = TRUE)
             
           }else{ #If there were no recorded contacts
-            durationTab <- data.frame(matrix(ncol = 6, nrow = 0))
+            durationTab <- data.frame(matrix(ncol = 6, nrow = 0), stringsAsFactors = TRUE)
             colnames(durationTab) <- c("indiv.id","area.id","contact.id", "contactDuration", "contactStartTime", "contactEndTime")
           }
           return(durationTab)
@@ -283,10 +283,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           distmat.noNA <-ifelse(is.na(distmat) == TRUE,1000000000,distmat)
           distthreshold<-ifelse(distmat.noNA<=as.numeric(unlist(unname(x[2]))),1,0)
           colnames(distthreshold)<-areaIDVec #relate the distance threshold columns to each area id
-          idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))))  
+          idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))), stringsAsFactors = TRUE)  
           timeVec <- unname(spec.dist[,match("dateTime", colnames(spec.dist))])
-          dateTimeFrame <- data.frame(timeVec)
-          idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)))
+          dateTimeFrame <- data.frame(timeVec, stringsAsFactors = TRUE)
+          idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)), stringsAsFactors = TRUE)
           return(idDurations)
         }
         
@@ -298,14 +298,14 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
             dist.all$dt = 0
           }else{ #if there's more than one row in dist.all
-            timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)])
+            timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
             timedif = apply(timesFrame, 1, timeDifference)
             dist.all$dt = c(0, timedif)
           }
         }
-        comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold)
+        comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
         duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)	
-        durationTable = data.frame(data.table::rbindlist(duration, fill = TRUE))
+        durationTable = data.frame(data.table::rbindlist(duration, fill = TRUE), stringsAsFactors = TRUE)
         
         if(nrow(durationTable) > 0){ #if there was at least one contact duration, block information is appended to the data frame. If there are no observations, durationTable becomes NULL
           durationTable$block<- unique(dist.all$block)
@@ -407,7 +407,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           
         }
         
-        durationTable <- data.frame(data.table::rbindlist(duration.block))
+        durationTable <- data.frame(data.table::rbindlist(duration.block), stringsAsFactors = TRUE)
         
         if(nrow(durationTable) > 0){ #Here we change components of the durationTable to the appropriate data type. This only occurs if there was at least one observation, however (otherwise an error will be produced). 
           durationTable[,match("block", names(durationTable))]<- as.factor(durationTable[,match("block", names(durationTable))])
@@ -498,10 +498,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           dyad = paste(member1,"-",member2,sep="")
           times.start <- timeVec1[contact.start]
           times.finish <- timeVec1[contact.finish]
-          durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish)
+          durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish, stringsAsFactors = TRUE)
           
         }else{ #If there were no recorded contacts
-          durationTab <- data.frame(matrix(ncol = 6, nrow = 0))
+          durationTab <- data.frame(matrix(ncol = 6, nrow = 0), stringsAsFactors = TRUE)
           colnames(durationTab) <- c("indiv.id","area.id","contact.id", "contactDuration", "contactStartTime", "contactEndTime")
         }
         return(durationTab)
@@ -516,10 +516,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         distmat.noNA <-ifelse(is.na(distmat) == TRUE,1000000000,distmat)
         distthreshold<-ifelse(distmat.noNA<=as.numeric(unlist(unname(x[2]))),1,0)
         colnames(distthreshold)<-areaIDVec #relate the distance threshold columns to each area id
-        idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))))  
+        idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))), stringsAsFactors = TRUE)  
         timeVec <- unname(spec.dist[,match("dateTime", colnames(spec.dist))])
-        dateTimeFrame <- data.frame(timeVec)
-        idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)))
+        dateTimeFrame <- data.frame(timeVec, stringsAsFactors = TRUE)
+        idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)), stringsAsFactors = TRUE)
         return(idDurations)
       }
       
@@ -531,7 +531,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
           dist.all$dt = 0
         }else{ #if there's more than one row in dist.all
-          timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)])
+          timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
           
           if (parallel == TRUE){
             cl<-parallel::makeCluster(nCores)
@@ -543,14 +543,14 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           }
         }
       }
-      comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold)
+      comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
       
       if (parallel == TRUE){
         duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all) #note that cl is defined above
       }else{
         duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)
       }
-      durationTable = data.frame(data.table::rbindlist(duration))
+      durationTable = data.frame(data.table::rbindlist(duration), stringsAsFactors = TRUE)
       
       }, envir = environmentTag)
       
@@ -600,10 +600,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           dyad = paste(member1,"-",member2,sep="")
           times.start <- timeVec1[contact.start]
           times.finish <- timeVec1[contact.finish]
-          durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish)
+          durationTab = data.frame("indiv.id" = member1,"area.id" = member2,"contact.id" = dyad, "contactDuration" = durlengths, "contactStartTime" = times.start, "contactEndTime" = times.finish, stringsAsFactors = TRUE)
           
         }else{ #If there were no recorded contacts
-          durationTab <- data.frame(matrix(ncol = 6, nrow = 0))
+          durationTab <- data.frame(matrix(ncol = 6, nrow = 0), stringsAsFactors = TRUE)
           colnames(durationTab) <- c("indiv.id","area.id","contact.id", "contactDuration", "contactStartTime", "contactEndTime")
         }
         return(durationTab)
@@ -618,10 +618,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         distmat.noNA <-ifelse(is.na(distmat) == TRUE,1000000000,distmat)
         distthreshold<-ifelse(distmat.noNA<=as.numeric(unlist(unname(x[2]))),1,0)
         colnames(distthreshold)<-areaIDVec #relate the distance threshold columns to each area id
-        idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))))  
+        idVecFrame = data.frame(unlist(rep(unlist(unname(x[1])),length(areaIDVec))),areaIDVec, unlist(rep(unlist(unname(x[2])),length(areaIDVec))),unlist(rep(unlist(unname(x[3])),length(areaIDVec))), stringsAsFactors = TRUE)  
         timeVec <- unname(spec.dist[,match("dateTime", colnames(spec.dist))])
-        dateTimeFrame <- data.frame(timeVec)
-        idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)))
+        dateTimeFrame <- data.frame(timeVec, stringsAsFactors = TRUE)
+        idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)), stringsAsFactors = TRUE)
         return(idDurations)
       }
       
@@ -633,14 +633,14 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
           dist.all$dt = 0
         }else{ #if there's more than one row in dist.all
-          timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)])
+          timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
           timedif = apply(timesFrame, 1, timeDifference)
           dist.all$dt = c(0, timedif)
         }
       }
-      comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold)
+      comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
       duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)	
-      durationTable = data.frame(data.table::rbindlist(duration, fill = TRUE))
+      durationTable = data.frame(data.table::rbindlist(duration, fill = TRUE), stringsAsFactors = TRUE)
       
       if(nrow(durationTable) > 0){ #if there was at least one contact duration, block information is appended to the data frame. If there are no observations, durationTable becomes NULL
         durationTable$block<- unique(dist.all$block)
@@ -742,7 +742,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         
       }
       
-      durationTable <- data.frame(data.table::rbindlist(duration.block))
+      durationTable <- data.frame(data.table::rbindlist(duration.block), stringsAsFactors = TRUE)
       
       if(nrow(durationTable) > 0){ #Here we change components of the durationTable to the appropriate data type. This only occurs if there was at least one observation, however (otherwise an error will be produced). 
         durationTable[,match("block", names(durationTable))]<- as.factor(durationTable[,match("block", names(durationTable))])

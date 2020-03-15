@@ -99,9 +99,9 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       
       blockSum <-function(x,y, indivSeq, areaSeq){
         blockDurFrame<-y[which(y$block == unname(unlist(x[1]))),]
-        indivSeqFrame <- data.frame(indivSeq)
+        indivSeqFrame <- data.frame(indivSeq, stringsAsFactors = TRUE)
         summary.contacts<-apply(indivSeqFrame, 1, contSum, blockDurFrame, indivSeq, areaSeq)
-        indivSum.full<- data.frame(data.table::rbindlist(summary.contacts))
+        indivSum.full<- data.frame(data.table::rbindlist(summary.contacts), stringsAsFactors = TRUE)
         indivSum.full$block <- unname(unlist(x[1]))
         
         #added 02/05/2019 - to maintain this new information created in the newest version of the contactDur functions.
@@ -123,7 +123,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
         
         #Here identify the number of contact durations individuals had with others. How we do this is determined by the number of times individuals appear in y's dyadMember1 and dyadMember2 columns. Note that the only option if the function input originated from contactDur.area is (nrow(indivContact1) >= 1) & (nrow(indivContact2) == 0)
         if((nrow(indivContact1) >= 1) & (nrow(indivContact2) >= 1)){
-          indivContact.full <- data.frame(data.table::rbindlist(list(indivContact1,indivContact2)))
+          indivContact.full <- data.frame(data.table::rbindlist(list(indivContact1,indivContact2)), stringsAsFactors = TRUE)
           specIndivSeq = unique(c(as.character(indivContact.full$dyadMember1),as.character(indivContact.full$dyadMember2))) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
           specIndivSeq1 = specIndivSeq[-which(specIndivSeq == me)]
         }
@@ -147,9 +147,9 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
         }
         if(length(y$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
           if(nrow(indivContact.full) > 1){
-            indivSeqFrame1 <-data.frame(indivSeq)
+            indivSeqFrame1 <-data.frame(indivSeq, stringsAsFactors = TRUE)
             contactSum<-apply(indivSeqFrame1, 1, distributeContacts1, indivContact.full, me)
-            sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+            sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1), stringsAsFactors = TRUE)
             colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
             sumTable$id = me
             sumTable$totalDegree <- length(specIndivSeq1)
@@ -158,7 +158,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
             sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
           }else{ #if nrow !>0
             if(nrow(indivContact.full) == 1){
-              sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+              sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1), stringsAsFactors = TRUE)
               colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
               sumTable$id = me
               sumTable$totalDegree <- 1
@@ -168,7 +168,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
               sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
             }
             if(nrow(indivContact.full) == 0){
-              sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+              sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1), stringsAsFactors = TRUE)
               colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
               sumTable$id = me
               sumTable[1,2:ncol(sumTable)] <- 0
@@ -177,9 +177,9 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
           }
         }else{ # length(y$dyadMember1) == 0
           if(nrow(indivContact.full) > 1){
-            areaSeqFrame <- data.frame(areaSeq)
+            areaSeqFrame <- data.frame(areaSeq, stringsAsFactors = TRUE)
             contactSum<-apply(areaSeqFrame, 1, distributeContacts2, indivContact.full)
-            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1), stringsAsFactors = TRUE)
             colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
             sumTable$id = me
             sumTable$totalDegree <- length(specIndivSeq1)
@@ -188,7 +188,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
           }else{ #if nrow !>1
             if(nrow(indivContact.full) == 1){
               areaVec <- unique(y$area.id)
-              sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+              sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1), stringsAsFactors = TRUE)
               colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
               sumTable$id = me
               sumTable$totalDegree <- 1
@@ -197,7 +197,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
               sumTable[,match(paste("contactDuration_Area_",areaVec, sep = ""), names(sumTable))] = indivContact.full$contactDuration
             }
             if(nrow(indivContact.full) == 0){
-              sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+              sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1), stringsAsFactors = TRUE)
               colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
               sumTable$id = me
               sumTable[1,2:ncol(sumTable)] <- 0
@@ -214,7 +214,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
           contact1 <- y[c(which(as.character(y$dyadMember1) == unname(unlist(x[1])))),]
           contact2 <- y[c(which(as.character(y$dyadMember2) == unname(unlist(x[1])))),]
           if((nrow(contact1) >= 1) & (nrow(contact2) >= 1)){
-            contact.full <- data.frame(data.table::rbindlist(list(contact1,contact2)))
+            contact.full <- data.frame(data.table::rbindlist(list(contact1,contact2)), stringsAsFactors = TRUE)
           }
           if((nrow(contact1) >= 1) & (nrow(contact2) == 0)){
             contact.full <- contact1
@@ -262,11 +262,11 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
           summary.block<- foreach::foreach(i = unique(as.character(x$block))) %dopar% blockSum(i, x, indivSeq, areaSeq)
           
         }else{ #if parallel == FALSE
-          blockVecFrame <- data.frame(unique(as.character(x$block)))
+          blockVecFrame <- data.frame(unique(as.character(x$block)), stringsAsFactors = TRUE)
           summary.block <- apply(blockVecFrame, 1, blockSum, x, indivSeq, areaSeq) #according to Dan, this apply function is faster than parApply, so I've removed the parApply option 1/17
         }      
         
-        summaryTable<- data.frame(data.table::rbindlist(summary.block))
+        summaryTable<- data.frame(data.table::rbindlist(summary.block), stringsAsFactors = TRUE)
         summaryTable<-summaryTable[order(as.numeric(as.character(summaryTable$block)),summaryTable$id),]
         
       }else{ #importBlocks == FALSE
@@ -284,9 +284,9 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
         indivSeq <- unique(indivVec)
         indivSeq<-indivSeq[order(indivSeq)]
         indivSeq<-as.character(indivSeq) #forces the data type to become character so that there will be no issues with apply functions later.
-        indivSeqFrame <- data.frame(indivSeq)
+        indivSeqFrame <- data.frame(indivSeq, stringsAsFactors = TRUE)
         summary.contacts <- apply(indivSeqFrame, 1, contSum, x, indivSeq, areaSeq) #according to Dan, this apply function is faster than parApply, so I've removed the parApply option 1/17
-        summaryTable<- data.frame(data.table::rbindlist(summary.contacts))
+        summaryTable<- data.frame(data.table::rbindlist(summary.contacts), stringsAsFactors = TRUE)
         summaryTable<-summaryTable[order(summaryTable$id),]
       }
       return(summaryTable)
@@ -296,17 +296,17 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       summaryList<-lapply(x, summary.generator, importBlocks, parallel, nCores) #changed to lapply 02/02/2019
       
       if(avg == TRUE){
-        full.summary<- data.frame(data.table::rbindlist(summaryList, fill = TRUE)) #Now we need to average the number of contacts by id and block
+        full.summary<- data.frame(data.table::rbindlist(summaryList, fill = TRUE), stringsAsFactors = TRUE) #Now we need to average the number of contacts by id and block
         idSeq<-unique(full.summary$id)
         if(importBlocks == TRUE){
           blockSeq<-unique(full.summary$block)
-          aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq))
+          aggTab<- expand.grid(as.character(idSeq),as.character(blockSeq), stringsAsFactors = TRUE)
           sumTab <- apply(aggTab, 1, summaryAgg.block, y = full.summary)
         }else{ #if importBlocks == FALSE
-          aggTab<-data.frame(idSeq)
+          aggTab<-data.frame(idSeq, stringsAsFactors = TRUE)
           sumTab <- apply(aggTab, 1, summaryAgg.NoBlock, y = full.summary)
         }
-        sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
+        sumTab.agg <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE)
         summary.output<-list(sumTab.agg, summaryList)
         names(summary.output)<-c("avg.","contactSummaries.")
       }else{ #if avg == FALSE
@@ -330,7 +330,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       }else{ #if the number of levels <= 1
         x2.id <-unname(unlist(x[2]))
       }
-      out.frame<-data.frame(from = x1.id, to = x2.id) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
+      out.frame<-data.frame(from = x1.id, to = x2.id, stringsAsFactors = TRUE) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
       y.ContactNames<-c(NA,NA,NA,substring((names(y[grep("contactDuration_", names(y))])),22)) #The three NAs represent the first 3 columns in y, which are irrelevent for our needs.
       duration <- unname(unlist(y[which(y$id == x1.id), which(y.ContactNames == x2.id)]))
       duration.corrected<-ifelse(duration > 0, duration, NA) 
@@ -340,7 +340,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
     contactSummary<-summarizeContacts(x, importBlocks = FALSE, parallel = par, nCores = cores) #generate a summary of the contact table using the summarizeContacts function (available in the package as a stand-alone function)
     contactSummary.node1 <- unique(contactSummary$id)
     contactSummary.node2 <- substring((names(contactSummary[grep("contactDuration_", names(contactSummary))])),22) #pulls out the contacted IDs
-    potential_edges <- expand.grid(contactSummary.node1, contactSummary.node2) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
+    potential_edges <- expand.grid(contactSummary.node1, contactSummary.node2, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
     names(potential_edges) <- c("from", "to")
     
     if(removeDuplicates == TRUE){
@@ -356,7 +356,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
     }
     
     edgelist<-apply(potential_edges,1,confirm_edges.noBlock, y=contactSummary) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
-    edgeFrame<-data.frame(data.table::rbindlist(edgelist))
+    edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
     confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
     rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
     return(confirmed_edges)
@@ -373,7 +373,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       }else{ #if the number of levels <= 1
         x3.id <-unname(unlist(x[3]))
       }
-      out.frame<-data.frame(from = x2.id, to = x3.id) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
+      out.frame<-data.frame(from = x2.id, to = x3.id, stringsAsFactors = TRUE) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
       y.ContactNames<-c(NA,NA,NA,substring((names(y[grep("contactDuration_", names(y))])),22)) #The three NAs represent the first 3 columns in y, which are irrelevent for our needs.
       duration <- unname(unlist(y[which(y$id == x2.id), which(y.ContactNames == x3.id)]))
       duration.corrected<-ifelse(duration > 0, duration, NA) 
@@ -386,8 +386,8 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
     contactSummary<-summarizeContacts(x, importBlocks = TRUE, parallel = par, nCores = cores) #generate a summary of the contact table using the summarizeContacts function (available in the package as a stand-alone function)
     contactSummary.node1 <- unique(contactSummary$id)
     contactSummary.node2 <- substring((names(contactSummary[grep("contactDuration_", names(contactSummary))])),22) #pulls out the contacted IDs
-    block_info<-data.frame(block = unique(contactSummary$block), block.start = unique(contactSummary$block.start), block.end = unique(contactSummary$block.end)) #pulls the block information from contactSummary
-    potential_edges1 <- expand.grid(contactSummary.node1, contactSummary.node2, block_info$block) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
+    block_info<-data.frame(block = unique(contactSummary$block), block.start = unique(contactSummary$block.start), block.end = unique(contactSummary$block.end), stringsAsFactors = TRUE) #pulls the block information from contactSummary
+    potential_edges1 <- expand.grid(contactSummary.node1, contactSummary.node2, block_info$block, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
     names(potential_edges1) <- c("from", "to", "block")
     potential_edges2<-merge(potential_edges1, block_info, by = "block") #note that this merge reorders the columns, by placing the "block" column first.
     potential_edges2<-potential_edges2[order(as.numeric(as.character(potential_edges2$block))),] #orders rows by ascending block number.
@@ -409,7 +409,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
     }
     
     edgelist<-apply(potential_edges2,1,confirm_edges.Block, y=contactSummary) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
-    edgeFrame<-data.frame(data.table::rbindlist(edgelist))
+    edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
     confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
     rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
     

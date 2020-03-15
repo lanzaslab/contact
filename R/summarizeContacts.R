@@ -101,9 +101,9 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
     
     blockSum <-function(x,y, indivSeq, areaSeq){
       blockDurFrame<-y[which(y$block == unname(unlist(x[1]))),]
-      indivSeqFrame <- data.frame(indivSeq)
+      indivSeqFrame <- data.frame(indivSeq, stringsAsFactors = TRUE)
       summary.contacts<-apply(indivSeqFrame, 1, contSum, blockDurFrame, indivSeq, areaSeq)
-      indivSum.full<- data.frame(data.table::rbindlist(summary.contacts))
+      indivSum.full<- data.frame(data.table::rbindlist(summary.contacts), stringsAsFactors = TRUE)
       indivSum.full$block <- unname(unlist(x[1]))
       
       #added 02/05/2019 - to maintain this new information created in the newest version of the contactDur functions.
@@ -125,7 +125,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
       
       #Here identify the number of contact durations individuals had with others. How we do this is determined by the number of times individuals appear in y's dyadMember1 and dyadMember2 columns. Note that the only option if the function input originated from contactDur.area is (nrow(indivContact1) >= 1) & (nrow(indivContact2) == 0)
       if((nrow(indivContact1) >= 1) & (nrow(indivContact2) >= 1)){
-        indivContact.full <- data.frame(data.table::rbindlist(list(indivContact1,indivContact2)))
+        indivContact.full <- data.frame(data.table::rbindlist(list(indivContact1,indivContact2)), stringsAsFactors = TRUE)
         specIndivSeq = unique(c(as.character(indivContact.full$dyadMember1),as.character(indivContact.full$dyadMember2))) #had to add as.character call because contactDur functions now produce factor data. 02/05/2019
         specIndivSeq1 = specIndivSeq[-which(specIndivSeq == me)]
       }
@@ -149,9 +149,9 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
       }
       if(length(y$dyadMember1) > 0){ #This essentially determines if the input was created with dist.all or distToArea. If length(dyadMember1) >0, it was created with dist.all
         if(nrow(indivContact.full) > 1){
-          indivSeqFrame1 <-data.frame(indivSeq)
+          indivSeqFrame1 <-data.frame(indivSeq, stringsAsFactors = TRUE)
           contactSum<-apply(indivSeqFrame1, 1, distributeContacts1, indivContact.full, me)
-          sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+          sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1), stringsAsFactors = TRUE)
           colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
           sumTable$id = me
           sumTable$totalDegree <- length(specIndivSeq1)
@@ -160,7 +160,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
           sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
         }else{ #if nrow !>0
           if(nrow(indivContact.full) == 1){
-            sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+            sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1), stringsAsFactors = TRUE)
             colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
             sumTable$id = me
             sumTable$totalDegree <- 1
@@ -170,7 +170,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
             sumTable[,match(paste("contactDuration_Indiv",me, sep = ""), names(sumTable))] = NA
           }
           if(nrow(indivContact.full) == 0){
-            sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1))
+            sumTable <- data.frame(matrix(ncol = (3+length(indivSeq)), nrow = 1), stringsAsFactors = TRUE)
             colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Indiv",indivSeq, sep = ""))
             sumTable$id = me
             sumTable[1,2:ncol(sumTable)] <- 0
@@ -179,9 +179,9 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
         }
       }else{ # length(y$dyadMember1) == 0
         if(nrow(indivContact.full) > 1){
-          areaSeqFrame <- data.frame(areaSeq)
+          areaSeqFrame <- data.frame(areaSeq, stringsAsFactors = TRUE)
           contactSum<-apply(areaSeqFrame, 1, distributeContacts2, indivContact.full)
-          sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+          sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1), stringsAsFactors = TRUE)
           colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
           sumTable$id = me
           sumTable$totalDegree <- length(specIndivSeq1)
@@ -190,7 +190,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
         }else{ #if nrow !>1
           if(nrow(indivContact.full) == 1){
             areaVec <- unique(y$area.id)
-            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1), stringsAsFactors = TRUE)
             colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
             sumTable$id = me
             sumTable$totalDegree <- 1
@@ -199,7 +199,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
             sumTable[,match(paste("contactDuration_Area_",areaVec, sep = ""), names(sumTable))] = indivContact.full$contactDuration
           }
           if(nrow(indivContact.full) == 0){
-            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1))
+            sumTable <- data.frame(matrix(ncol = (3+length(areaSeq)), nrow = 1), stringsAsFactors = TRUE)
             colnames(sumTable) <- c("id","totalDegree","totalContactDurations", paste("contactDuration_Area_",areaSeq, sep = ""))
             sumTable$id = me
             sumTable[1,2:ncol(sumTable)] <- 0
@@ -216,7 +216,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
         contact1 <- y[c(which(as.character(y$dyadMember1) == unname(unlist(x[1])))),]
         contact2 <- y[c(which(as.character(y$dyadMember2) == unname(unlist(x[1])))),]
         if((nrow(contact1) >= 1) & (nrow(contact2) >= 1)){
-          contact.full <- data.frame(data.table::rbindlist(list(contact1,contact2)))
+          contact.full <- data.frame(data.table::rbindlist(list(contact1,contact2)), stringsAsFactors = TRUE)
         }
         if((nrow(contact1) >= 1) & (nrow(contact2) == 0)){
           contact.full <- contact1
@@ -264,11 +264,11 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
         summary.block<- foreach::foreach(i = unique(as.character(x$block))) %dopar% blockSum(i, x, indivSeq, areaSeq)
              
       }else{ #if parallel == FALSE
-      blockVecFrame <- data.frame(unique(as.character(x$block)))
+      blockVecFrame <- data.frame(unique(as.character(x$block)), stringsAsFactors = TRUE)
       summary.block <- apply(blockVecFrame, 1, blockSum, x, indivSeq, areaSeq) #according to Dan, this apply function is faster than parApply, so I've removed the parApply option 1/17
            }      
       
-      summaryTable<- data.frame(data.table::rbindlist(summary.block))
+      summaryTable<- data.frame(data.table::rbindlist(summary.block), stringsAsFactors = TRUE)
       summaryTable<-summaryTable[order(as.numeric(as.character(summaryTable$block)),summaryTable$id),]
       
     }else{ #importBlocks == FALSE
@@ -286,9 +286,9 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
       indivSeq <- unique(indivVec)
       indivSeq<-indivSeq[order(indivSeq)]
       indivSeq<-as.character(indivSeq) #forces the data type to become character so that there will be no issues with apply functions later.
-      indivSeqFrame <- data.frame(indivSeq)
+      indivSeqFrame <- data.frame(indivSeq, stringsAsFactors = TRUE)
       summary.contacts <- apply(indivSeqFrame, 1, contSum, x, indivSeq, areaSeq) #according to Dan, this apply function is faster than parApply, so I've removed the parApply option 1/17
-      summaryTable<- data.frame(data.table::rbindlist(summary.contacts))
+      summaryTable<- data.frame(data.table::rbindlist(summary.contacts), stringsAsFactors = TRUE)
       summaryTable<-summaryTable[order(summaryTable$id),]
     }
     return(summaryTable)
@@ -298,12 +298,12 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
     summaryList<-lapply(x, summary.generator, importBlocks, parallel, nCores) #changed to lapply 02/02/2019
     
     if(avg == TRUE){
-      full.summary<- data.frame(data.table::rbindlist(summaryList, fill = TRUE)) #Now we need to average the number of contacts by id and block
+      full.summary<- data.frame(data.table::rbindlist(summaryList, fill = TRUE), stringsAsFactors = TRUE) #Now we need to average the number of contacts by id and block
       idSeq<-unique(full.summary$id)
       if(importBlocks == TRUE){
         blockSeq<-unique(full.summary$block)
-        sumTab <- apply(data.frame(blockSeq), 1, summaryAgg.block, y = full.summary)
-        sumTab.agg <- data.frame(data.table::rbindlist(sumTab))
+        sumTab <- apply(data.frame(blockSeq), 1, summaryAgg.block, y = full.summary, stringsAsFactors = TRUE)
+        sumTab.agg <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE)
       }else{ #if importBlocks == FALSE
         sumTab.agg<-aggregate(full.summary[,-match("id", colnames(full.summary))], list(id = full.summary$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.
       }

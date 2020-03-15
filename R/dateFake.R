@@ -36,8 +36,8 @@ dateFake<-function(timestamp, dateFormat ="mdy", startYear = 2000){
     monthDays<- lubridate::days_in_month(a)
     numDays1<-c(numDays1, unname(unlist(monthDays)))
     Seq1<-seq(1, unname(unlist(monthDays)),1)
-    seqFrame<- expand.grid(monthSeq[a], Seq1)
-    daySeqFrame<-data.frame(data.table::rbindlist(list(daySeqFrame,seqFrame)))
+    seqFrame<- expand.grid(monthSeq[a], Seq1, stringsAsFactors = TRUE)
+    daySeqFrame<-data.frame(data.table::rbindlist(list(daySeqFrame,seqFrame)), stringsAsFactors = TRUE)
   }
   dataTime<- lubridate::hms(timestamp)
   dataHours<- lubridate::hour(dataTime) + 1 #assuming timestamp system is hours 0-23, not 1-24
@@ -47,7 +47,7 @@ dateFake<-function(timestamp, dateFormat ="mdy", startYear = 2000){
   for(b in startYear:endYear){ #added 02/06/2019. No longer will this function always start on year 2001
     year <- b
     daySeqFrame$year <- year
-    yearFrame<-data.frame(data.table::rbindlist(list(yearFrame,daySeqFrame)))
+    yearFrame<-data.frame(data.table::rbindlist(list(yearFrame,daySeqFrame)), stringsAsFactors = TRUE)
   }    
   rowCall<- ceiling(dataHours/24)
   if(dateFormat == "mdy"){

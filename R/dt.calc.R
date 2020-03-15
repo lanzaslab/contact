@@ -64,7 +64,7 @@ dt.calc<-function(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL, timeU
   idBreak = function(x, originTab, timeUnits){
     breakVec1 <- originTab$dateTime1[which(originTab$id == unname(unlist(x[1])))]
     breakVec2 <- originTab$dateTime2[which(originTab$id == unname(unlist(x[1])))]
-    timesFrame = data.frame(breakVec1[1:(length(breakVec1) - 1)], breakVec2[2:length(breakVec2)])
+    timesFrame = data.frame(breakVec1[1:(length(breakVec1) - 1)], breakVec2[2:length(breakVec2)], stringsAsFactors = TRUE)
     timedif <- apply(timesFrame,1,timeDifference, timeUnits)
     if(timeStepRelation == 1){ #dt values represent the diference between time i and time i-1
       timedif = c(NA, timedif)
@@ -72,12 +72,12 @@ dt.calc<-function(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL, timeU
     if(timeStepRelation == 2){ #dt values represent the diference between time i and time i+1
       timedif = c(timedif, NA)
     }
-    timeTab = data.frame(id = unlist(rep(unname(unlist(x[1])),length(timedif))), dt = timedif)
+    timeTab = data.frame(id = unlist(rep(unname(unlist(x[1])),length(timedif))), dt = timedif, stringsAsFactors = TRUE)
     return(timeTab)
   }
   
   if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime), a dataframe with columns named the same, or a combination of dataframe and vectors.
-    originTab = data.frame(id = id, dateTime1 = dateTime1)
+    originTab = data.frame(id = id, dateTime1 = dateTime1, stringsAsFactors = TRUE)
     if(length(dateTime2) >0){
       originTab$dateTime2 <- dateTime2
     }else{
@@ -101,7 +101,7 @@ dt.calc<-function(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL, timeU
   }
   
   originTab<-originTab[order(originTab$id, originTab$dateTime1),]
-  idVecFrame<-data.frame(unique(originTab$id))
+  idVecFrame<-data.frame(unique(originTab$id), stringsAsFactors = TRUE)
   
   if (parallel == TRUE){
     cl<-parallel::makeCluster(nCores)
@@ -111,7 +111,7 @@ dt.calc<-function(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL, timeU
     dtTime = apply(idVecFrame, 1, idBreak,originTab, timeUnits)	
   }
   
-  dt.final <- data.frame(data.table::rbindlist(dtTime))
+  dt.final <- data.frame(data.table::rbindlist(dtTime), stringsAsFactors = TRUE)
   dt.final$units = timeUnits
   return(dt.final)
 }

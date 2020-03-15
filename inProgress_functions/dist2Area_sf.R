@@ -149,7 +149,7 @@ dist2Area_sf<-function(x, y, x.id = NULL, y.id = NULL, dateTime = NULL, parallel
   timeSeq <- unique(sp_merge$dateTime)
   
   timestepFrame<-data.frame(unique(sp_merge$dateTime))
-  indivAreaFrame <- expand.grid(indivSeq, areaSeq)
+  indivAreaFrame <- expand.grid(indivSeq, areaSeq, stringsAsFactors = TRUE)
   
   if (parallel == TRUE){
     cl<-parallel::makeCluster(nCores)

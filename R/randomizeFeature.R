@@ -41,7 +41,7 @@
 #'    feature = c("calftag", "date"), shuffle = TRUE, maintainDistr = TRUE, 
 #'    numRandomizations = 3)) 
 #'    
-#' randomizedFrame<-data.frame(randomizedValues[[1]])
+#' randomizedFrame<-data.frame(randomizedValues[[1]], stringsAsFactors = TRUE)
 #' 
 #' head(randomizedFrame) #see that randomized-value columns have been appended.
 
@@ -61,7 +61,7 @@ randomizeFeature<-function(x, feature = NULL, shuffle = FALSE, maintainDistr = T
         y <- as.character(x[,match(feature[i],colnames(x))])
         emp.feat <-unique(y)
         rand.feat <- sample(emp.feat,length(emp.feat), replace = FALSE)
-        randTab <- data.frame(emp.feat,rand.feat)
+        randTab <- data.frame(emp.feat,rand.feat, stringsAsFactors = TRUE)
         randList <- apply(randTab, 1, shuffle.func, y)	
         randVec<-unname(unlist(randList))
         x[,(length(x) + 1)] <- randVec
@@ -92,7 +92,7 @@ randomizeFeature<-function(x, feature = NULL, shuffle = FALSE, maintainDistr = T
   }
   output<-lapply(inputList, randomization.func, feature, shuffle, maintainDistr, numRandomizations) 
   if(length(output) == 1){ #if there's only one list object in the output, the output will be a data frame, not a list.
-    output <- data.frame(output[[1]])
+    output <- data.frame(output[[1]], stringsAsFactors = TRUE)
   }
     
   return(output)

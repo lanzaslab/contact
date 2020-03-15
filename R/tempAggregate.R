@@ -101,7 +101,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
 
   Agg.generator<-function(x, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores){
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
-      originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime)
+      originTab = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
     }
 
     if(length(x) > 0){ #for some reason using an "else" statement would always result in an originTab table with 0 records...
@@ -128,7 +128,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
           x$y = point.y
         }
       }
-      xyFrame1<- data.frame(x = x$x, y = x$y)
+      xyFrame1<- data.frame(x = x$x, y = x$y, stringsAsFactors = TRUE)
 
       if(length(dateTime) > 0){
 
@@ -299,11 +299,11 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
       datesAgg = NULL
 
       for(n in 1:length(dateSeq)){
-        date = data.frame(date = rep(dateSeq[n],(nrow(locmatrix)/2)/length(dateSeq)))
-        datesAgg = data.frame(data.table::rbindlist(list(datesAgg,date)))
+        date = data.frame(date = rep(dateSeq[n],(nrow(locmatrix)/2)/length(dateSeq)), stringsAsFactors = TRUE)
+        datesAgg = data.frame(data.table::rbindlist(list(datesAgg,date)), stringsAsFactors = TRUE)
 
       }
-      tempTable = data.frame(id = id1, x = xvec, y = yvec, date = datesAgg)
+      tempTable = data.frame(id = id1, x = xvec, y = yvec, date = datesAgg, stringsAsFactors = TRUE)
       tempTable1 = NULL
 
       for(o in 1:length(dateSeq)){
@@ -330,9 +330,9 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
         datesub$minute = M
         datesub$second = S
 
-        tempTable1 = data.frame(data.table::rbindlist(list(tempTable1,datesub)))
+        tempTable1 = data.frame(data.table::rbindlist(list(tempTable1,datesub)), stringsAsFactors = TRUE)
       }
-      locTable = data.frame(data.table::rbindlist(list(locTable,tempTable1)))
+      locTable = data.frame(data.table::rbindlist(list(locTable,tempTable1)), stringsAsFactors = TRUE)
     }
 
     locTable <- locTable[,-match("UID",names(datesub))] #removes the UID column to save space
@@ -380,7 +380,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
     return(locTable)
   }
 
-  if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
+  if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R treats dataframes as lists.
     list.Agg <- foreach::foreach(l = seq(from = 1, to = length(x), by = 1)) %do% Agg.generator(x[[l]], id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here.
     return(list.Agg)
 

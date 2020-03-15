@@ -235,7 +235,7 @@ contactCompare_mantel<-function(x.summary, y.summary, numPermutations = 1000, al
       warn1 = ""
     }
     
-    summaryFrame <- data.frame(method = "Mantel's permutation test for similarity of two matrices", z.val = output.test[1], alternative.hyp = output.test[3], nperm = numPermutations, p.val = output.test[2], x.mean = emp.mean, y.mean = rand.mean, warning = warn1)
+    summaryFrame <- data.frame(method = "Mantel's permutation test for similarity of two matrices", z.val = output.test[1], alternative.hyp = output.test[3], nperm = numPermutations, p.val = output.test[2], x.mean = emp.mean, y.mean = rand.mean, warning = warn1, stringsAsFactors = TRUE)
     final_out <- summaryFrame #redefine summaryFrame as the final function output.
   }
   
@@ -280,7 +280,7 @@ contactCompare_mantel<-function(x.summary, y.summary, numPermutations = 1000, al
       
       summaryFrame <- data.frame(method = "Mantel's permutation test for similarity of two matrices", z.val = output.test[1], alternative.hyp = output.test[3], nperm = numPermutations, 
                                  p.val = output.test[2], x.mean = emp.mean, y.mean = rand.mean, block = unique(block.x$block), block.start = unique(block.x$block.start), 
-                                 block.end = unique(block.x$block.end) , warning = warn1)
+                                 block.end = unique(block.x$block.end) , warning = warn1, stringsAsFactors = TRUE)
       
       bindlist<-list(final_out, summaryFrame) #create the list describing what should be bound together
       final_out <- data.frame(data.table::rbindlist(bindlist), stringsAsFactors = TRUE) #rbind summaryFrame to final function output.

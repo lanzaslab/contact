@@ -72,7 +72,7 @@ makePlanar<-function(x = NULL, x.lon = NULL, x.lat = NULL, origin.lon = NULL, or
     #columns with names proceeded by "makePlanarFunction__" are appended to the data set for analysis within this function. These columns will be removed from the output.
     
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors, a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
-      originTab = data.frame(lon = x.lon, lat = x.lat, makePlanarFunction__lon = x.lon, makePlanarFunction__lat = x.lat)
+      originTab = data.frame(lon = x.lon, lat = x.lat, makePlanarFunction__lon = x.lon, makePlanarFunction__lat = x.lat, stringsAsFactors = TRUE)
     }
     
     if(length(x) > 0){
@@ -128,7 +128,7 @@ makePlanar<-function(x = NULL, x.lon = NULL, x.lat = NULL, origin.lon = NULL, or
     #Project the data using an equidistant azimuthal projection centered at the centroid.
     Coords<- sp::SpatialPoints(coords = originTab[,c(match("makePlanarFunction__lon",names(originTab)),match("makePlanarFunction__lat",names(originTab)))], proj4string = sp::CRS(paste("+proj=longlat +datum=",datum, sep = ""))) #projects the long/lat data on the elipsoid described by datum. datum default is WGS84.
     planarCoords<-sp::spTransform(Coords, sp::CRS(paste("+proj=aeqd +lon_0=",cntr.lon," +lat_0=",cntr.lat, " +units=m", sep = ""))) #creates a spatial-class feature with points projected on a planar surface using an equidistant projection centered at the centroid of the data. The "units=m" argument indicates that the coordinate unit is meters
-    planarCoords.frame <- as.data.frame(planarCoords)
+    planarCoords.frame <- as.data.frame(planarCoords, stringsAsFactors = TRUE)
     names(planarCoords.frame)<-c("planar.x", "planar.y")
     
     #Now we bind this new coordinate information to originTab

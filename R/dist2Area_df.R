@@ -113,13 +113,13 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R treats dataframes as lists.
     
     listBreak_dist.generator2 <-function(x, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, nCores, dataType, lonlat, numVertices){ #this function is exactly the same as what happens when the x input to the master function is a single data frame.
-      
+  
       #write all the sub-functions first
       
       dist.generator2<-function(x, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores){
         
         create.distFrame<- function(x,distMat, indivSeq, timestepIndivSeq,time, origin.y){
-          dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1))
+          dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1), stringsAsFactors = TRUE)
           colnames(dist) = c("dateTime","totalIndividuals","individualsAtTimestep","id", paste("dist.to.", origin.y[,1], sep = ""))
           dist$dateTime = time
           dist$totalIndividuals = length(indivSeq)
@@ -150,7 +150,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
           y<- y[,-match("id", names(y))]
         }
         
-        ids <- data.frame(orig.id = id.y, new.id = as.integer(seq(1,nrow(y),1)))
+        ids <- data.frame(orig.id = id.y, new.id = as.integer(seq(1,nrow(y),1)), stringsAsFactors = TRUE)
         origin.y <- do.call("cbind",list(ids,y)) #so, now we have a table that is arranged like: id1,id2,xCoord1, yCoord1..., xCoordnumVertices.y,yCoordnumVertices.y
         
         if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
@@ -180,19 +180,19 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
               xy = timestep[,c(match("x",names(timestep)), match("y",names(timestep)))]
               rownames(xy) <- timestepIndivSeq
               spatPoints =sp::SpatialPoints(xy)
-              makePolyFrame<-data.frame(seq(1,nrow(origin.y),1))
+              makePolyFrame<-data.frame(seq(1,nrow(origin.y),1), stringsAsFactors = TRUE)
               spatialPolygons <- apply(makePolyFrame,1,create.poly2,origin.y,numVertices.y)
               sPolys = sp::SpatialPolygons(spatialPolygons,as.integer(origin.y[,2])) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
               distMat = rgeos::gDistance(spatPoints,sPolys, byid = TRUE) #columns are indivIDs, rows are fixed areas (this is how distances are presented in raster::pointDistance as well)
             }
-            distMat = data.frame(distMat)
-            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(timestepIndivSeq),1))
-            distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, timestepIndivSeq,time, origin.y))) 
+            distMat = data.frame(distMat, stringsAsFactors = TRUE)
+            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(timestepIndivSeq),1), stringsAsFactors = TRUE)
+            distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, timestepIndivSeq,time, origin.y)), stringsAsFactors = TRUE) 
             return(distTab)
           }
           
           distTab <- foreach::foreach(i = unique(originTab$dateTime), .packages = 'foreach') %do% dist.process.point(i, originTab, indivSeq, dist.measurement, origin.y, numVertices.y)
-          dist.all = data.frame(data.table::rbindlist(distTab)) #bind the list together
+          dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE) #bind the list together
         }
         
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -220,7 +220,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
             timestep = originTab[which(originTab$dateTime == time),]
             timestepIndivSeq.integ = unique(timestep$integ.ID)
             timestepIndivSeq = unique(timestep$id)
-            makePolyFrame1<-data.frame(seq(1,length(timestepIndivSeq.integ),1))
+            makePolyFrame1<-data.frame(seq(1,length(timestepIndivSeq.integ),1), stringsAsFactors = TRUE)
             spatialPolygons1 <- apply(makePolyFrame1,1,create.poly1,timestep,numVertices)
             sPolys1 <- sp::SpatialPolygons(spatialPolygons1,as.integer(timestepIndivSeq.integ)) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
             
@@ -230,19 +230,19 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
               spatPoints =sp::SpatialPoints(xy)
               distMat = rgeos::gDistance(sPolys1,spatPoints, byid = TRUE)
             }else{ #if y has more than only one point
-              makePolyFrame2<-data.frame(seq(1,nrow(origin.y),1))
+              makePolyFrame2<-data.frame(seq(1,nrow(origin.y),1), stringsAsFactors = TRUE)
               spatialPolygons2 <- apply(makePolyFrame2,1,create.poly2,origin.y,numVertices.y)
               sPolys2 = sp::SpatialPolygons(spatialPolygons2,as.integer(origin.y[,2])) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
               distMat = rgeos::gDistance(sPolys1,sPolys2, byid = TRUE)
             }
-            distMat = data.frame(distMat)
-            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1))
+            distMat = data.frame(distMat, stringsAsFactors = TRUE)
+            timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), stringsAsFactors = TRUE)
             
-            distTab <- data.frame(NULL)
+            distTab <- data.frame(NULL, stringsAsFactors = TRUE)
             
             for(i in 1:nrow(timestepIndivSeqFrame)){ #This for-loop is pretty much just the create.distFrame function (see note immediately above).
               x<- timestepIndivSeqFrame[i,]
-              dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1))
+              dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1), stringsAsFactors = TRUE)
               colnames(dist) = c("dateTime","totalIndividuals","individualsAtTimestep","id", paste("dist.to.", origin.y[,1], sep = ""))
               dist$dateTime = time
               dist$totalIndividuals = length(indivSeq)
@@ -253,14 +253,14 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
               col.fill = unname(unlist(distMat[,unname(unlist(x[2]))])) #There's no need for the forloop used in the dist.all function b/c there will never be a distance given that represents individuals' distance to themselves.
               dist[1,5:ncol(dist)] = col.fill
               
-              distTab<-data.frame(data.table::rbindlist(list(distTab,dist)))
+              distTab<-data.frame(data.table::rbindlist(list(distTab,dist)), stringsAsFactors = TRUE)
             }
             return(distTab)
           }
           
           distTab <- foreach::foreach(i = unique(originTab$dateTime), .packages = 'foreach') %do% dist.process.poly(i, originTab, indivSeq, origin.y, numVertices, numVertices.y)
           
-          dist.all = data.frame(data.table::rbindlist(distTab)) #bind the list together
+          dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE) #bind the list together
         }
         return(dist.all)
       }
@@ -277,7 +277,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
         names(day_lists)<-NULL #ensure that list names do not mess up column names
         list.dist <- lapply(day_lists, dist.generator2, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply
-        dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE)) #bind these hours back together
+        dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
         
         return(dist.bind)
       }
@@ -287,16 +287,16 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       idVec1=NULL #added in the case that idVec1 isn't created when x isn't specified
       if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
         if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
-          originTab = data.frame(id = x.id, x = point.x, y = point.y, dateTime = dateTime)
+          originTab = data.frame(id = x.id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
         }
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
-          originTab = data.frame(matrix(ncol = 0, nrow = length(id)))
+          originTab = data.frame(matrix(ncol = 0, nrow = length(id)), stringsAsFactors = TRUE)
           originTab$id = x.id
           colnames(poly.xy)[seq(1,(ncol(poly.xy) - 1),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".x", sep = "")
           colnames(poly.xy)[seq(2,ncol(poly.xy),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".y", sep = "")
-          dateFrame = data.frame(dateTime = dateTime)
+          dateFrame = data.frame(dateTime = dateTime, stringsAsFactors = TRUE)
           bindlist = list(originTab,poly.xy,dateFrame)
-          originTab = data.frame(do.call("cbind", bindlist))
+          originTab = data.frame(do.call("cbind", bindlist), stringsAsFactors = TRUE)
         }
       }
       
@@ -325,7 +325,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
               x$y = point.y
             }
           }
-          xyFrame1<- data.frame(x = x$x, y = x$y)
+          xyFrame1<- data.frame(x = x$x, y = x$y, stringsAsFactors = TRUE)
         }
         
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -333,7 +333,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
             if(length(as.matrix(poly.xy)) == (numVertices*2) && length(which(is.na(match(as.matrix(poly.xy), names(x)))) == TRUE) == 0){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than poly.xy being a matrix/dataframe of length(nrow(x)), it may be necessary to designate the colnames for intended coordinate values (i.e., if the xy-coordinate values in different list entries are different)
               xyFrame1<-x[,match(poly.xy,names(x))] 
             }else{
-              xyFrame1<- data.frame(poly.xy)
+              xyFrame1<- data.frame(poly.xy, stringsAsFactors = TRUE)
             }
           }else{ #if length(poly.xy == 0)
             xyFrame1 <-  x[,(match("point1.x", names(x))):((2*numVertices) + (match("point1.x", names(x)) -1))] #if there is no poly.xy input, the code assumes the input is output from referencePointToPolygon function, and therefore, the first point of interest would be "point1.x"
@@ -418,12 +418,12 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         colLengths<-NULL
         areas<-list()
         for(a in 1:length(y)){
-          areaFrame<-data.frame(y[a])
+          areaFrame<-data.frame(y[a], stringsAsFactors = TRUE)
           colnum<- ifelse(is.na(match("id", names(areaFrame))) == FALSE, ncol(areaFrame) -1, ncol(areaFrame)) #if there IS an id column, it will not be counted towards the column number, which is representative of the number of xycoordinates.
           colLengths<-c(colLengths, colnum) #we compile a sequence ncols, so we can determine the maximum number of vertices the input areas have. 
           if(nrow(areaFrame) > 1){ #if multiple fixed areas are represented in a list entry
             rowSeq<-seq(1,nrow(areaFrame),1)
-            rowSeqFrame<-data.frame(rowSeq)
+            rowSeqFrame<-data.frame(rowSeq, stringsAsFactors = TRUE)
             polys <- apply(rowSeqFrame,1,frameBreaker,areaFrame)
             for(b in 1:length(polys)){
               areas<-c(areas,polys[b])
@@ -435,7 +435,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         #Now we have the areas list, which we can input into the growPoly function.
         vertex.colnum<-max(colLengths) #the maximum number of columns (representative of the number of vertices) in the area set.
         new.y<-lapply(areas, growPoly, vertex.colnum)
-        y <- data.frame(data.table::rbindlist(new.y, use.names = FALSE)) #here we remake y as a dataframe containing polygons all with the same number of vertices. After this step, the function can move forward as if y was not a list. 
+        y <- data.frame(data.table::rbindlist(new.y, use.names = FALSE), stringsAsFactors = TRUE) #here we remake y as a dataframe containing polygons all with the same number of vertices. After this step, the function can move forward as if y was not a list. 
       }
       
       data.dates<-lubridate::date(originTab$dateTime) #now we can start concattenating the data by subsetting it into smaller lists
@@ -467,10 +467,9 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         
       }
       
-      frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE))
+      frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE), stringsAsFactors = TRUE)
       
       return(frame.dist)
-      
     }
     
     list.dist<- foreach::foreach(k = 1:length(x), .packages = 'foreach') %do% listBreak_dist.generator2(x[[k]], y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, nCores, dataType, lonlat, numVertices) #we set the .packages argument to 'foreach' to allow us to use foreach loops within foreach loops
@@ -484,7 +483,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
     dist.generator2<-function(x, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores){
       
       create.distFrame<- function(x,distMat, indivSeq, timestepIndivSeq,time, origin.y){
-        dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1))
+        dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1), stringsAsFactors = TRUE)
         colnames(dist) = c("dateTime","totalIndividuals","individualsAtTimestep","id", paste("dist.to.", origin.y[,1], sep = ""))
         dist$dateTime = time
         dist$totalIndividuals = length(indivSeq)
@@ -515,7 +514,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         y<- y[,-match("id", names(y))]
       }
       
-      ids <- data.frame(orig.id = id.y, new.id = as.integer(seq(1,nrow(y),1)))
+      ids <- data.frame(orig.id = id.y, new.id = as.integer(seq(1,nrow(y),1)), stringsAsFactors = TRUE)
       origin.y <- do.call("cbind",list(ids,y)) #so, now we have a table that is arranged like: id1,id2,xCoord1, yCoord1..., xCoordnumVertices.y,yCoordnumVertices.y
       
       if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
@@ -545,19 +544,19 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
             xy = timestep[,c(match("x",names(timestep)), match("y",names(timestep)))]
             rownames(xy) <- timestepIndivSeq
             spatPoints =sp::SpatialPoints(xy)
-            makePolyFrame<-data.frame(seq(1,nrow(origin.y),1))
+            makePolyFrame<-data.frame(seq(1,nrow(origin.y),1), stringsAsFactors = TRUE)
             spatialPolygons <- apply(makePolyFrame,1,create.poly2,origin.y,numVertices.y)
             sPolys = sp::SpatialPolygons(spatialPolygons,as.integer(origin.y[,2])) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
             distMat = rgeos::gDistance(spatPoints,sPolys, byid = TRUE) #columns are indivIDs, rows are fixed areas (this is how distances are presented in raster::pointDistance as well)
           }
-          distMat = data.frame(distMat)
-          timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(timestepIndivSeq),1))
-          distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, timestepIndivSeq,time, origin.y))) 
+          distMat = data.frame(distMat, stringsAsFactors = TRUE)
+          timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(timestepIndivSeq),1), stringsAsFactors = TRUE)
+          distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, timestepIndivSeq,time, origin.y)), stringsAsFactors = TRUE) 
           return(distTab)
         }
         
         distTab <- foreach::foreach(i = unique(originTab$dateTime), .packages = 'foreach') %do% dist.process.point(i, originTab, indivSeq, dist.measurement, origin.y, numVertices.y)
-        dist.all = data.frame(data.table::rbindlist(distTab)) #bind the list together
+        dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE) #bind the list together
       }
       
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -585,7 +584,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
           timestep = originTab[which(originTab$dateTime == time),]
           timestepIndivSeq.integ = unique(timestep$integ.ID)
           timestepIndivSeq = unique(timestep$id)
-          makePolyFrame1<-data.frame(seq(1,length(timestepIndivSeq.integ),1))
+          makePolyFrame1<-data.frame(seq(1,length(timestepIndivSeq.integ),1), stringsAsFactors = TRUE)
           spatialPolygons1 <- apply(makePolyFrame1,1,create.poly1,timestep,numVertices)
           sPolys1 <- sp::SpatialPolygons(spatialPolygons1,as.integer(timestepIndivSeq.integ)) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
           
@@ -595,19 +594,19 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
             spatPoints =sp::SpatialPoints(xy)
             distMat = rgeos::gDistance(sPolys1,spatPoints, byid = TRUE)
           }else{ #if y has more than only one point
-            makePolyFrame2<-data.frame(seq(1,nrow(origin.y),1))
+            makePolyFrame2<-data.frame(seq(1,nrow(origin.y),1), stringsAsFactors = TRUE)
             spatialPolygons2 <- apply(makePolyFrame2,1,create.poly2,origin.y,numVertices.y)
             sPolys2 = sp::SpatialPolygons(spatialPolygons2,as.integer(origin.y[,2])) #note that the second part of this argument must be an integer. Otherwise, it will return the following error: Error: is.integer(pO) is not TRUE
             distMat = rgeos::gDistance(sPolys1,sPolys2, byid = TRUE)
           }
-          distMat = data.frame(distMat)
-          timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1))
+          distMat = data.frame(distMat, stringsAsFactors = TRUE)
+          timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(unique(timestep$id)),1), stringsAsFactors = TRUE)
           
-          distTab <- data.frame(NULL)
+          distTab <- data.frame(NULL, stringsAsFactors = TRUE)
           
           for(i in 1:nrow(timestepIndivSeqFrame)){ #This for-loop is pretty much just the create.distFrame function (see note immediately above).
             x<- timestepIndivSeqFrame[i,]
-            dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1))
+            dist = data.frame(matrix(ncol = (nrow(origin.y) + 4), nrow = 1), stringsAsFactors = TRUE)
             colnames(dist) = c("dateTime","totalIndividuals","individualsAtTimestep","id", paste("dist.to.", origin.y[,1], sep = ""))
             dist$dateTime = time
             dist$totalIndividuals = length(indivSeq)
@@ -618,14 +617,14 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
             col.fill = unname(unlist(distMat[,unname(unlist(x[2]))])) #There's no need for the forloop used in the dist.all function b/c there will never be a distance given that represents individuals' distance to themselves.
             dist[1,5:ncol(dist)] = col.fill
             
-            distTab<-data.frame(data.table::rbindlist(list(distTab,dist)))
+            distTab<-data.frame(data.table::rbindlist(list(distTab,dist)), stringsAsFactors = TRUE)
           }
           return(distTab)
         }
         
         distTab <- foreach::foreach(i = unique(originTab$dateTime), .packages = 'foreach') %do% dist.process.poly(i, originTab, indivSeq, origin.y, numVertices, numVertices.y)
         
-        dist.all = data.frame(data.table::rbindlist(distTab)) #bind the list together
+        dist.all = data.frame(data.table::rbindlist(distTab), stringsAsFactors = TRUE) #bind the list together
       }
       return(dist.all)
     }
@@ -642,7 +641,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       day_lists <- data.list[grep(unname(unlist(x[1])), names(data.list))] #pulls the hour lists within a given day
       names(day_lists)<-NULL #ensure that list names do not mess up column names
       list.dist <- lapply(day_lists, dist.generator2, y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply
-      dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE)) #bind these hours back together
+      dist.bind <- data.frame(data.table::rbindlist(list.dist, fill = TRUE), stringsAsFactors = TRUE) #bind these hours back together
       
       return(dist.bind)
     }
@@ -652,16 +651,16 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
     idVec1=NULL #added in the case that idVec1 isn't created when x isn't specified
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors. No matter the input format, a table called "originTab" will be created.
       if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
-        originTab = data.frame(id = x.id, x = point.x, y = point.y, dateTime = dateTime)
+        originTab = data.frame(id = x.id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
       }
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
-        originTab = data.frame(matrix(ncol = 0, nrow = length(id)))
+        originTab = data.frame(matrix(ncol = 0, nrow = length(id)), stringsAsFactors = TRUE)
         originTab$id = x.id
         colnames(poly.xy)[seq(1,(ncol(poly.xy) - 1),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".x", sep = "")
         colnames(poly.xy)[seq(2,ncol(poly.xy),2)] = paste("point",seq(1,(ncol(poly.xy)/2),1),".y", sep = "")
-        dateFrame = data.frame(dateTime = dateTime)
+        dateFrame = data.frame(dateTime = dateTime, stringsAsFactors = TRUE)
         bindlist = list(originTab,poly.xy,dateFrame)
-        originTab = data.frame(do.call("cbind", bindlist))
+        originTab = data.frame(do.call("cbind", bindlist), stringsAsFactors = TRUE)
       }
     }
     
@@ -690,7 +689,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
             x$y = point.y
           }
         }
-        xyFrame1<- data.frame(x = x$x, y = x$y)
+        xyFrame1<- data.frame(x = x$x, y = x$y, stringsAsFactors = TRUE)
       }
       
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
@@ -698,7 +697,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
           if(length(as.matrix(poly.xy)) == (numVertices*2) && length(which(is.na(match(as.matrix(poly.xy), names(x)))) == TRUE) == 0){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than poly.xy being a matrix/dataframe of length(nrow(x)), it may be necessary to designate the colnames for intended coordinate values (i.e., if the xy-coordinate values in different list entries are different)
             xyFrame1<-x[,match(poly.xy,names(x))] 
           }else{
-            xyFrame1<- data.frame(poly.xy)
+            xyFrame1<- data.frame(poly.xy, stringsAsFactors = TRUE)
           }
         }else{ #if length(poly.xy == 0)
           xyFrame1 <-  x[,(match("point1.x", names(x))):((2*numVertices) + (match("point1.x", names(x)) -1))] #if there is no poly.xy input, the code assumes the input is output from referencePointToPolygon function, and therefore, the first point of interest would be "point1.x"
@@ -783,12 +782,12 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       colLengths<-NULL
       areas<-list()
       for(a in 1:length(y)){
-        areaFrame<-data.frame(y[a])
+        areaFrame<-data.frame(y[a], stringsAsFactors = TRUE)
         colnum<- ifelse(is.na(match("id", names(areaFrame))) == FALSE, ncol(areaFrame) -1, ncol(areaFrame)) #if there IS an id column, it will not be counted towards the column number, which is representative of the number of xycoordinates.
         colLengths<-c(colLengths, colnum) #we compile a sequence ncols, so we can determine the maximum number of vertices the input areas have. 
         if(nrow(areaFrame) > 1){ #if multiple fixed areas are represented in a list entry
           rowSeq<-seq(1,nrow(areaFrame),1)
-          rowSeqFrame<-data.frame(rowSeq)
+          rowSeqFrame<-data.frame(rowSeq, stringsAsFactors = TRUE)
           polys <- apply(rowSeqFrame,1,frameBreaker,areaFrame)
           for(b in 1:length(polys)){
             areas<-c(areas,polys[b])
@@ -800,7 +799,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       #Now we have the areas list, which we can input into the growPoly function.
       vertex.colnum<-max(colLengths) #the maximum number of columns (representative of the number of vertices) in the area set.
       new.y<-lapply(areas, growPoly, vertex.colnum)
-      y <- data.frame(data.table::rbindlist(new.y, use.names = FALSE)) #here we remake y as a dataframe containing polygons all with the same number of vertices. After this step, the function can move forward as if y was not a list. 
+      y <- data.frame(data.table::rbindlist(new.y, use.names = FALSE), stringsAsFactors = TRUE) #here we remake y as a dataframe containing polygons all with the same number of vertices. After this step, the function can move forward as if y was not a list. 
     }
 
     data.dates<-lubridate::date(originTab$dateTime) #now we can start concattenating the data by subsetting it into smaller lists
@@ -832,7 +831,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       
     }
     
-    frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE))
+    frame.dist<- data.frame(data.table::rbindlist(distances, fill = TRUE), stringsAsFactors = TRUE)
     
     return(frame.dist)
   }
