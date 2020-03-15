@@ -3,13 +3,13 @@
 #' This function creates a square/rectangular polygon from a single reference 
 #'    point by translating its location multiple times using the same method 
 #'    used in repositionReferencePoint. For example, even though calves in our 
-#'    study see (data(calves2018)) were only equiped with RFID tags on their 
+#'    study (see data(calves2018)) were only equiped with RFID tags on their 
 #'    left ear. With this function, we can create polygons that account for the
 #'    total space used by each individual at each time step.This function is 
 #'    different from similar point-to-polygon functions for two reasons:
 #'    1.) It does not assume points lie within the center of the polygon. 
 #'        Rather, the reference point must be a corner of the polygon 
-#'        (Note: "UL" denotes that reference point lies on the upper-left 
+#'        (Note: "UL" denotes that the reference point lies on the upper-left 
 #'        corner of the polygon, "UR" denotes that reference point lies on the 
 #'        upper-right corner of the polygon,"DL" denotes that reference point 
 #'        lies on the down-left corner of the polygon, "DR" denotes that 
@@ -18,7 +18,7 @@
 #'        polygon, you can first translate the reference point to a central 
 #'        location on tracked individuals using repositionReferencePoint.
 #'    2.) Polygon angles/directionality are based on observed movements of 
-#'        tracked individuals.
+#'        tracked individuals or gyroscope data.
 #'
 #' Currently, this function only supports input data with coordinates 
 #'    representing planar ('Euclidean') space (e.g. units of meters).
@@ -29,18 +29,20 @@
 #'    of the polygon, point2 would be on the upper right corner, point3 on the 
 #'    bottom right, and point 4 on the bottom left.
 #'
-#' Because this function needs information (dist, dx, dy) from 2 points on an 
-#'    individual's path to work, at least the first point in each individual's 
-#'    path will be removed (the function will report NAs for adjusted 
-#'    locations). Also note that if the distance between an individual's first 
-#'    point in their path and the second one is 0, the function will also 
-#'    report NAs for the second point's adjusted coordinates. The first non-NA 
-#'    values will only be reported for the instance where dist > 0.
+#' If distance == NULL, then function will require information (dist, dx, dy) 
+#'    from 2 points on an individual's path to work properly. Because of this, 
+#'    when no gyroscopic data are provided, at least the first point in each 
+#'    individual's path will be removed (the function will report NAs for 
+#'    adjusted locations). Also note that if the distance between an 
+#'    individual's first point in their path and the second one is 0, the 
+#'    function will also report NAs for the second point's adjusted 
+#'    coordinates. The first non-NA values will only be reported for the 
+#'    instance where dist > 0.
 #'
 #' Note that populating the direction argument with gyroscopic accelerometer 
 #'    data (or data collected using similar devices) collected concurrently 
 #'    with point-locations allows us to overcome a couple of assumptions 
-#'    associtated with using point-locations alone.
+#'    associated with using point-locations alone.
 #'    
 #'    First, unless the direction argument is specifically given (i.e., 
 #'    direction != NULL), vertex locations in output are subject to the 
@@ -124,7 +126,7 @@
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).
 #' @param modelOrientation Numerical. Describes the relative orientation (in 
-#'   degrees) of a planar model (see vignette or Farthing et al. in Review 
+#'   degrees) of a planar model (see vignette or Farthing et al. in Press 
 #'   (note: when this manuscript is officially published, we will update this 
 #'   citation/reference information)) describing vertex locations relative to
 #'   tracking-device point-locations. Defaults to 90.

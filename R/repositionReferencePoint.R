@@ -21,13 +21,15 @@
 #'    errors or miniscule bodily movements (e.g., head shaking) that are not 
 #'    indicative of actual movement.)
 #'
-#' Because this function needs information (dist, dx, dy) from 2 points on an 
-#'    individual's path to work, at least the first point in each individual's 
-#'    path will be removed (the function will report NAs for adjusted 
-#'    locations). Also note that if the distance between an individual's first 
-#'    point in their path and the second one is 0, the function will also 
-#'    report NAs for the second point's adjusted coordinates. The first non-NA 
-#'    values will only be reported for the instance where dist > 0.
+#' If distance == NULL, then function will require information (dist, dx, dy) 
+#'    from 2 points on an individual's path to work properly. Because of this, 
+#'    when no gyroscopic data are provided, at least the first point in each 
+#'    individual's path will be removed (the function will report NAs for 
+#'    adjusted locations). Also note that if the distance between an 
+#'    individual's first point in their path and the second one is 0, the 
+#'    function will also report NAs for the second point's adjusted 
+#'    coordinates. The first non-NA values will only be reported for the 
+#'    instance where dist > 0.
 #'
 #' Note that populating the direction argument with gyroscopic accelerometer 
 #'    data (or data collected using similar devices) collected concurrently 
@@ -116,7 +118,7 @@
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).
 #' @param modelOrientation Numerical. Describes the relative orientation (in 
-#'   degrees) of a planar model (see vignette or Farthing et al. in Review 
+#'   degrees) of a planar model (see vignette or Farthing et al. in Press 
 #'   (note: when this manuscript is officially published, we will update this 
 #'   citation/reference information)) describing vertex locations relative to
 #'   tracking-device point-locations. Defaults to 90.
