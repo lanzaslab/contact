@@ -58,6 +58,7 @@
 #'    If filterOutput == FALSE, returns \code{x} appended with a 
 #'    "duplicated" column which reports timepoints are duplicated (column 
 #'    value == 1), or not (column value == 0).
+#' @import foreach  
 #' @export
 #' @examples
 #' 
@@ -246,16 +247,11 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
 
     return(x)
   }
-  list.breaker<-function(x,y,id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores){
-    input<- data.frame(y[[unname(unlist(x[1]))]])
-    dup.filter<-filter1.func(input, id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores)
-    return(dup.filter)
-  }
 
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
-    breakFrame<- data.frame(seq(1,length(x),1))
-    list.dup <- apply(breakFrame, 1, list.breaker,y = x, id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
-
+    
+    list.dup <- foreach::foreach(l = seq(from = 1, to = length(x), by = 1)) %do% filter1.func(x[[l]], id, point.x, point.y, dateTime, avg, parallel, filterOutput, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here.
+    
     return(list.dup)
 
   }else{ #if x is a dataFrame

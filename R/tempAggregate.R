@@ -80,7 +80,8 @@
 #'    \item{x}{Smoothed x coordinates.}
 #'    \item{y}{Smoothed y coordinates.}
 #'    \item{dateTime}{Timepoint at which smoothed points were observed.}
-#'    
+#'
+#' @import foreach        
 #' @export
 #' @examples
 #' data("calves")
@@ -378,15 +379,9 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
 
     return(locTable)
   }
-  list.breaker<-function(x,y,id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores){
-    input<- data.frame(y[[unname(unlist(x[1]))]])
-    tempAgg<-Agg.generator(input, id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores)
-    return(tempAgg)
-  }
 
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
-    breakFrame<- data.frame(seq(1,length(x),1))
-    list.Agg <- apply(breakFrame, 1, list.breaker,y = x,id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
+    list.Agg <- foreach::foreach(l = seq(from = 1, to = length(x), by = 1)) %do% Agg.generator(x[[l]], id, point.x, point.y, dateTime, secondAgg, extrapolate.left, extrapolate.right, resolutionLevel, parallel, na.rm, smooth.type, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here.
     return(list.Agg)
 
   }else{ #if x is a dataFrame

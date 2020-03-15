@@ -64,6 +64,7 @@
 #'    If filterOutput == FALSE, returns \code{x} appended with an 
 #'    "mps" column which reports the avg distance per second 
 #'    individuals moved to get from observation i-1 to observation i.
+#' @import foreach
 #' @export
 #' @examples
 #' data(calves) #load calves data
@@ -222,14 +223,8 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     x <- x[,-match("dateTimeVec1",names(x))]
     return(x)
   }
-  list.breaker<-function(x,y,id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores){
-    input<- data.frame(y[[unname(unlist(x[1]))]])
-    mps.filter<-filter3.func(input, id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores)
-    return(mps.filter)
-  }
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
-    breakFrame<- data.frame(seq(1,length(x),1))
-    list.mps <- apply(breakFrame, 1, list.breaker,y = x,id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here. As such, since parallelizing this list processing could cause numerous problems due to parallelized subfunctions, this is an apply rather than a parApply or lapply.
+    list.mps <- foreach::foreach(l = seq(from = 1, to = length(x), by = 1)) %do% filter3.func(x[[l]], id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores) #in the vast majority of cases, parallelizing the subfunctions will result in faster processing than parallelizing the list processing here.
     return(list.mps)
   }else{ #if x is a dataFrame
     frame.mps<- filter3.func(x, id, point.x, point.y, dateTime, mpsThreshold, lonlat, parallel, filterOutput, nCores)
