@@ -450,6 +450,10 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
           durationTable$blockLength <- paste(blockLength,blockUnit, sep = " ")
         }
       }
+    }else{ #if nrow(durationTable) == 0
+      
+      warning("no contacts observed at this dist.threshold value") #if no contacts were found, ensure that users are made aware.
+      
     }
     return(durationTable)
     
@@ -803,6 +807,10 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
           durationTable$blockLength <- paste(blockLength,blockUnit, sep = " ")
         }
       }
+    }else{ #if nrow(durationTable) == 0
+      
+      warning("no contacts observed at this dist.threshold value") #if no contacts were found, ensure that users are made aware.
+      
     }
     return(durationTable)
   } 
