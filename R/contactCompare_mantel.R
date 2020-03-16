@@ -163,7 +163,7 @@ contactCompare_mantel<-function(x.summary, y.summary, numPermutations = 1000, al
     
     if(length(y.summary$block) == 0){
       
-      warning("importBlocks set to TRUE, but no block column exists in y.summary. Proceding as if y.summary values are stable across time and relevant to EVERY block.")
+      warning("importBlocks set to TRUE, but no block column exists in y.summary. Proceeding as if y.summary values are stable across time and relevant to EVERY block.", immediate. = TRUE)
       
       y.summaryBlock<-NULL #create an empty object to contain new block information
       

@@ -18,4 +18,12 @@ knitr::opts_chunk$set(echo = TRUE)
 * Addressed issues highlighted from CRAN reviewer.
 * Fixed a substantial bug in the "chisq" sub-function of contactTest.
 
+## contact 1.2.0
+
+* Corrected many bugs in package functions.
+* Improved efficiency (e.g., run time, local memory usage, etc.) of package functions
+* Ensured compatability with R 4.0.0.
+* Updated package citation (because our paper was accepted for publication!)
+* Broke contact::contactTest into multiple functions - contactTest is now defunct.
+
 ```

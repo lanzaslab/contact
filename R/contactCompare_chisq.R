@@ -1,6 +1,5 @@
-#' Determine if Observed Contacts are More or Less Frequent than in a Random
-#'    Distribution
-#'    
+#' Compare Observed Contacts to a Random Distribution
+#' 
 #' This function is used to determine if tracked individuals in an 
 #'    empirical dataset had more or fewer contacts with other tracked 
 #'    individuals/specified locations than would be expected at random. The
@@ -218,6 +217,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   
   #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
   block <- NULL
+  id<-NULL 
+  output<-NULL
   j <- NULL
   metric <-NULL
   block.x<-NULL
@@ -236,9 +237,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
                                        warning = w.handler),
            warning = W)
     }
-    
-    id<-NULL #bind this variable to a local object so that R CMD check doesn't flag it.
-    output<-NULL
+
     
     indivSummaryTest<- ifelse(length(grep("contactDuration_Indiv", colnames(empirical))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
     
@@ -456,11 +455,11 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   
   colnames(y.summary)<- gsub("avg..","",colnames(y.summary)) #if y.summary represents the average summary report (from the summarizeContacts function), all colnames may be preceded by "avg..". This line removes that tag from all relevant columns.
   
-  if(importBlocks == TRUE){ #if importBlocks == TRUE, but there is no block information in y.summary, the function returns a warning, but precedes as if the y input is relevant to all columns.
+  if(importBlocks == TRUE){ #if importBlocks == TRUE, but there is no block information in y.summary, the function returns a warning, but proceeds as if the y input is relevant to all columns.
     
     if(length(y.summary$block) == 0){
       
-      warning("importBlocks set to TRUE, but no block column exists in y.summary. Proceding as if y.summary values are stable across time and relevant to EVERY block.")
+      warning("importBlocks set to TRUE, but no block column exists in y.summary. Proceeding as if y.summary values are stable across time and relevant to EVERY block.", immediate. = TRUE)
       
       y.summaryBlock<-NULL #create an empty object to contain new block information
       
@@ -592,7 +591,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       if(is.na(match("block", colnames(y.potentialAgg))) == TRUE){ #if there is NOT a "block" column present, the function will return a warning and proceed as if importBlocks == FALSE. 
         
-        warning("importBlocks set to TRUE, but no block column exists in y.potential. Proceding as if y.potential values are stable across time and relevant to EVERY block.")
+        warning("importBlocks set to TRUE, but no block column exists in y.potential. Proceeding as if y.potential values are stable across time and relevant to EVERY block.", immediate. = TRUE)
         
         #return y.potential as if importBlocks == FALSE and no block column exists in y.potential then repeat it for each block
         y.potential<-stats::aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
@@ -646,7 +645,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       if(is.na(match("block", colnames(y.potential))) == TRUE){ #if there is NOT a "block" column present.
         
-        warning("importBlocks set to TRUE, but no block column exists in y.potential. Proceding as if y.potential values are stable across time and relevant to EVERY block.")
+        warning("importBlocks set to TRUE, but no block column exists in y.potential. Proceeding as if y.potential values are stable across time and relevant to EVERY block.")
         
         #return y.potential as if importBlocks == FALSE and no block column exists in y.potential then repeat it for each block
         
@@ -790,46 +789,59 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       popLevelOut<-foreach::foreach(i = seq(from = 1, to = nrow(processFrame), by = 1)) %do% { #no need to make this parallel. Doing so would only slow things down.
         
+        summaryFrame <- data.frame(matrix(ncol = 11, nrow = 1), stringsAsFactors = TRUE) #just in case there are no entries in summaryFrame, all entries in this summaryFrame will be NA
+        summaryFrame[1,] <- NA
+        
         popLevelMetric <- droplevels(subset(chisqOut, metric == processFrame[i,1] & block.x == processFrame[i,2])) # pull the unique value of interest
         
-        observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-        maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
-        expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-        maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
+        if(nrow(popLevelMetric) > 0){
+          
+          observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
+          expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
         
-        expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
+          expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
         
-        assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
+          assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
         
-        test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
-        warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
+          test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
+          warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
         
-        if(length(warn1) == 0){
-          warn1 = ""
-        }
+          if(length(warn1) == 0){
+            warn1 = ""
+          }
         
-        summaryFrame <- data.frame(metric = i, method = unname(test[4]), X.squared = unname(test[1]), 
+          summaryFrame <- data.frame(metric = processFrame[i,1], method = unname(test[4]), X.squared = unname(test[1]), 
                                    df = unname(test[2]), p.val = unname(test[3]), empiricalContactDurations = observedVec[1], 
                                    randContactDurations.mean = expectedVec[1], empiricalNoContactDurations = observedVec[2], 
                                    randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
                                    warning = warn1, stringsAsFactors = TRUE)
         
-        colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
+        }
+          colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
                                   "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
-        ##add block information to summaryFrame (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
-        summaryFrame$block.x <- unique(popLevelMetric$block.x)
-        summaryFrame$block.start.x <- unique(popLevelMetric$block.start.x)
-        summaryFrame$block.end.x <- unique(popLevelMetric$block.end.x)
-        summaryFrame$block.y <- unique(popLevelMetric$block.y)
-        summaryFrame$block.start.y <- unique(popLevelMetric$block.start.y)
-        summaryFrame$block.end.y <- unique(popLevelMetric$block.end.y)
+          ##add block information to summaryFrame (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
+          #summaryFrame$block.x <- unique(popLevelMetric$block.x)
+          #summaryFrame$block.start.x <- unique(popLevelMetric$block.start.x)
+          #summaryFrame$block.end.x <- unique(popLevelMetric$block.end.x)
+          #summaryFrame$block.y <- unique(popLevelMetric$block.y)
+          #summaryFrame$block.start.y <- unique(popLevelMetric$block.start.y)
+          #summaryFrame$block.end.y <- unique(popLevelMetric$block.end.y)
+          
+          summaryFrame$block.x <- unique(droplevels(processFrame[i,2]))
+          summaryFrame$block.start.x <- unique(chisqOut$block.start.x[which(chisqOut$block.x == processFrame[i,2])])
+          summaryFrame$block.end.x <- unique(chisqOut$block.end.x[which(chisqOut$block.x == processFrame[i,2])])
+          summaryFrame$block.y <- unique(chisqOut$block.y[which(chisqOut$block.x == processFrame[i,2])])
+          summaryFrame$block.start.y <- unique(chisqOut$block.start.y[which(chisqOut$block.x == processFrame[i,2])])
+          summaryFrame$block.end.y <- unique(chisqOut$block.end.y[which(chisqOut$block.x == processFrame[i,2])])
         
-        rownames(summaryFrame) <-1
-        
+          rownames(summaryFrame) <-1
+          
         return(summaryFrame)
         
-      }
+        }
       
       popLevelOut<- data.frame(data.table::rbindlist(popLevelOut), stringsAsFactors = TRUE) #bind these frames together
       
@@ -857,31 +869,38 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       uniqueMetrics <- unique(chisqOut$metric) #pull out the unique metrics for the data set
       
-       popLevelOut<-foreach::foreach(i = uniqueMetrics) %do% { #no need to make this parallel. Doing so would only slow things down.
+      popLevelOut<-foreach::foreach(i = uniqueMetrics) %do% { #no need to make this parallel. Doing so would only slow things down.
         
+        summaryFrame <- data.frame(matrix(ncol = 11, nrow = 1), stringsAsFactors = TRUE) #just in case there are no entries in summaryFrame, all entries in this summaryFrame will be NA
+        summaryFrame[1,] <- NA
+         
         popLevelMetric <- droplevels(subset(chisqOut, metric == i)) # pull the unique value of interest
         
-        observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-        maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
-        expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-        maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
+        if(nrow(popLevelMetric) > 0){
         
-        expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
+          observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
+          expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
         
-        assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
+          expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
         
-        test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
-        warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
+          assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
         
-        if(length(warn1) == 0){
-          warn1 = ""
-        }
+          test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
+          warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
         
-        summaryFrame <- data.frame(metric = i, method = unname(test[4]), X.squared = unname(test[1]), 
+          if(length(warn1) == 0){
+            warn1 = ""
+          }
+        
+          summaryFrame <- data.frame(metric = i, method = unname(test[4]), X.squared = unname(test[1]), 
                                    df = unname(test[2]), p.val = unname(test[3]), empiricalContactDurations = observedVec[1], 
                                    randContactDurations.mean = expectedVec[1], empiricalNoContactDurations = observedVec[2], 
                                    randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
                                    warning = warn1, stringsAsFactors = TRUE)
+        
+        }
         
         colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
                                   "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.

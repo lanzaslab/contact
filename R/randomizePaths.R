@@ -296,7 +296,7 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
           rand <-apply(rand.blockTab,1,xy.assignShuff, idFrame, dataType, numVertices)
           randCoord<- data.frame(data.table::rbindlist(rand), stringsAsFactors = TRUE)
           
-          blockFrame.full<-subset(y, block <= blocksPerUnit)
+          blockFrame.full<-droplevels(subset(y, block <= blocksPerUnit)) #we need to pull the dateTimes for these blocks
           
           if(length(blockAbsence > 0)){ #So, if there is a missing block
             timestep.per.block <- length(unique(blockFrame.full$dateTime))/length(unique(blockFrame.full$block)) #pulls the number of timesteps per block. In the event that randVec pulls a starting block(s) that does not exist for the individual, NAs will be returned. Assuming that all timesteps are equidistant (as they should be when shuffleType == 2), this can only be the case if a block is pulled from a time before the individual began reporting tracks.
@@ -317,8 +317,8 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
               }
             }
           }
-          #outTable<- idFrame[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
-          outTable<-data.frame(id = unname(unlist(x[1])), dateTime = unique(blockFrame.full$dateTime), blockLength = unique(blockFrame.full$blockLength), stringsAsFactors = TRUE) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
+          #outTable<-data.frame(id = unname(unlist(x[1])), dateTime = unique(blockFrame.full$dateTime), blockLength = unique(blockFrame.full$blockLength), stringsAsFactors = TRUE) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
+          outTable<-data.frame(id = rep(unname(unlist(x[1])), length(unique(blockFrame.full$dateTime))), dateTime = unique(blockFrame.full$dateTime), stringsAsFactors = TRUE) #create a dataframe with the number of rows corresponding to the number of times individuals were observed. This data frame will contain essentially the same info. as idFrame, but will ensure that blocks are consistent for all individuals.
           outTable<- outTable[1:nrow(randCoord),] #If the final block of the dataset has fewer observations than other blocks, and the randomized locations used this final block, this reduces the number of rows in idFrame to fit the number of rows in randCoord
           
           #now we have to redefine block information for the single shuffleUnit (so that users can recall the block information they set)

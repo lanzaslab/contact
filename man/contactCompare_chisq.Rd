@@ -2,68 +2,7 @@
 % Please edit documentation in R/contactCompare_chisq.R
 \name{contactCompare_chisq}
 \alias{contactCompare_chisq}
-\title{Determine if Observed Contacts are More or Less Frequent than in a Random
-   Distribution
-   
-This function is used to determine if tracked individuals in an 
-   empirical dataset had more or fewer contacts with other tracked 
-   individuals/specified locations than would be expected at random. The
-   function works by comparing an empirical contact distribution (generated 
-   using x.summary and x.potential) to a NULL distribution (generated using 
-   y.summary and y.potential) using a X-squared goodness-of-fit test. Note
-   that this function SHOULD NOT be used to compare two empirical networks 
-   using Chi-squared tests, as the function assumes x.summary and y.summary 
-   represent observed and expected values, respectively.
-   
-This function was inspired by the methods described by Spiegel et al. 2016. 
-   They determined individuals to be expressing social behavior when nodes 
-   had greater degree values than would be expected at random, with 
-   randomized contact networks derived from movement paths randomized 
-   according to their novel methodology (that can be implemented using our 
-   randomizePaths function). Here, users can also identify when more or 
-   fewer contacts (demonstrated by the sign of values in the "difference" 
-   column in the output) with specific individuals than would be expected 
-   at random, given a pre-determined p-value threshold. Such relationships 
-   suggest social affinities or aversions, respectively, may exist between 
-   specific individuals.
-   
-Note:The default tested column (i.e., categorical data column from which 
-   data is drawn to be compared to randomized sets herein) is "id." This 
-   means that contacts involving each individual (defined by a unique "id") 
-   will be compared to randomized sets. Users may not use any data column 
-   for analysis other than "id." If users want to use another categorical 
-   data column in analyses rather than "id," we recommend re-processing 
-   data (starting from the dist.all/distToArea functions), while specifying 
-   this new data as an "id." For example, users may annotate an illness 
-   status column to the empirical input, wherein they describe if the 
-   tracked individual displayed gastrointestinal ("gastr"), respiratory 
-   ("respr"), both ("both"), illness symptoms, or were consistently healthy 
-   ("hel") over the course of the tracking period. Users could set this 
-   information as the "id," and carry it forward as such through the 
-   data-processing pipeline. Ultimately, they could determine if each of 
-   these disease states affected contact rates, relative to what would be 
-   expected at random.    
-   
-Take care to ensure that the same shuffle.type is denoted as was originally 
-   used to randomize individuals' locations (assuming the randomizePaths 
-   function was used to do so). This is important for two reasons: 1.) If 
-   there was no y.potential input, the function assumes that x.potential is 
-   relevant to the random set as well. This is a completely fair assumption 
-   when importBlocks == FALSE or when the shuffleUnit == 0. In cases when 
-   the shuffle.type is 1 or 2, however, this assumption can lead to 
-   erroneous results and/or errors in the function. 2.) In the 
-   randomizePaths function, setting shuffle.type == 2 produces only 1 
-   shuffle.unit's worth of data (e.g., 1 day), rather than a dataset with 
-   the same length of x. As such, there may be a different number of blocks 
-   in y compared to x. Here we assume that the mean randomized durations 
-   per block in y.summary and y.potential, are representative of mean 
-   randomized durations per block across each shuffle unit (e.g., day 1 is 
-   represntative of day 3, etc.).
-   
-Finally, if X-squared expected values will be very small, 
-   approximations of p may not be correct (and in fact, all estimates will 
-   be poor). It may be best to weight these tests differently. To address 
-   this, We've added the function reported that results may be inaccurate.}
+\title{Compare Observed Contacts to a Random Distribution}
 \usage{
 contactCompare_chisq(
   x.summary,
@@ -170,9 +109,6 @@ Output format is dependent on \code{popLevelOutput} value.
    population-level comparisons. Columns in each data frame are identical.
 }
 \description{
-Determine if Observed Contacts are More or Less Frequent than in a Random
-   Distribution
-   
 This function is used to determine if tracked individuals in an 
    empirical dataset had more or fewer contacts with other tracked 
    individuals/specified locations than would be expected at random. The

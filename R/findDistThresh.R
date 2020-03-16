@@ -51,7 +51,7 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     conf1.2<-unlist(ifelse(conf1.1 >0, conf1.1,0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)) #if conf = 0, it is replaced with this value which is extremely close to 0, so that qnorm doesn't return an inf value
     if(conf1.2 == 0){ #Ensure that users know that users know if conf1.1 was changed
       
-      warning("pWithin1 == 1. To prevent an error here, probability of true locations falling outside of an acc.Dist1 radius around reported point locations changed from 0 to 9.999889e-320. As a result, spTh estimates may be inflated.")
+      warning("pWithin1 == 1. To prevent an error here, probability of true locations falling outside of an acc.Dist1 radius around reported point locations changed from 0 to 9.999889e-320. As a result, spTh estimates may be inflated.", immediate. = TRUE)
       
     }
     zscore1<-abs(stats::qnorm(conf1.2)) #calculate z-score
@@ -60,7 +60,7 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     conf2.2<-unlist(ifelse(conf2.1 >0, conf2.1,0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)) #if conf = 0, it is replaced with this value which is extremely close to 0, so that qnorm doesn't return an inf value
     if(conf2.2 == 0){ #Ensure that users know that users know if conf1.1 was changed
       
-      warning("pWithin2 == 1. To prevent an error here, probability of true locations falling outside of an acc.Dist2 radius around reported point locations changed from 0 to 9.999889e-320. As a result, spTh estimates may be inflated.")
+      warning("pWithin2 == 1. To prevent an error here, probability of true locations falling outside of an acc.Dist2 radius around reported point locations changed from 0 to 9.999889e-320. As a result, spTh estimates may be inflated.", immediate. = TRUE)
       
     }
     
