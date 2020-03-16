@@ -1,6 +1,6 @@
 Package: contact
 Title: Creating Contact and Social Networks
-Version: 1.2.0
+Version: 1.2.1
 Authors@R: 
     c(person(given = "Trevor", family = "Farthing", role = c("aut", "cre"),
     email = "tsfarthi@ncsu.edu"), person(given = "Daniel", family = "Dawson",

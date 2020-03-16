@@ -11,7 +11,7 @@
 #'    Essentially this function can be used to determine an adjusted spTh value
 #'    that likely includes >= 99-percent of true contacts defined using the 
 #'    initial spTh.
-#' @param n Numerical. Number of "in-contact" point-pairs used in the 
+#' @param n Integer. Number of "in-contact" point-pairs used in the 
 #'    expected-distance distribution(s). Defaults to 1000.
 #' @param acc.Dist1 Numerical. Accuracy distance for point 1.
 #' @param acc.Dist2 Numerical. Accuracy distance for point 2. If == NULL, 
