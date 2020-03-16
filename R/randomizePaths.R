@@ -107,7 +107,7 @@
 #' @param reduceOutput Logical. If TRUE, to reduce output size, only "id," 
 #'    "x.rand," "y.rand," "dateTime," and "rand.rep" columns will be included 
 #'    in function output. Defaults to FALSE.
-#' @keywords data-processing contact
+#' @keywords data-processing randomize
 #' @return If reduceOutput == FALSE, output is \code{x} appended with columns 
 #'    described below.
 #'    

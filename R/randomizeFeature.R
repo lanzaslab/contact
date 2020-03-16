@@ -22,8 +22,9 @@
 #'    function will draw on the initial distribution to assign randomized 
 #'    values, but the specific number of each unique value may not be 
 #'    maintained. Defaults to TRUE.
-#' @param numRandomizations Description imminent
-#' @keywords randomize analysis
+#' @param numRandomizations Integer. The number of replicate data frames 
+#'    produced in output. Defaults to 1.
+#' @keywords data-processing randomize
 #' @return Output is \code{x} appended with columns described below. 
 #'    
 #'    \item{...shuff}{Randomized value of specified variables.}
@@ -45,7 +46,7 @@
 #' 
 #' head(randomizedFrame) #see that randomized-value columns have been appended.
 
-randomizeFeature<-function(x, feature = NULL, shuffle = FALSE, maintainDistr = TRUE, numRandomizations = 10){
+randomizeFeature<-function(x, feature = NULL, shuffle = FALSE, maintainDistr = TRUE, numRandomizations = 1){
   shuffle.func<-function(x,y){
     shufVec <- unlist(rep(x[2],length(which(y == x[1]))))
     return(shufVec)

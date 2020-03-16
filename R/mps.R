@@ -57,7 +57,7 @@
 #'    observartions are removed and an "mps" column is appended to x,which 
 #'    reports the avg distance per second individuals moved to get from 
 #'    observation i-1 to observation i. Defaults to TRUE.
-#' @keywords filter movement speed
+#' @keywords filter
 #' @return If filterOutput == TRUE, returns \code{x} less observations 
 #'    representing impossible/unlikely movements.
 #'    
