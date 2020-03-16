@@ -477,11 +477,11 @@ Note that the newly-created smoothed-point-location data set, calves.10secSmooth
 
 **C.) Randomize the newly-created point-location data set.**
 
-In accordance with the Spiegel *et al.* (2016) procedure, individuals' movement paths (i.e., sequential relocation events) within defined time blocks will be shuffled around in time, so that individuals visit the same places, just not at the same times. Here, 10-minute time blocks are shuffled between hours of the day on 06/01/2018. For a more detailed description of the relationship between blockUnits and shuffleUnits in the randomizePaths function, please see the randomizePaths function help page. In the interest of relatively quick processing speeds later on, we will only create 10 randomized replicates here.
+In accordance with the Spiegel *et al.* (2016) procedure, individuals' movement paths (i.e., sequential relocation events) within defined time blocks will be shuffled around in time, so that individuals visit the same places, just not at the same times. Here, 10-minute time blocks are shuffled between hours of the day on 06/01/2018. For a more detailed description of the relationship between blockUnits and shuffleUnits in the randomizePaths function, please see the randomizePaths function help page. In the interest of relatively quick processing speeds later on, we will only create 20 randomized replicates here.
 
 ```{r, echo=TRUE, warning = FALSE, eval = FALSE}
 
-nRandomizations <- 10 #we will create 10 randomized-hour replicates.
+nRandomizations <- 20 #we will create 20 randomized-hour replicates.
 
 system.time(randomHourlyCalfPaths.list <- contact::randomizePaths(x = calves.10secSmoothed.na, id = calves.10secSmoothed.na$id, dateTime = calves.10secSmoothed.na$dateTime, point.x = calves.10secSmoothed.na$x, point.y = calves.10secSmoothed.na$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", numVertices = 4, blocking = TRUE, blockUnit = "mins", blockLength = 10, shuffle.type = 2, shuffleUnit = "hours", indivPaths = TRUE, numRandomizations = nRandomizations))
 
@@ -597,7 +597,7 @@ These warnings are normal and occur when expected pairwise counts are are very s
 
 ```{r, echo=TRUE, warning=FALSE, eval = FALSE}
 
-system.time(fullBody_NULLTest1<-contact::contactCompare_chisq(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = TRUE, shuffle.type = 2, popLevelOutput = TRUE, parallel = FALSE)) #Note that we MUST indicate the shuffle.type used to randomize point-locations.
+system.time(fullBody_NULLTest1<-contact::contactCompare_chisq(x.summary, y.summary, x.potential, y.potential, importBlocks = TRUE, shuffle.type = 2, popLevelOutput = TRUE, parallel = FALSE)) #Note that we MUST indicate the shuffle.type used to randomize point-locations.
 
 ```
 
@@ -607,7 +607,7 @@ Note that most of the "metrics" represented here are numbers. These are actually
 
 ```{r, echo=TRUE, warning = FALSE, eval = FALSE}
 
-fullBody_NULLTest1[[2]]
+head(fullBody_NULLTest1[[2]])
 
 ```
 

@@ -339,8 +339,21 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           }
         }
         
+        maxDurations.rand<-maxDurations.rand[is.na(maxDurations.rand) == FALSE] #remove the NAs
+        if(length(maxDurations.rand) == 0){ #if removing the NAs removed the only observations, then maxDurations.rand reverts to 0
+          maxDurations.rand <- 0
+        }
+        
         observedVec <- c(sum(empDurations), maxDurations-sum(empDurations)) #create a vector describing observed counts
-        expectedProb <- c((sum(randDurations)/maxDurations.rand), ((maxDurations.rand-sum(randDurations))/maxDurations.rand)) #convert the observed random durations to probabilities.
+
+        if(maxDurations.rand > 0){ #we must prevent dividing by zero here. 
+          expectedProb <- c((sum(randDurations)/maxDurations.rand), ((maxDurations.rand-sum(randDurations))/maxDurations.rand)) #convert the observed random durations to probabilities.
+
+        }else{ #if maxDurations.rand == 0, expectedProb will always be c(0,0) and therefore chisq.test will return an error
+          
+          expectedProb <- c(0,1) #here we force expected probability to be (0, 1) (i.e., 100% probability of no contact), which would be the case if the individual was not observed.
+          
+        }
         
         assign("last.warning", NULL, envir = baseenv()) #clears the warnings
         
@@ -356,7 +369,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
                                    randContactDurations.mean = sum(randDurations), empiricalNoContactDurations = (maxDurations - sum(empDurations)), 
                                    randNoContactDurations.mean = (maxDurations.rand - sum(randDurations)), difference = abs((maxDurations - sum(empDurations)) - (maxDurations.rand - sum(randDurations))), 
                                    warning = warn1, stringsAsFactors = TRUE)
-        
+
         colnames(summaryFrame)<-c("id", "metric", "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
                                   "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
@@ -801,8 +814,20 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
           maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
         
-          expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
-        
+          maxDurations.y<-maxDurations.y[is.na(maxDurations.y) == FALSE] #remove the NAs
+          if(length(maxDurations.y) == 0){ #if removing the NAs removed the only observations, then maxDurations.y reverts to 0
+            maxDurations.y <- 0
+          }
+          
+          if(maxDurations.y > 0){ #we must prevent dividing by zero here. 
+            expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
+            
+          }else{ #if maxDurations.y == 0, expectedProb will always be c(0,0) and therefore chisq.test will return an error
+            
+            expectedProb <- c(0,1) #here we force expected probability to be (0, 1) (i.e., 100% probability of no contact), which would be the case if the individual was not observed.
+            
+          }
+          
           assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
         
           test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
@@ -882,8 +907,20 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
           expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
           maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
-        
-          expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
+      
+          maxDurations.y<-maxDurations.y[is.na(maxDurations.y) == FALSE] #remove the NAs
+          if(length(maxDurations.y) == 0){ #if removing the NAs removed the only observations, then maxDurations.y reverts to 0
+            maxDurations.y <- 0
+          }
+          
+          if(maxDurations.y > 0){ #we must prevent dividing by zero here. 
+            expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
+            
+          }else{ #if maxDurations.y == 0, expectedProb will always be c(0,0) and therefore chisq.test will return an error
+            
+            expectedProb <- c(0,1) #here we force expected probability to be (0, 1) (i.e., 100% probability of no contact), which would be the case if the individual was not observed.
+            
+          }
         
           assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
         

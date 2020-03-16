@@ -27,7 +27,7 @@ This package was created and is maintained by members of the [Lanzas Lab](http:/
 You can install the released version of contact from [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
-install.packages("contact")
+# install.packages("contact")
 
 ```
 
@@ -35,7 +35,7 @@ And the development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("lanzaslab/contact")
+# devtools::install_github("lanzaslab/contact")
 ```
 ## Example
 

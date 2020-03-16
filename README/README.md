@@ -33,14 +33,14 @@ You can install the released version of contact from
 [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
-install.packages("contact")
+# install.packages("contact")
 ```
 
 And the development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("lanzaslab/contact")
+# devtools::install_github("lanzaslab/contact")
 ```
 
 ## Example
@@ -111,20 +111,13 @@ timestep.
 water_distance<-contact::dist2Area_df(x = calves.dateTime, y = water_poly, x.id = "calftag", y.id = "water", dateTime = "dateTime", point.x = calves.dateTime$x, point.y = calves.dateTime$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", lonlat = FALSE, numVertices = NULL) #note that the poly.xy and numVertices arguments refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," these arguments are irrelevant here.
 
 head(water_distance)
-#>              dateTime totalIndividuals individualsAtTimestep  id
-#> 1 2016-05-02 00:00:14               70                    12 101
-#> 2 2016-05-02 00:00:14               70                    12 104
-#> 3 2016-05-02 00:00:14               70                    12 108
-#> 4 2016-05-02 00:00:14               70                    12 111
-#> 5 2016-05-02 00:00:14               70                    12 116
-#> 6 2016-05-02 00:00:14               70                    12 123
-#>   dist.to.water
-#> 1      14.32860
-#> 2      12.04416
-#> 3      32.84068
-#> 4      35.58052
-#> 5       0.00000
-#> 6      47.51557
+#>              dateTime totalIndividuals individualsAtTimestep  id dist.to.water
+#> 1 2016-05-02 00:00:14               10                     3 101      14.32860
+#> 2 2016-05-02 00:00:14               10                     3 104      12.04416
+#> 3 2016-05-02 00:00:14               10                     3 108      32.84068
+#> 4 2016-05-02 00:00:22               10                     4 101      15.17450
+#> 5 2016-05-02 00:00:22               10                     4 104      12.06342
+#> 6 2016-05-02 00:00:22               10                     4 108      27.13532
 ```
 
 **C.) Identify what SpTh value will allow us to capture 99% of contacts,
@@ -133,17 +126,15 @@ water trough, given the RTLS accuracy.**
 
 ``` r
 
-SpThValues<-contact::findDistThresh(n1 = 1000, n2 = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the initially-defined spatial threshold for contact
+SpThValues<-contact::findDistThresh(n = 100000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the initially-defined spatial threshold for contact. #spTh represents the initially-defined spatial threshold for contact. Note that we've chosen to use 100,000 in-contact point-location pairs here.
 
-SpThValues #it looks like an adjusted SpTh value of approximately 0.74 m will likely capture 99% of contacts, defined as instances when point-locations were within 0.333 m of the water trough, given the RTLS accuracy. #Note that because these confidence intervals are obtained from distributions generated from random samples, every time this function is run, results will be slightly different. 
-#>      mean     5%-CI    10%-CI    15%-CI    20%-CI    25%-CI    30%-CI 
-#> 0.7068588 0.7075445 0.7082329 0.7089268 0.7096292 0.7103432 0.7110723 
-#>    35%-CI    40%-CI    45%-CI    50%-CI    55%-CI    60%-CI    65%-CI 
-#> 0.7118207 0.7125932 0.7133954 0.7142344 0.7151193 0.7160620 0.7170786 
-#>    70%-CI    75%-CI    80%-CI    85%-CI    90%-CI    95%-CI    99%-CI 
-#> 0.7181923 0.7194380 0.7208727 0.7226002 0.7248454 0.7282912 0.7350257 
-#>       max 
-#> 1.9878744
+SpThValues #it looks like an adjusted SpTh value of approximately 0.71 m will likely capture 99% of contacts, defined as instances when point-locations were within 0.333 m of the water trough, given the RTLS accuracy. #Note that because these confidence intervals are obtained from distributions generated from random samples, every time this function is run, results will be slightly different. 
+#>      mean     5%-CI    10%-CI    15%-CI    20%-CI    25%-CI    30%-CI    35%-CI 
+#> 0.7077398 0.7078082 0.7078769 0.7079461 0.7080162 0.7080874 0.7081602 0.7082348 
+#>    40%-CI    45%-CI    50%-CI    55%-CI    60%-CI    65%-CI    70%-CI    75%-CI 
+#> 0.7083119 0.7083919 0.7084756 0.7085639 0.7086579 0.7087594 0.7088705 0.7089947 
+#>    80%-CI    85%-CI    90%-CI    95%-CI    99%-CI       max       TPR 
+#> 0.7091379 0.7093102 0.7095342 0.7098779 0.7105498 2.7230331 0.3032000
 
 CI_99<-unname(SpThValues[21]) #we will use this SpTh value moving forward.
 ```
@@ -164,10 +155,10 @@ head(water_contacts)
 #> 5      101   water  101-water               1 2016-05-02 00:48:15
 #> 6      101   water  101-water               1 2016-05-02 00:48:36
 #>        contactEndTime distThreshold secThreshold equidistant.time
-#> 1 2016-05-02 00:47:35     0.7350257            1            FALSE
-#> 2 2016-05-02 00:47:43     0.7350257            1            FALSE
-#> 3 2016-05-02 00:47:47     0.7350257            1            FALSE
-#> 4 2016-05-02 00:47:59     0.7350257            1            FALSE
-#> 5 2016-05-02 00:48:15     0.7350257            1            FALSE
-#> 6 2016-05-02 00:48:36     0.7350257            1            FALSE
+#> 1 2016-05-02 00:47:35     0.7105498            1            FALSE
+#> 2 2016-05-02 00:47:43     0.7105498            1            FALSE
+#> 3 2016-05-02 00:47:47     0.7105498            1            FALSE
+#> 4 2016-05-02 00:47:59     0.7105498            1            FALSE
+#> 5 2016-05-02 00:48:15     0.7105498            1            FALSE
+#> 6 2016-05-02 00:48:36     0.7105498            1            FALSE
 ```
