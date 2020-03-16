@@ -6,5 +6,7 @@ devtools::check_win_release() #check on windows server running the current versi
 
 devtools::check_win_devel() #check on windows server running the development version of R
 
+devtools::revdep() #check for any downstream dependencies
+
 devtools::build() #build tarball
 

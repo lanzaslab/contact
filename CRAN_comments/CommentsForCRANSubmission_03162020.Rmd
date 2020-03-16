@@ -1,0 +1,25 @@
+---
+title: "CommentsForCRANSubmission_10162019"
+author: "Trevor Farthing"
+date: "10/16/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Test environments
+* local macOS Catalina (10.15.3), R 3.6.2
+* winbuilder (release) #note: I tried passing the package to devel multiple times over the past couple of days, but was always presented with "Error in curl::curl_fetch_memory(url, handle = h) : Failed FTP upload: 550" and the transmission is aborted. Googling the error indicates that this is often an error unrelated to the package or my local system.
+
+## R CMD check results
+There were no ERRORs, WARNINGs, or NOTEs 
+
+## Downstream dependencies
+
+There are currently no downstream dependencies for this package.
+
+```{r}
+
+```
