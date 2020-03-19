@@ -22,9 +22,6 @@
 #'   \item{dateTime}{UTC date and time at which location fix was obtained}
 #' }
 #' @keywords datasets calves point location planar
-#' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-#'    C. in Press. Accounting for space and uncertainty in real-time-location-
-#'    system-derived contact networks. Ecology and Evolution.
 #' @examples
 #' \donttest{
 #' data("calves2018") #alternatively, you may use the command: contact::calves2018

@@ -26,4 +26,8 @@ knitr::opts_chunk$set(echo = TRUE)
 * Updated package citation (because our paper was accepted for publication!)
 * Broke contact::contactTest into multiple functions - contactTest is now defunct.
 
+## contact 1.2.1
+
+* Fixed a bug introduced in version 1.2.0, as required by CRAN
+
 ```

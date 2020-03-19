@@ -109,5 +109,3 @@ calves_filter1 <- mps(calves.dateTime, id = calves.dateTime$calftag,
 
 }
 \keyword{filter}
-\keyword{movement}
-\keyword{speed}

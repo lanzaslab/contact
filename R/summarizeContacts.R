@@ -306,7 +306,7 @@ summarizeContacts<- function(x, importBlocks = FALSE, avg = FALSE, parallel = FA
       idSeq<-unique(full.summary$id)
       if(importBlocks == TRUE){
         blockSeq<-unique(full.summary$block)
-        sumTab <- apply(data.frame(blockSeq), 1, summaryAgg.block, y = full.summary, stringsAsFactors = TRUE)
+        sumTab <- apply(data.frame(blockSeq, stringsAsFactors = TRUE), 1, summaryAgg.block, y = full.summary)
         sumTab.agg <- data.frame(data.table::rbindlist(sumTab), stringsAsFactors = TRUE)
       }else{ #if importBlocks == FALSE
         sumTab.agg<-stats::aggregate(full.summary[,-match("id", colnames(full.summary))], list(id = full.summary$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set.

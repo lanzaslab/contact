@@ -14,7 +14,7 @@ findDistThresh(
 )
 }
 \arguments{
-\item{n}{Numerical. Number of "in-contact" point-pairs used in the 
+\item{n}{Integer. Number of "in-contact" point-pairs used in the 
 expected-distance distribution(s). Defaults to 1000.}
 
 \item{acc.Dist1}{Numerical. Accuracy distance for point 1.}

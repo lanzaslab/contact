@@ -21,4 +21,8 @@
   - Broke contact::contactTest into multiple functions - contactTest is
     now defunct.
 
+## contact 1.2.1
+
+  - Fixed a bug introduced in version 1.2.0, as required by CRAN
+
 \`\`\`

@@ -1,0 +1,29 @@
+---
+title: "CommentsForCRANSubmission_10162019"
+author: "Trevor Farthing"
+date: "10/19/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Test environments
+* local macOS Catalina (10.15.3), R 3.6.2 #tested with run_dont_test = TRUE
+* winbuilder (release, devel) 
+
+## R CMD check results
+There were no ERRORs or WARNINGs.
+
+1 NOTE: "Days since last update: 3"
+  - I apologize for updating the package again so soon. I received an email from ripley@stats.ox.ac.uk indicating that ver. 1.2.0 had broken \donttest examples which must be corrected by 04/02/2020. This was due to an undiscovered bug introduced in ver. 1.2.0. It has now been fixed.
+
+
+## Downstream dependencies
+
+There are currently no downstream dependencies for this package.
+
+```{r}
+
+```

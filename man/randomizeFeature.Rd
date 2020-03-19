@@ -9,7 +9,7 @@ randomizeFeature(
   feature = NULL,
   shuffle = FALSE,
   maintainDistr = TRUE,
-  numRandomizations = 10
+  numRandomizations = 1
 )
 }
 \arguments{
@@ -33,7 +33,8 @@ function will draw on the initial distribution to assign randomized
 values, but the specific number of each unique value may not be 
 maintained. Defaults to TRUE.}
 
-\item{numRandomizations}{Description imminent}
+\item{numRandomizations}{Integer. The number of replicate data frames 
+produced in output. Defaults to 1.}
 }
 \value{
 Output is \code{x} appended with columns described below. 
@@ -67,5 +68,5 @@ Farine, D.R., 2017. A guide to null models for animal social
    network analysis. Methods in Ecology and Evolution 8:1309-1320.
    https://doi.org/10.1111/2041-210X.12772.
 }
-\keyword{analysis}
+\keyword{data-processing}
 \keyword{randomize}

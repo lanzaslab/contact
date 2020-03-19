@@ -211,5 +211,5 @@ Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially
    analysis. Methods in Ecology and Evolution 8:1309-1320.
    https://doi.org/10.1111/2041-210X.12772.
 }
-\keyword{contact}
 \keyword{data-processing}
+\keyword{randomize}

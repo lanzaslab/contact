@@ -247,9 +247,13 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     ids<-x[,1]
     cols<-x[,2]
     
+    #pull the id colnames (as they relate to cols values) for empirical and random sets
+    emp.IdCols<-c(colnames(empirical)[1:3], substring(names(x.summary[,4:max(grep("contactDuration_", names(empirical)))]), 22)) #pull the empirical colnames for the 1st 3 columns, then the unique IDs for later columns
+    rand.IdCols<-c(colnames(randomized)[1:3], substring(names(y.summary[,4:max(grep("contactDuration_", names(randomized)))]), 22)) #pull the empirical colnames for the 1st 3 columns, then the unique IDs for later columns
+    
     for(i in 1:nrow(x)){
       
-      if(grep(unlist(unname(cols[i])),colnames(empirical))[1] >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+      if(match(cols[i], emp.IdCols) >= 4){ #empirical[,1:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
         
         if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
           
@@ -274,15 +278,15 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       
       if(length(empDurations) > 0){ #if there is no entry OR is.na == TRUE, nothing will happen
         
-        if(grep(unlist(unname(cols[i])),colnames(empirical))[1] >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+        if(match(cols[i], emp.IdCols) >= 4){ #empirical[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
           
           maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i]))), match(paste("potenContactDurations_", unlist(unname(cols[i])), sep = ""), names(emp.potential))]
           
         }else{ #i.e., x[2] == 2 or 3
-          if(grep(unlist(unname(cols[i])),colnames(empirical))[1] == 2){ #if cols = totalDegree, the maximum degree possible would be the number of individuals observed during the time period (i.e., potenDegree in emp.potential)
+          if(match(cols[i], emp.IdCols) == 2){ #if cols = totalDegree, the maximum degree possible would be the number of individuals observed during the time period (i.e., potenDegree in emp.potential)
             maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i]))), match("potenDegree", names(emp.potential))]
           }
-          if(grep(unlist(unname(cols[i])),colnames(empirical))[1] == 3){ #if cols = totalcontactDurations, the maximum possible number of contacts would be would be the sum of all individuals observed at each time step during the time period, excluding individual i (i.e., potenTotalContactDurations in emp.potential).
+          if(match(cols[i], emp.IdCols) == 3){ #if cols = totalcontactDurations, the maximum possible number of contacts would be would be the sum of all individuals observed at each time step during the time period, excluding individual i (i.e., potenTotalContactDurations in emp.potential).
             maxDurations<- emp.potential[which(emp.potential$id == unlist(unname(ids[i]))), match("potenTotalContactDurations", names(emp.potential))]
           }
         }
@@ -291,12 +295,12 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           next
         }
         
-        if(length(grep(unlist(unname(cols[i])),colnames(randomized))) == 0){ #if i is trying to reference a specific object not present in the random set, rand duration will equal "0."
+        if(is.na(match(cols[i], rand.IdCols)) == TRUE ){ #if i is trying to reference a specific object not present in the random set, rand duration will equal "0."
           randDurations <- 0
         }else{ # if the relavent column DOES exist in randomized
           
           
-          if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+          if(match(cols[i], rand.IdCols) >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
             
             
             if(indivSummaryTest == TRUE){ #if the summarizeContacts output represented contacts with individuals
@@ -326,7 +330,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           randDurations <- 0
         }
         
-        if(grep(unlist(unname(cols[i])),colnames(randomized))[1] >= 4){ #randomized[,2:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
+        
+        if(is.na(match(cols[i], rand.IdCols)) == TRUE | match(cols[i], rand.IdCols) >= 4){ #randomized[,1:3] do not represent contacts derived from singular columns in the contact::dist2... function outputs.
           
           maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i]))), match(paste("potenContactDurations_", unlist(unname(cols[i])), sep = ""), names(rand.potential))]
           
@@ -338,6 +343,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
             maxDurations.rand<- rand.potential[which(rand.potential$id == unlist(unname(ids[i]))), match("potenTotalContactDurations", names(rand.potential))]
           }
         }
+        
         
         maxDurations.rand<-maxDurations.rand[is.na(maxDurations.rand) == FALSE] #remove the NAs
         if(length(maxDurations.rand) == 0){ #if removing the NAs removed the only observations, then maxDurations.rand reverts to 0

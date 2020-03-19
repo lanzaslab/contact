@@ -17,44 +17,6 @@
 #'    instead (e.g., contactCompare_chisq, contactCompare_mantel, etc.)."
 #'    
 #' @export
-#' @examples
-#' \donttest{
-#' data(calves)
-#' 
-#' calves.dateTime<-datetime.append(calves, date = calves$date, 
-#'    time = calves$time) 
-#'    
-#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
-#'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
-#'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
-#'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
-#'    na.rm = TRUE, smooth.type = 1) 
-#'
-#' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, 
-#'    dataType = "Point", lonlat = FALSE) 
-#'    
-#' calves.contact.block<-contactDur.all(x = calves.dist, dist.threshold=1, 
-#'    sec.threshold=10, blocking = TRUE, blockUnit = "hours", blockLength = 1, 
-#'    equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE) 
-#' 
-#' calves.agg.rand<-randomizePaths(x = calves.agg, id = "id", 
-#'    dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL, 
-#'    parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE, 
-#'    blockUnit = "mins", blockLength = 10, shuffle.type = 0, shuffleUnit = NA,
-#'    indivPaths = TRUE, numRandomizations = 1) 
-#' 
-#' calves.dist.rand<-dist2All_df(x = calves.agg.rand, point.x = "x.rand", 
-#'    point.y = "y.rand", parallel = FALSE, dataType = "Point", lonlat = FALSE) 
-#'    
-#' calves.contact.rand<-contactDur.all(x = calves.dist.rand, 
-#'    dist.threshold=1, sec.threshold=10, blocking = TRUE, blockUnit = "hours",
-#'    blockLength = 1, equidistant.time = FALSE, parallel = FALSE, 
-#'    reportParameters = TRUE) 
-#' 
-#' contactTest(emp.input = calves.contact.block, 
-#'    rand.input = calves.contact.rand, dist.input = calves.dist, 
-#'    importBlocks = FALSE, shuffle.type = 0) #Defunct!
-#'    }
 
 contactTest<-function(...){
   
