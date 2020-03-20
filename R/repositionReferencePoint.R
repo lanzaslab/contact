@@ -154,7 +154,7 @@
 #'    \item{immobThreshold}{Returns the value from the \code{immobThreshold}
 #'    argument.}
 #'    \item{dateTime}{Timepoint at which polygons were observed.}
-#'    \item{dt}{The the time between reported xy coordinates in row i to row 
+#'    \item{dt}{The time between reported xy coordinates in row i to row 
 #'    i + 1 in each individuals' movement path.}
 #' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
 #'    C. in Press. Accounting for space and uncertainty in real-time-location-

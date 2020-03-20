@@ -126,7 +126,7 @@ Output is a data frame with the following columns:
    \item{immobThreshold}{Returns the value from the \code{immobThreshold}
    argument.}
    \item{dateTime}{Timepoint at which polygons were observed.}
-   \item{dt}{The the time between reported xy coordinates in row i to row 
+   \item{dt}{The time between reported xy coordinates in row i to row 
    i + 1 in each individuals' movement path.}
 }
 \description{

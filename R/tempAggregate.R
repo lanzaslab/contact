@@ -3,7 +3,7 @@
 #' Aggregate location data by secondAgg seconds over the course of each day 
 #'    represented in the dataset. The function smooths xy data forwards 
 #'    (smooth.type == 1) or backwards (smooth.type == 2) according to a 
-#'    data-point-averaging loess smoothing methodology. As part of the 
+#'    data-point-averaging smoothing methodology. As part of the 
 #'    smoothing process, tempAggregate fills in any missing values (either due 
 #'    to a lack of data transmission or faulty prior interpolation). We 
 #'    recognize that this procedure is not sensitive to individual presence at 
@@ -15,7 +15,7 @@
 #'    ("full" or "reduced") to process individuals' locations at different 
 #'    resolutions. If resolution == "reduced", if no locations of individuals 
 #'    exist over any secondAgg time block, NAs will be produced for the time 
-#'    blocks of interest. 
+#'    points of interest. 
 #'    
 #' This function is based on real-time-location-data-smoothing methods 
 #'    presented by Dawson et al. 2019. 
