@@ -385,7 +385,13 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         }
       }
       
-      x<-x[order(x$id, x$dateTime),] #data tables should already be ordered like this, but because this function assumes this ordering scheme, I wanted to ensure it was so.
+      #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+      daySecondVec = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+      lub.dates = lubridate::date(x$dateTime)
+      x<-x[order(x$id, lub.dates, daySecondVec),] #order x 
+      
+      rm(list = c("daySecondVec", "lub.dates")) #remove these objects because they are no longer needed.
+      
       rownames(x) <- seq(1, nrow(x),1)
       
       data.dates<-lubridate::date(x$dateTime) #now we can start concattenating the data by subsetting it into smaller lists
@@ -622,7 +628,13 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
       }
     }
     
-    x<-x[order(x$id, x$dateTime),] #data tables should already be ordered like this, but because this function assumes this ordering scheme, I wanted to ensure it was so.
+    #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+    daySecondVec = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+    lub.dates = lubridate::date(x$dateTime)
+    x<-x[order(x$id, lub.dates, daySecondVec),] #order x 
+    
+    rm(list = c("daySecondVec", "lub.dates")) #remove these objects because they are no longer needed.
+    
     rownames(x) <- seq(1, nrow(x),1)
     
     data.dates<-lubridate::date(x$dateTime) #now we can start concattenating the data by subsetting it into smaller lists

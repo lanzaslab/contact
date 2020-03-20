@@ -72,13 +72,13 @@
 #' calves.dateTime<-datetime.append(calves, date = calves$date,
 #'    time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #' 
-#' calves_filter1 <- mps(calves.dateTime, id = calves.dateTime$calftag,
+#' calves_filter1 <- mps(x = calves.dateTime, id = calves.dateTime$calftag,
 #'    point.x = calves.dateTime$x, point.y = calves.dateTime$y, 
 #'    dateTime = calves.dateTime$dateTime, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, 
 #'    filterOutput = TRUE) 
 #'
 mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), filterOutput = TRUE){
-
+  
   #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
   l <- NULL
   
@@ -121,54 +121,54 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
       }
     }
 
-    if(length(xVec) > 0){ #if xVec is still NULL, then the function assumes an "x" column exists in x and assigns that column value to xVec1. In this case, if no "x" column exists, an error will be returned (Note: The error will look like this: Error in ans[!xVec1 & ok] <- rep(no, length.out = length(ans))[!xVec1 &  : replacement has length zero In addition: Warning message:In rep(no, length.out = length(ans)) : 'x' is NULL so the result will be NULL).
-      xVec1 <- xVec
+    if(length(xVec) > 0){ #if xVec is still NULL, then the function assumes an "x" column exists in x and assigns that column value to xVec1... In this case, if no "x" column exists, an error will be returned (Note: The error will look like this: Error in ans[!xVec1.. & ok] <- rep(no, length.out = length(ans))[!xVec1.. &  : replacement has length zero In addition: Warning message:In rep(no, length.out = length(ans)) : 'x' is NULL so the result will be NULL).
+      xVec1.. <- xVec
     }else{
-      xVec1 <- x$x
+      xVec1.. <- x$x
     }
 
     if(length(yVec) > 0){
-      yVec1 <- yVec
+      yVec1.. <- yVec
     }else{
-      yVec1 <- x$y
+      yVec1.. <- x$y
     }
 
     if(length(idVec) > 0){
-      idVec1 <- idVec
+      idVec1.. <- idVec
     }else{
-      idVec1 <- x$id
+      idVec1.. <- x$id
     }
 
     if(length(dateTimeVec) > 0){
-      dateTimeVec1 <- dateTimeVec
+      dateTimeVec1.. <- dateTimeVec
     }else{
-      dateTimeVec1 <- x$dateTime
+      dateTimeVec1.. <- x$dateTime
     }
-    x$idVec1 <- idVec1
-    x$dateTimeVec1 <- dateTimeVec1
-    x$xVec1 <- xVec1
-    x$yVec1 <- yVec1
+    x$idVec1.. <- idVec1..
+    x$dateTimeVec1.. <- dateTimeVec1..
+    x$xVec1.. <- xVec1..
+    x$yVec1.. <- yVec1..
+    
+    #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+    daySecondVec = lubridate::hour(dateTimeVec1..) * 3600 + lubridate::minute(dateTimeVec1..) * 60 + lubridate::second(dateTimeVec1..) #This calculates a day-second
+    lub.dates = lubridate::date(dateTimeVec1..)
 
     if(length(x$totalSecond) > 0){ #if there is a totalSecond column (indicating the data has likely been processed using dateTime.append), then the totSecVec will be the totalSecond-column values, otherwise we need to calculate the totalSecond for each dateTime (using the same process as in dateTime.append)
-      x<-x[order(x$idVec1, x$dateTimeVec1),] #this sorts the data so that future processes will work
+      x<-x[order(idVec1.., lub.dates, daySecondVec),] #this sorts the data so that future processes will work
       totSecVec<-x$totalSecond
     }else{
-      x<-x[order(x$dateTimeVec1),] #We need to ensure that the data is ordered in the same way as timeVec will be, so that all observations line up as they should.
-      timeVec<-x$dateTimeVec1
-      daySecondVec <- lubridate::hour(timeVec) * 3600 + lubridate::minute(timeVec) * 60 + lubridate::second(timeVec) #This calculates a day-second
-      lub.dates = lubridate::date(timeVec)
-      dateseq = unique(lub.dates)
-      dayIDVec = NULL
-      dayIDseq = seq(1,length(dateseq),1)
-      for(b in dayIDseq){
-        ID = rep(b,length(which(lub.dates == dateseq[which(dayIDseq == b)])))
-        dayIDVec = c(dayIDVec, ID)
-      } #This part of the function takes awhile (especially for large datasets)
-      totSecVec <- ((dayIDVec - 1)*86400) + daySecondVec #This calculates the total second (the cumulative second across the span of the study's timeframe)
-      id_dateTime.order<-order(x$idVec1, x$dateTimeVec1) #Identify the necessary order so that the data so that future processes will work
+      x<-x[order(lub.dates, daySecondVec),] #We need to ensure that the data is ordered in this way so that all observations line up as they should.
+      lub.dates2<- lub.dates[order(lub.dates, daySecondVec)] #this must be reordered to accurately redistribute observations below
+      daySecondVec2<- daySecondVec[order(lub.dates, daySecondVec)] #this must be reordered to accurately redistribute observations below
+      
+      totSecVec <- as.integer(difftime(x$dateTimeVec1.. ,x$dateTimeVec1..[1] , units = c("secs"))) #calculates the total second of each timepoint in x
+
+      #now we need to order x and totSecVec by ID THEN dateTime 
+      id_dateTime.order<-order(x$idVec1.., lub.dates2, daySecondVec2) #Identify the necessary order so that future processes will work
       x<-x[id_dateTime.order,] #this sorts the data so that future processes will work
-      totSecVec<-totSecVec[id_dateTime.order] #We need to make sure these observations have been ordered in the same way as  by idVec1 and dateTimeVec1
+      totSecVec<-totSecVec[id_dateTime.order] #We need to make sure these observations have been ordered in the same way as  by idVec1.. and dateTimeVec1..
     }
+    
     euc=function(x, dist.measurement) {
       point1 = x.cor=unlist(c(x[1],x[2]))
       point2 = x.cor=unlist(c(x[3],x[4]))
@@ -177,9 +177,9 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     }
 
     indivDist <- function(x, y, dist.measurement){
-      xytab = y[which(y$idVec1 == x[1]),]
+      xytab = y[which(y$idVec1.. == x[1]),]
       if(nrow(xytab) > 1){
-        distCoordinates = data.frame(xytab$xVec1[1:(nrow(xytab) - 1)], xytab$yVec1[1:(nrow(xytab) - 1)], xytab$xVec1[2:nrow(xytab)], xytab$yVec1[2:nrow(xytab)], stringsAsFactors = TRUE)
+        distCoordinates = data.frame(xytab$xVec1..[1:(nrow(xytab) - 1)], xytab$yVec1..[1:(nrow(xytab) - 1)], xytab$xVec1..[2:nrow(xytab)], xytab$yVec1..[2:nrow(xytab)], stringsAsFactors = TRUE)
         dist = apply(distCoordinates,1,euc, dist.measurement)
         dist1 = c(NA, dist)
       }else{#if nrow(xytab) == 0 or 1.
@@ -189,7 +189,7 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     }
     dist.measurement = lonlat
     rownames(x) <-seq(1,nrow(x),1) #This renames the rownames because they may no longer be sequential following the confinementFilter
-    indivSeqFrame=data.frame(unique(x$idVec1), stringsAsFactors = TRUE) #The list of individual IDs.
+    indivSeqFrame=data.frame(unique(x$idVec1..), stringsAsFactors = TRUE) #The list of individual IDs.
     if(parallel == TRUE){
       cl<-parallel::makeCluster(nCores)
       on.exit(parallel::stopCluster(cl))
@@ -221,10 +221,10 @@ mps <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, m
     if(nrow(x) > 0){
       rownames(x) <-seq(1,nrow(x),1)
     }
-    x <- x[,-match("xVec1",names(x))]
-    x <- x[,-match("yVec1",names(x))]
-    x <- x[,-match("idVec1",names(x))]
-    x <- x[,-match("dateTimeVec1",names(x))]
+    x <- x[,-match("xVec1..",names(x))]
+    x <- x[,-match("yVec1..",names(x))]
+    x <- x[,-match("idVec1..",names(x))]
+    x <- x[,-match("dateTimeVec1..",names(x))]
     return(x)
   }
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #02/02/2019 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.

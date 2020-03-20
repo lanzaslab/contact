@@ -217,7 +217,7 @@ datetime.append <- function(x, date = NULL, time = NULL, dateTime = NULL, dateFo
       x<-x[order(lub.dates, daySecondVec),] #Just in case the data wasn't already ordered in this way.
       cbindTab<-cbindTab[order(lub.dates, daySecondVec),]
       timevec <-timevec[order(lub.dates, daySecondVec)]
-      cbindTab$totalSecond<- difftime(timevec ,timevec[1] , units = c("secs")) #adds the total second column to the dataframe
+      cbindTab$totalSecond<- as.integer(difftime(timevec ,timevec[1] , units = c("secs"))) #adds the total second column to the dataframe
       
       }
     

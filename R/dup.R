@@ -146,8 +146,13 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
     x$dateTimeVec1 <- dateTimeVec1
     x$xVec1 <- xVec1
     x$yVec1 <- yVec1
-
-    x<-x[order(idVec1, dateTimeVec1),] #this sorts the data so that future processes will work
+    
+    #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+    daySecondList = lubridate::hour(dateTimeVec1) * 3600 + lubridate::minute(dateTimeVec1) * 60 + lubridate::second(dateTimeVec1) #This calculates a day-second
+    lub.dates = lubridate::date(dateTimeVec1)
+    x<-x[order(idVec1, lub.dates, daySecondList),] #order x 
+    
+    #x<-x[order(idVec1, dateTimeVec1),] #this sorts the data so that future processes will work
 
     rownames(x) <-seq(1,nrow(x),1)
     x$indiv_dateTimes = paste(x$idVec1, x$dateTimeVec1, sep = " ")
@@ -225,7 +230,8 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
         if(length(exactDuplicates) > 0){ #if there were exact duplicates, then they are indicated as well.
           exactDup.values$duplicated <- 1
           x <- data.frame(data.table::rbindlist(list(x, exactDup.values)), stringsAsFactors = TRUE) #bind x and exactDup.values
-          x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
+          x<-x[order(idVec1, lub.dates, daySecondList),] #this sorts the data, putting duplicates back into place 
+          #x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
           x$duplicated[exactDuplicates -1] <- 1
         }
       }
@@ -234,7 +240,8 @@ dup <- function(x, id = NULL, point.x = NULL, point.y = NULL, dateTime = NULL, a
           x$duplicated = 0
           exactDup.values$duplicated <- 1
           x <- data.frame(data.table::rbindlist(list(x, exactDup.values)), stringsAsFactors = TRUE) #bind x and exactDup.values
-          x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
+          x<-x[order(idVec1, lub.dates, daySecondList),] #this sorts the data, putting duplicates back into place 
+          #x<-x[order(idVec1, dateTimeVec1),] #this sorts the data, putting duplicates back into place
           x$duplicated[exactDuplicates -1] <- 1
         }
       }

@@ -161,8 +161,13 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         
         if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
           
-          originTab<-x[order(x$id, x$dateTime),]
-          rm(x) #now that originTab has been defined, we can safely remove x to free up space
+          #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+          daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+          lub.dates = lubridate::date(x$dateTime)
+          originTab<-x[order(x$id, lub.dates, daySecondList),] #order x 
+          
+          rm(list = c("x", "daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+          
           indivSeq = unique(originTab$id)
           dist.measurement = lonlat
           
@@ -202,8 +207,14 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         }
         
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
-          originTab<-originTab[order(x$id, x$dateTime),]
-          rm(x) #now that originTab has been defined, we can safely remove x to free up space
+
+          #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+          daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+          lub.dates = lubridate::date(x$dateTime)
+          originTab<-x[order(x$id, lub.dates, daySecondList),] #order x 
+          
+          rm(list = c("x", "daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+          
           naVec<-which(is.na(originTab[,match("point2.x", names(originTab))]) == TRUE) #the referencePointtoPolygon function will create some observations that are not complete polygons (i.e., only the point1 coordinates are recorded). This identifies those observations, so that they may be removed. If they are not removed, they will cause errors later.
           if(length(naVec) > 0){
             originTab <- originTab[-naVec,]
@@ -525,8 +536,13 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       
       if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
         
-        originTab<-x[order(x$id, x$dateTime),]
-        rm(x) #now that originTab has been defined, we can safely remove x to free up space
+        #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+        daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+        lub.dates = lubridate::date(x$dateTime)
+        originTab<-x[order(x$id, lub.dates, daySecondList),] #order x 
+        
+        rm(list = c("x", "daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+        
         indivSeq = unique(originTab$id)
         dist.measurement = lonlat
         
@@ -566,8 +582,14 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       }
       
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
-        originTab<-originTab[order(x$id, x$dateTime),]
-        rm(x) #now that originTab has been defined, we can safely remove x to free up space
+
+        #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+        daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+        lub.dates = lubridate::date(x$dateTime)
+        originTab<-x[order(x$id, lub.dates, daySecondList),] #order x 
+        
+        rm(list = c("x", "daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+        
         naVec<-which(is.na(originTab[,match("point2.x", names(originTab))]) == TRUE) #the referencePointtoPolygon function will create some observations that are not complete polygons (i.e., only the point1 coordinates are recorded). This identifies those observations, so that they may be removed. If they are not removed, they will cause errors later.
         if(length(naVec) > 0){
           originTab <- originTab[-naVec,]

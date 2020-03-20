@@ -150,7 +150,13 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
 
         if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
           
-          x<-x[order(x$id, x$dateTime),]
+          #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+          daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+          lub.dates = lubridate::date(x$dateTime)
+          x<-x[order(x$id, lub.dates, daySecondList),] #order x 
+          
+          rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+          
           indivSeq = unique(x$integ.ID)
           idSeq = unique(x$id)
           dist.measurement = lonlat
@@ -187,7 +193,13 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
         
         if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
           
-          x<-x[order(x$id, x$dateTime),]
+          #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+          daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+          lub.dates = lubridate::date(x$dateTime)
+          x<-x[order(x$id, lub.dates, daySecondList),] #order x 
+          
+          rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+          
           naVec<-which(is.na(x[,match("point2.x", names(x))]) == TRUE) #the referencePointtoPolygon function will create some observations that are not complete polygons (i.e., only the point1 coordinates are recorded). This identifies those observations, so that they may be removed. If they are not removed, they will cause errors later.
           if(length(naVec) > 0){
             x <- x[-naVec,]
@@ -439,7 +451,13 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       
       if(dataType == "point" || dataType == "Point" || dataType == "POINT"){
         
-        x<-x[order(x$id, x$dateTime),]
+        #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+        daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+        lub.dates = lubridate::date(x$dateTime)
+        x<-x[order(x$id, lub.dates, daySecondList),] #order x 
+        
+        rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+        
         indivSeq = unique(x$integ.ID)
         idSeq = unique(x$id)
         dist.measurement = lonlat
@@ -476,7 +494,13 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       
       if(dataType == "polygon" || dataType == "Polygon" || dataType == "POLYGON"){
         
-        x<-x[order(x$id, x$dateTime),]
+        #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+        daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+        lub.dates = lubridate::date(x$dateTime)
+        x<-x[order(x$id, lub.dates, daySecondList),] #order x 
+        
+        rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+        
         naVec<-which(is.na(x[,match("point2.x", names(x))]) == TRUE) #the referencePointtoPolygon function will create some observations that are not complete polygons (i.e., only the point1 coordinates are recorded). This identifies those observations, so that they may be removed. If they are not removed, they will cause errors later.
         if(length(naVec) > 0){
           x <- x[-naVec,]

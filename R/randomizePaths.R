@@ -178,8 +178,6 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     blockLength = as.integer(unlist(unname(x[9]))) #1/31 had to add the as.integer call to avoid a "Error in (24)/blockLength : non-numeric argument to binary operator" error in the apply function.
     reduceOutput = unlist(unname(x[10]))
     
-    y <- y[order(y$id, y$dateTime),]
-    
     if(indivPaths == TRUE){
       idVecSeq <- unique(y$id)
     }else{
@@ -472,7 +470,15 @@ randomizePaths<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, p
     originTab <- do.call("cbind", bindlist1)
     names(originTab)[c(1,ncol(originTab))]<-c("id", "dateTime")
   }
+  
   originTab$dateTime = as.character(originTab$dateTime)
+  
+  #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+  daySecondList = lubridate::hour(originTab$dateTime) * 3600 + lubridate::minute(originTab$dateTime) * 60 + lubridate::second(originTab$dateTime) #This calculates a day-second
+  lub.dates = lubridate::date(originTab$dateTime)
+  originTab<-originTab[order(originTab$id, lub.dates, daySecondList),] #order originTab 
+  
+  rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
   
   if(blocking == TRUE){
     if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){

@@ -102,7 +102,7 @@ data(calves) #load calves data
 calves.dateTime<-datetime.append(calves, date = calves$date,
    time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 
-calves_filter1 <- mps(calves.dateTime, id = calves.dateTime$calftag,
+calves_filter1 <- mps(x = calves.dateTime, id = calves.dateTime$calftag,
    point.x = calves.dateTime$x, point.y = calves.dateTime$y, 
    dateTime = calves.dateTime$dateTime, mpsThreshold = 10, lonlat = FALSE, parallel = FALSE, 
    filterOutput = TRUE) 

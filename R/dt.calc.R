@@ -77,11 +77,11 @@ dt.calc<-function(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL, timeU
   }
   
   if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime), a dataframe with columns named the same, or a combination of dataframe and vectors.
-    originTab = data.frame(id = id, dateTime1 = dateTime1, stringsAsFactors = TRUE)
+    x = data.frame(id = id, dateTime1 = dateTime1, stringsAsFactors = TRUE) #define x if the input is NULL
     if(length(dateTime2) >0){
-      originTab$dateTime2 <- dateTime2
+      x$dateTime2 <- dateTime2
     }else{
-      originTab$dateTime2 <- dateTime1
+      x$dateTime2 <- dateTime1
     }
   }
   
@@ -97,18 +97,21 @@ dt.calc<-function(x = NULL, id = NULL, dateTime1 = NULL, dateTime2 = NULL, timeU
     }else{
       x$dateTime2 <- dateTime1
     }
-    originTab = x
   }
   
-  originTab<-originTab[order(originTab$id, originTab$dateTime1),]
-  idVecFrame<-data.frame(unique(originTab$id), stringsAsFactors = TRUE)
+  #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+  daySecondList = lubridate::hour(x$dateTime1) * 3600 + lubridate::minute(x$dateTime1) * 60 + lubridate::second(x$dateTime1) #This calculates a day-second
+  lub.dates = lubridate::date(x$dateTime1)
+  x<-x[order(x$id, lub.dates, daySecondList),] #order x 
+  
+  idVecFrame<-data.frame(unique(x$id), stringsAsFactors = TRUE)
   
   if (parallel == TRUE){
     cl<-parallel::makeCluster(nCores)
     on.exit(parallel::stopCluster(cl))
-    dtTime<-parallel::parApply(cl, idVecFrame, 1, idBreak,originTab, timeUnits)
+    dtTime<-parallel::parApply(cl, idVecFrame, 1, idBreak,originTab = x, timeUnits)
   }else{
-    dtTime = apply(idVecFrame, 1, idBreak,originTab, timeUnits)	
+    dtTime = apply(idVecFrame, 1, idBreak,originTab = x, timeUnits)	
   }
   
   dt.final <- data.frame(data.table::rbindlist(dtTime), stringsAsFactors = TRUE)

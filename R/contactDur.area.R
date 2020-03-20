@@ -117,8 +117,9 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
   
   if(is.data.frame(x) == FALSE & is.list(x) == TRUE){ #1/15 added the "is.data.frame(x) == FALSE" argument because R apparently treats dataframes as lists.
     
-    listBreak_dur.generator<-function(x, dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores){ #this function just calls what happens when x is not a list o data frames
-    
+    listBreak_dur.generator<-function(x, dist.threshold,sec.threshold, blocking, blockUnit, blockLength, equidistant.time, parallel, reportParameters, nCores){#this function just calls what happens when x is not a list o data frames
+      
+      
       durFinder.noblock<-function(parallel, dist.threshold, sec.threshold, equidistant.time, nCores, environmentTag){
         
         eval(expr = { #evaluate these function steps in the master-function environment to avoid cloning x (i.e., dist2... ouput), which can be quite large
@@ -192,32 +193,31 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
             return(idDurations)
           }
           
-          dist.all<-x[order(x$id, x$dateTime),]
-          idVec1 = unique(dist.all$id)
+          idVec1 = unique(x$id)
           if(equidistant.time == TRUE){ #added 02/04/2019 to make the dt calculations a toggleable parameter that users may turn off if all data points in their data set are temporally equidistant. This saves a large amount of time (approx. 3.5 mins/day)
-            dist.all.reduced$dt = 0
+            x.reduced$dt = 0
           }else{ #if equidistant.time == FALSE
-            if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
-              dist.all$dt = 0
-            }else{ #if there's more than one row in dist.all
-              timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
+            if(nrow(x) ==1){ #if there's only one row, there cannot be any time difference (note, because x is only created from blocks with observed contacts, there will never be a case where x < 1)
+              x$dt = 0
+            }else{ #if there's more than one row in x
+              timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
               
               if (parallel == TRUE){
                 cl<-parallel::makeCluster(nCores)
                 on.exit(parallel::stopCluster(cl))
-                timedif<-parallel::parApply(cl, timesFrame, 1, timeDifference); dist.all$dt = c(0, timedif) #timedif represents the time it takes to move from location i-1 to location i	
+                timedif<-parallel::parApply(cl, timesFrame, 1, timeDifference); x$dt = c(0, timedif) #timedif represents the time it takes to move from location i-1 to location i	
               }else{
                 timedif = apply(timesFrame, 1, timeDifference)
-                dist.all$dt = c(0, timedif) 
+                x$dt = c(0, timedif) 
               }
             }
           }
-          comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
+          comboFrame = data.frame(unique(x$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
           
           if (parallel == TRUE){
-            duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all) #note that cl is defined above
+            duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all = x) #note that cl is defined above
           }else{
-            duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)
+            duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all = x)
           }
           durationTable = data.frame(data.table::rbindlist(duration), stringsAsFactors = TRUE)
           
@@ -294,28 +294,27 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           return(idDurations)
         }
         
-        dist.all<-x[order(x$id, x$dateTime),]
-        idVec1 = unique(dist.all$id)
+        idVec1 = unique(x$id)
         if(equidistant.time == TRUE){ #added 02/04/2019 to make the dt calculations a toggleable parameter that users may turn off if all data points in their data set are temporally equidistant. This saves a large amount of time (approx. 3.5 mins/day)
-          dist.all.reduced$dt = 0
+          x.reduced$dt = 0
         }else{ #if equidistant.time == FALSE
-          if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
-            dist.all$dt = 0
-          }else{ #if there's more than one row in dist.all
-            timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
+          if(nrow(x) ==1){ #if there's only one row, there cannot be any time difference (note, because x is only created from blocks with observed contacts, there will never be a case where x < 1)
+            x$dt = 0
+          }else{ #if there's more than one row in x
+            timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
             timedif = apply(timesFrame, 1, timeDifference)
-            dist.all$dt = c(0, timedif)
+            x$dt = c(0, timedif)
           }
         }
-        comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
-        duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)	
+        comboFrame = data.frame(unique(x$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
+        duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all = x)	
         durationTable = data.frame(data.table::rbindlist(duration, fill = TRUE), stringsAsFactors = TRUE)
         
         if(nrow(durationTable) > 0){ #if there was at least one contact duration, block information is appended to the data frame. If there are no observations, durationTable becomes NULL
-          durationTable$block<- unique(dist.all$block)
-          durationTable$block.start<- unique(dist.all$block.start)
-          durationTable$block.end<- unique(dist.all$block.end)
-          durationTable$numBlocks<- unique(dist.all$numBlocks)
+          durationTable$block<- unique(x$block)
+          durationTable$block.start<- unique(x$block.start)
+          durationTable$block.end<- unique(x$block.end)
+          durationTable$numBlocks<- unique(x$numBlocks)
         }else{ #if nrow(durationTable) == 0
           durationTable <- NULL
         }
@@ -324,6 +323,13 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
       }	
       
       thisEnvironment<-environment() #tag the environment of the parent function so that sub-functions may work within it. This is done so that we don't have to clone the list of data frames in the various sub functions over and over again.
+      
+      #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+      daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+      lub.dates = lubridate::date(x$dateTime)
+      x<-x[order(x$id, lub.dates, daySecondList),] #order x and rename it for simplicity
+      
+      rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
       
       if(blocking == TRUE){
         
@@ -347,10 +353,6 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
             blockLength1 <- blockLength*60*60*24*7 #num seconds in a week
           }
           
-          daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
-          lub.dates = lubridate::date(x$dateTime)
-          x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
-          
           #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
           totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
           totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
@@ -373,7 +375,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           x$block.end <- block.end
           x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
           
-          rm(list = c("daySecondList", "lub.dates", "totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
+          rm(list = c("totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
           
           blockList<-list()
           blockVec <- unique(x$block)
@@ -526,33 +528,32 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         idDurations <- data.frame(data.table::rbindlist(apply(idVecFrame, 1, mat.breaker,distthreshold, timebreakVec, dateTimeFrame)), stringsAsFactors = TRUE)
         return(idDurations)
       }
-      
-      dist.all<-x[order(x$id, x$dateTime),]
-      idVec1 = unique(dist.all$id)
+
+      idVec1 = unique(x$id)
       if(equidistant.time == TRUE){ #added 02/04/2019 to make the dt calculations a toggleable parameter that users may turn off if all data points in their data set are temporally equidistant. This saves a large amount of time (approx. 3.5 mins/day)
-        dist.all.reduced$dt = 0
+        x.reduced$dt = 0
       }else{ #if equidistant.time == FALSE
-        if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
-          dist.all$dt = 0
-        }else{ #if there's more than one row in dist.all
-          timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
+        if(nrow(x) ==1){ #if there's only one row, there cannot be any time difference (note, because x is only created from blocks with observed contacts, there will never be a case where x < 1)
+          x$dt = 0
+        }else{ #if there's more than one row in x
+          timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
           
           if (parallel == TRUE){
             cl<-parallel::makeCluster(nCores)
             on.exit(parallel::stopCluster(cl))
-            timedif<-parallel::parApply(cl, timesFrame, 1, timeDifference); dist.all$dt = c(0, timedif) #timedif represents the time it takes to move from location i-1 to location i	
+            timedif<-parallel::parApply(cl, timesFrame, 1, timeDifference); x$dt = c(0, timedif) #timedif represents the time it takes to move from location i-1 to location i	
           }else{
             timedif = apply(timesFrame, 1, timeDifference)
-            dist.all$dt = c(0, timedif) 
+            x$dt = c(0, timedif) 
           }
         }
       }
-      comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
+      comboFrame = data.frame(unique(x$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
       
       if (parallel == TRUE){
-        duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all) #note that cl is defined above
+        duration<-parallel::parApply(cl, comboFrame, 1, contactMatrix.maker,idVec1, dist.all = x) #note that cl is defined above
       }else{
-        duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)
+        duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all = x)
       }
       durationTable = data.frame(data.table::rbindlist(duration), stringsAsFactors = TRUE)
       
@@ -629,28 +630,27 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         return(idDurations)
       }
       
-      dist.all<-x[order(x$id, x$dateTime),]
-      idVec1 = unique(dist.all$id)
+      idVec1 = unique(x$id)
       if(equidistant.time == TRUE){ #added 02/04/2019 to make the dt calculations a toggleable parameter that users may turn off if all data points in their data set are temporally equidistant. This saves a large amount of time (approx. 3.5 mins/day)
-        dist.all.reduced$dt = 0
+        x.reduced$dt = 0
       }else{ #if equidistant.time == FALSE
-        if(nrow(dist.all) ==1){ #if there's only one row, there cannot be any time difference (note, because dist.all is only created from blocks with observed contacts, there will never be a case where dist.all < 1)
-          dist.all$dt = 0
-        }else{ #if there's more than one row in dist.all
-          timesFrame = data.frame(dist.all$dateTime[1:(nrow(dist.all) - 1)], dist.all$dateTime[2:nrow(dist.all)], stringsAsFactors = TRUE)
+        if(nrow(x) ==1){ #if there's only one row, there cannot be any time difference (note, because x is only created from blocks with observed contacts, there will never be a case where x < 1)
+          x$dt = 0
+        }else{ #if there's more than one row in x
+          timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
           timedif = apply(timesFrame, 1, timeDifference)
-          dist.all$dt = c(0, timedif)
+          x$dt = c(0, timedif)
         }
       }
-      comboFrame = data.frame(unique(dist.all$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
-      duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all)	
+      comboFrame = data.frame(unique(x$id),dist.threshold,sec.threshold, stringsAsFactors = TRUE)
+      duration = apply(comboFrame, 1, contactMatrix.maker,idVec1, dist.all = x)	
       durationTable = data.frame(data.table::rbindlist(duration, fill = TRUE), stringsAsFactors = TRUE)
       
       if(nrow(durationTable) > 0){ #if there was at least one contact duration, block information is appended to the data frame. If there are no observations, durationTable becomes NULL
-        durationTable$block<- unique(dist.all$block)
-        durationTable$block.start<- unique(dist.all$block.start)
-        durationTable$block.end<- unique(dist.all$block.end)
-        durationTable$numBlocks<- unique(dist.all$numBlocks)
+        durationTable$block<- unique(x$block)
+        durationTable$block.start<- unique(x$block.start)
+        durationTable$block.end<- unique(x$block.end)
+        durationTable$numBlocks<- unique(x$numBlocks)
       }else{ #if nrow(durationTable) == 0
         durationTable <- NULL
       }
@@ -659,6 +659,13 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
     }	
     
     thisEnvironment<-environment() #tag the environment of the parent function so that sub-functions may work within it. This is done so that we don't have to clone the list of data frames in the various sub functions over and over again.
+    
+    #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+    daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
+    lub.dates = lubridate::date(x$dateTime)
+    x<-x[order(x$id, lub.dates, daySecondList),] #order x and rename it for simplicity
+    
+    rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
     
     if(blocking == TRUE){
       
@@ -681,11 +688,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         if(blockUnit == "Weeks" || blockUnit == "WEEKS" || blockUnit == "weeks"){
           blockLength1 <- blockLength*60*60*24*7 #num seconds in a week
         }
-        
-        daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
-        lub.dates = lubridate::date(x$dateTime)
-        x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
-        
+       
         #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
         totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
         totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
@@ -708,7 +711,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         x$block.end <- block.end
         x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
         
-        rm(list = c("daySecondList", "lub.dates", "totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
+        rm(list = c("totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
         
         blockList<-list()
         blockVec <- unique(x$block)
