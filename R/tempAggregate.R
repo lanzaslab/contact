@@ -39,7 +39,7 @@
 #'    data, detailing the relevant colname in x, that denotes what dateTime 
 #'    information will be used. If argument == NULL, the function assumes a 
 #'    column with the colname "dateTime" exists in x. Defaults to NULL.
-#' @param secondAgg Numerical. The number of seconds over which 
+#' @param secondAgg Integer. The number of seconds over which 
 #'    tracked-individuals' location will be averaged. Defaults to 10.
 #' @param extrapolate.left Logical. If TRUE, individuals position at time 
 #'    points prior to their first location fix will revert to their first 
@@ -155,6 +155,9 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
     originTab$daySecond <- lubridate::hour(originTab$dateTime) * 3600 + lubridate::minute(originTab$dateTime) * 60 + lubridate::second(originTab$dateTime) #This calculates a day-second
     originTab<-originTab[order(originTab$date, originTab$daySecond),] #Just in case the data wasn't already ordered in this way.
     
+    dateSeq <- unique(originTab$date) #pull the unique dates, in order, to be used later on 
+    start_dateTime <- as.POSIXct(originTab$dateTime[1]) - originTab$daySecond[1] #record the first timepoint of the first day in the data to be used later on
+    
     originTab$totalSecond <- as.integer(difftime(originTab$dateTime ,originTab$dateTime[1] , units = c("secs"))) #calculates the total second of each timepoint in x
     
     leftExtrap = extrapolate.left
@@ -178,7 +181,11 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
         return(tmp.mmin)
       }
 
-      coord.tmp<-matrix(rep(0,length(unique(lubridate::date(originTab$dateTime)))*24*60*60*2),ncol=2)
+      #we need to determine how many days span the distribution of dates in the data set
+      dateSeq<- unique(originTab$date) #identify the unique days in the data
+      nDays<- as.integer(max(difftime(dateSeq, dateSeq[1], units = c("days")))) + 1 #max(difftime) returns the maximum difference between days. The +1 transforms this number to "the number of days within the timespan of the data"
+      
+      coord.tmp<-matrix(rep(0,nDays*24*60*60*2),ncol=2) #create a matrix populated by zeroes for x and y coordinates at every second within the time span
 
       data.one=originTab[c(brk.point[1]:brk.point[2]),]
       data.len=nrow(data.one)
@@ -271,7 +278,6 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
     locmatrix <- NULL
     start.brk <- NULL
     locTable <- NULL
-    dateSeq <- unique(originTab$date)
     indivSeq <- unique(originTab$id)
 
     for(i in indivSeq){ #This loop determines the rows in the dataset where each individual's path begins.
@@ -293,47 +299,13 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
       xvec<-locmatrix[1:(length(locmatrix[,1])/2),m]
       yvec<-locmatrix[((length(locmatrix[,1])/2)+1):length(locmatrix[,1]),m]
       id1 = rep(indivSeq[m],length(xvec))
-
-      datesAgg = NULL
-
-      for(n in 1:length(dateSeq)){
-        date = data.frame(date = rep(dateSeq[n],(nrow(locmatrix)/2)/length(dateSeq)), stringsAsFactors = TRUE)
-        datesAgg = data.frame(data.table::rbindlist(list(datesAgg,date)), stringsAsFactors = TRUE)
-
-      }
-      tempTable = data.frame(id = id1, x = xvec, y = yvec, date = datesAgg, stringsAsFactors = TRUE)
-      tempTable1 = NULL
-
-      for(o in 1:length(dateSeq)){
-        datesub = subset(tempTable, date == unique(tempTable$date)[o])
-        datesub$year = lubridate::year(datesub$date)
-        datesub$month = lubridate::month(datesub$date)
-        datesub$day = lubridate::day(datesub$date)
-        rownames(datesub) = seq(1,nrow(datesub),1)
-        datesub$UID = as.numeric(rownames(datesub))
-
-        H = floor((datesub$UID - 1)/(60*(60/secondAgg)))
-        M = floor((datesub$UID - 1)/(60/secondAgg)) - (H*60)
-        S = round((datesub$UID/(60/secondAgg) - floor(datesub$UID/(60/secondAgg)))*60)
-        S = c(0,S[1:(length(S) - 1)]) #I can't seem to get a zero-second starting point without this step
-        Hour = ifelse(H < 10, paste(0,H, sep = ""), H)
-        Minute = ifelse(M < 10, paste(0,M, sep = ""), M)
-        Second = ifelse(S < 10, paste(0,S, sep = ""), S)
-
-        datesub$time = paste(Hour,":", Minute, ":", Second, sep ="")
-        date.time = paste(datesub[,match("date",names(datesub))], datesub[,match("time",names(datesub))], sep = " ")
-        timevec = lubridate::ymd_hms(date.time)
-        datesub$dateTime = timevec
-        datesub$hour = H
-        datesub$minute = M
-        datesub$second = S
-
-        tempTable1 = data.frame(data.table::rbindlist(list(tempTable1,datesub)), stringsAsFactors = TRUE)
-      }
-      locTable = data.frame(data.table::rbindlist(list(locTable,tempTable1)), stringsAsFactors = TRUE)
+      
+      tempTable = data.frame(id = id1, x = xvec, y = yvec, stringsAsFactors = TRUE) #note that the date here is just the first date in the data set. below we add seconds to it to get the other date times
+      tempTable$dateTime<- start_dateTime + ((as.integer(rownames(tempTable)) - 1)*secondAgg) #define the dateTime information for the aggregated data 
+      
+      locTable = data.frame(data.table::rbindlist(list(locTable,tempTable)), stringsAsFactors = TRUE)
     }
 
-    locTable <- locTable[,-match("UID",names(datesub))] #removes the UID column to save space
 
     id.finder<-function(id, idSeq.subset, data.sub){
       if(isTRUE(id%in%idSeq.subset) == FALSE){ #This looks to see if individuals present over the course of the dataset were present in a given time frame (i.e., had at least one recorded location).
@@ -364,8 +336,6 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
 
     locTable<-locTable[order(locTable$id, lub.dates2, daySecondVec2),]
     rownames(locTable)<-seq(1,nrow(locTable),1)
-
-    locTable <- locTable[,-c(match("date",names(locTable)), match("year",names(locTable)), match("month",names(locTable)), match("day",names(locTable)), match("time",names(locTable)), match("hour",names(locTable)), match("minute",names(locTable)), match("second",names(locTable)))] #removes all the strictly unnecessary columns to reduce file size. All these columns can be later derrived again from the dateTime column.
 
     if(length(id) == 1 && is.na(match(id[1], names(x))) == FALSE){ #if id is representative of a column name, this maintains that column name in the output file
       names(locTable)[match("id",names(locTable))] <- id

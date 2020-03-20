@@ -46,7 +46,7 @@ data, detailing the relevant colname in x, that denotes what dateTime
 information will be used. If argument == NULL, the function assumes a 
 column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{secondAgg}{Numerical. The number of seconds over which 
+\item{secondAgg}{Integer. The number of seconds over which 
 tracked-individuals' location will be averaged. Defaults to 10.}
 
 \item{extrapolate.left}{Logical. If TRUE, individuals position at time 
