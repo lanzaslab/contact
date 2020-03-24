@@ -130,7 +130,7 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE,
    na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix intervals.
 
-calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
+calves.dist2<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
    lonlat = FALSE) #calculate distance between all individuals at each timepoint.
 
 }

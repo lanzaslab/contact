@@ -8,7 +8,8 @@ timeBlock.append(
   x = NULL,
   dateTime = NULL,
   blockLength = 1,
-  blockUnit = "hours"
+  blockUnit = "hours",
+  blockingStartTime = NULL
 )
 }
 \arguments{
@@ -26,6 +27,15 @@ temporal block. Defaults to 1.}
 
 \item{blockUnit}{Character string taking the values, "secs," "mins," 
 "hours," "days," or "weeks." Defaults to "hours."}
+
+\item{blockingStartTime}{Character string or date object describing the date
+OR dateTime starting point of the first time block. For example, if 
+blockingStartTime = "2016-05-01" OR "2016-05-01 00:00:00", the first 
+timeblock would begin at "2016-05-01 00:00:00." If NULL, the 
+blockingStartTime defaults to the minimum dateTime point in x. Note: 
+any blockingStartTime MUST precede or be equivalent to the minimum 
+timepoint in x. Additional note: IF blockingStartTime is a character 
+string, it must be in the format ymd OR ymd hms.}
 }
 \value{
 Appends the following columns to \code{x}.
@@ -51,9 +61,9 @@ This is a sub-function that can be found in the contactDur functions.
 }
 \examples{
 data("calves")
-calves.dateTime<-contact::datetime.append(calves, date = calves$date, 
+calves.dateTime<-datetime.append(calves, date = calves$date, 
    time = calves$time) #add dateTime identifiers for location fixes.
-calves.block<-contact::timeBlock.append(x = calves.dateTime, 
+calves.block<-timeBlock.append(x = calves.dateTime, 
     dateTime = calves.dateTime$dateTime, blockLength = 10, 
     blockUnit = "mins")
 head(calves.block) #see that block information has been appended.

@@ -18,6 +18,14 @@
 #'    "hours," "days," or "weeks." Defaults to "hours."
 #' @param blockLength Integer. Describes the number blockUnits within each 
 #'    temporal block. Defaults to 1.
+#' @param blockingStartTime Character string or date object describing the date
+#'     OR dateTime starting point of the first time block. For example, if 
+#'     blockingStartTime = "2016-05-01" OR "2016-05-01 00:00:00", the first 
+#'     timeblock would begin at "2016-05-01 00:00:00." If NULL, the 
+#'     blockingStartTime defaults to the minimum dateTime point in x. Note: 
+#'     any blockingStartTime MUST precede or be equivalent to the minimum 
+#'     timepoint in x. Additional note: IF blockingStartTime is a character 
+#'     string, it must be in the format ymd OR ymd hms.
 #' @keywords data-processing sub-function
 #' @return Appends the following columns to \code{x}.
 #'    
@@ -32,14 +40,14 @@
 #' @export
 #' @examples
 #' data("calves")
-#' calves.dateTime<-contact::datetime.append(calves, date = calves$date, 
+#' calves.dateTime<-datetime.append(calves, date = calves$date, 
 #'    time = calves$time) #add dateTime identifiers for location fixes.
-#' calves.block<-contact::timeBlock.append(x = calves.dateTime, 
+#' calves.block<-timeBlock.append(x = calves.dateTime, 
 #'     dateTime = calves.dateTime$dateTime, blockLength = 10, 
 #'     blockUnit = "mins")
 #' head(calves.block) #see that block information has been appended.
 
-timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit = "hours"){
+timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit = "hours", blockingStartTime = NULL){
   
   if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){
     blockLength1 <- blockLength
@@ -77,10 +85,20 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
   ##totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #calculate total seconds
   ##studySecond <- (totalSecond -min(totalSecond)) + 1
   
+  if(length(blockingStartTime) == 1){ #if the blockingStartTime argument is defined, we calculate how far it is away (in seconds) from the minimum timepoint in x
+    
+    blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
+    
+  }else{ #if the blockingStartTime argument is NOT defined, the adjustment is 0
+    
+    blockTimeAdjustment <- 0
+    
+  }
+  
   #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
   totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
-  totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
-  studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1)
+  totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+  studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
   
   numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
   block <-rep(0,length(studySecond))

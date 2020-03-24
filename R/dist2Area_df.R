@@ -383,6 +383,13 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       
       rm(x) #now that originTab is made, there's no need to keep x. It can be safely removed to free up memory.
       
+      #The next thing we need to do is remove any NAs in the data set 
+      if(length(unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE)))) > 0){
+        
+        originTab <- droplevels(originTab[- unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE))),])
+        
+      }
+      
       if(is.data.frame(y) == FALSE & is.list(y) == TRUE){ #added 02/06/2019, here we determine if y is a list.
         frameBreaker<- function(x,y){
           brokenFrame<- y[unlist(unname(x[1])),]
@@ -757,6 +764,13 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
     originTab$dateTime = as.character(originTab$dateTime)
     
     rm(x) #now that originTab is made, there's no need to keep x. It can be safely removed to free up memory.
+    
+    #The next thing we need to do is remove any NAs in the data set 
+    if(length(unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE)))) > 0){
+      
+      originTab <- droplevels(originTab[- unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE))),])
+      
+    }
     
     if(is.data.frame(y) == FALSE & is.list(y) == TRUE){ #added 02/06/2019, here we determine if y is a list.
       frameBreaker<- function(x,y){

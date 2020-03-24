@@ -96,7 +96,7 @@
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE,
 #'    na.rm = TRUE, smooth.type = 1) #smooth locations to 5-min fix intervals.
 #' 
-#' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
+#' calves.dist2<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
 #'    lonlat = FALSE) #calculate distance between all individuals at each timepoint.
 #' 
 
@@ -369,6 +369,13 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
       }
       
       rm(x) #now that originTab is created, we no longer need x
+      
+      #The next thing we need to do is remove any NAs in the data set 
+      if(length(unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE)))) > 0){
+        
+        originTab <- droplevels(originTab[- unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE))),])
+        
+      }
       
       data.dates<-lubridate::date(originTab$dateTime) #now we can start concattenating the data by subsetting it into smaller lists
       
@@ -670,6 +677,13 @@ dist2All_df<-function(x = NULL, id = NULL, dateTime = NULL, point.x = NULL, poin
     }
     
     rm(x) #now that originTab is created, we no longer need x
+    
+    #The next thing we need to do is remove any NAs in the data set 
+    if(length(unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE)))) > 0){
+      
+      originTab <- droplevels(originTab[- unique(c(which(is.na(originTab$x) == TRUE), which(is.na(originTab$y) == TRUE))),])
+      
+    }
     
     data.dates<-lubridate::date(originTab$dateTime) #now we can start concattenating the data by subsetting it into smaller lists
     

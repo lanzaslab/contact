@@ -32,6 +32,14 @@
 #' @param blockUnit Character string taking the values, "secs," "mins," 
 #'     "hours," "days," or "weeks." Describes the temporal unit associated with
 #'     each block. Defaults to "hours."
+#' @param blockingStartTime Character string or date object describing the date
+#'     OR dateTime starting point of the first time block. For example, if 
+#'     blockingStartTime = "2016-05-01" OR "2016-05-01 00:00:00", the first 
+#'     timeblock would begin at "2016-05-01 00:00:00." If NULL, the 
+#'     blockingStartTime defaults to the minimum dateTime point in x. Note: 
+#'     any blockingStartTime MUST precede or be equivalent to the minimum 
+#'     timepoint in x. Additional note: IF blockingStartTime is a character 
+#'     string, it must be in the format ymd OR ymd hms.
 #' @param equidistant.time Logical. If TRUE, location fixes in individuals' 
 #'     movement paths are temporally equidistant (e.g., all fix intervals are 
 #'     30 seconds). Defaults to FALSE. Note: This is a time-saving argument. 
@@ -105,7 +113,7 @@
 #'     sec.threshold=10, blocking = FALSE, blockUnit = "hours", blockLength = 1,
 #'     equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)
 
-contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockLength = 1, blockUnit = "hours", equidistant.time = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), reportParameters = TRUE){ 
+contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, blockLength = 1, blockUnit = "hours", blockingStartTime = NULL, equidistant.time = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), reportParameters = TRUE){ 
   
   #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
   l <- NULL
@@ -375,10 +383,20 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
             blockLength1 <- blockLength*60*60*24*7 #num seconds in a week
           }
           
+          if(length(blockingStartTime) == 1){ #if the blockingStartTime argument is defined, we calculate how far it is away (in seconds) from the minimum timepoint in x
+            
+            blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
+            
+          }else{ #if the blockingStartTime argument is NOT defined, the adjustment is 0
+            
+            blockTimeAdjustment <- 0
+            
+          }
+          
           #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
           totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
-          totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
-          studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1)
+          totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+          studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
           
           numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
           block <-rep(0,length(studySecond))
@@ -731,10 +749,20 @@ contactDur.all<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE, 
           blockLength1 <- blockLength*60*60*24*7 #num seconds in a week
         }
         
+        if(length(blockingStartTime) == 1){ #if the blockingStartTime argument is defined, we calculate how far it is away (in seconds) from the minimum timepoint in x
+          
+          blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
+          
+        }else{ #if the blockingStartTime argument is NOT defined, the adjustment is 0
+          
+          blockTimeAdjustment <- 0
+          
+        }
+        
         #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
         totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
-        totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("secs")))
-        studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1)
+        totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+        studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
         
         numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
         block <-rep(0,length(studySecond))

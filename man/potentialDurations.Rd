@@ -9,6 +9,7 @@ potentialDurations(
   blocking = FALSE,
   blockLength = 1,
   blockUnit = "hours",
+  blockingStartTime = NULL,
   distFunction = "dist2All_df"
 )
 }
@@ -26,6 +27,15 @@ temporal block. Defaults to 1.}
 \item{blockUnit}{Character string taking the values: "secs," "mins," 
 "hours," "days," or "weeks." Describes the temporal unit associated with
 each block. Defaults to "hours."}
+
+\item{blockingStartTime}{Character string or date object describing the date
+OR dateTime starting point of the first time block. For example, if 
+blockingStartTime = "2016-05-01" OR "2016-05-01 00:00:00", the first 
+timeblock would begin at "2016-05-01 00:00:00." If NULL, the 
+blockingStartTime defaults to the minimum dateTime point in x. Note: 
+any blockingStartTime MUST precede or be equivalent to the minimum 
+timepoint in x. Additional note: IF blockingStartTime is a character 
+string, it must be in the format ymd OR ymd hms.}
 
 \item{distFunction}{Character string taking the values: "dist2All_df",
 or "dist2Area_df." Describes the contact-package function used to
@@ -80,7 +90,7 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
 calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
     lonlat = FALSE) #calculate distance between all individuals at each timepoint
     
-calves.potentialContacts<-potentialDurations(x = calves.dist, blocking = FALSE)
+calves.potentialContacts<-potentialDurations(x = calves.dist2, blocking = FALSE)
 }
 \keyword{contact}
 \keyword{data-processing}
