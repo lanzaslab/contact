@@ -48,7 +48,7 @@ blockingStartTime = "2016-05-01" OR "2016-05-01 00:00:00", the first
 timeblock would begin at "2016-05-01 00:00:00." If NULL, the 
 blockingStartTime defaults to the minimum dateTime point in x. Note: 
 any blockingStartTime MUST precede or be equivalent to the minimum 
-timepoint in x. Additional note: IF blockingStartTime is a character 
+timepoint in x. Additional note: If blockingStartTime is a character 
 string, it must be in the format ymd OR ymd hms.}
 
 \item{equidistant.time}{Logical. If TRUE, location fixes in individuals' 

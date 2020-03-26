@@ -24,7 +24,7 @@
 #'     timeblock would begin at "2016-05-01 00:00:00." If NULL, the 
 #'     blockingStartTime defaults to the minimum dateTime point in x. Note: 
 #'     any blockingStartTime MUST precede or be equivalent to the minimum 
-#'     timepoint in x. Additional note: IF blockingStartTime is a character 
+#'     timepoint in x. Additional note: If blockingStartTime is a character 
 #'     string, it must be in the format ymd OR ymd hms.
 #' @param distFunction Character string taking the values: "dist2All_df",
 #'     or "dist2Area_df." Describes the contact-package function used to
@@ -138,11 +138,14 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
     
     #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
     totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
-    totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+    if(nrow(x) > length(totSecond)){
+      totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+    }else{
+      totSecond2 <- NULL
+    }
     studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
     
-    
-    numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
+    numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
     block <-rep(0,length(studySecond))
     for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
       block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
@@ -151,8 +154,8 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       block[which(block == 0)] = numblocks
     }
     
-    block.start<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
-    block.end<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+    block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
+    block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
     
     x$block <- block
     x$block.start <- block.start
@@ -342,10 +345,14 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       
       #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
       totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
-      totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+      if(nrow(x) > length(totSecond)){
+        totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+      }else{
+        totSecond2 <- NULL
+      }
       studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
       
-      numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
+      numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
       block <-rep(0,length(studySecond))
       for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
         block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
@@ -354,8 +361,8 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
         block[which(block == 0)] = numblocks
       }
       
-      block.start<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
-      block.end<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+      block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
+      block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
       
       x$block <- block
       x$block.start <- block.start

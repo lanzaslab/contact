@@ -34,7 +34,7 @@
 #'     timeblock would begin at "2016-05-01 00:00:00." If NULL, the 
 #'     blockingStartTime defaults to the minimum dateTime point in x. Note: 
 #'     any blockingStartTime MUST precede or be equivalent to the minimum 
-#'     timepoint in x. Additional note: IF blockingStartTime is a character 
+#'     timepoint in x. Additional note: If blockingStartTime is a character 
 #'     string, it must be in the format ymd OR ymd hms.
 #' @param equidistant.time Logical. If TRUE, location fixes in individuals' 
 #'    movement paths are temporally equidistant (e.g., all fix intervals are 30
@@ -335,11 +335,11 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
       #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
       daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
       lub.dates = lubridate::date(x$dateTime)
-      x<-x[order(x$id, lub.dates, daySecondList),] #order x and rename it for simplicity
-      
-      rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
       
       if(blocking == TRUE){
+        
+        x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
+        rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
         
         if(length(x$block) == 0){ #If there's no "block" column in dist.all output (i.e., blocking was "FALSE" when dist.all was run), then we need to define blocks here.
           
@@ -373,10 +373,14 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           
           #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
           totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
-          totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+          if(nrow(x) > length(totSecond)){
+            totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+          }else{
+            totSecond2 <- NULL
+          }
           studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
           
-          numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
+          numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
           block <-rep(0,length(studySecond))
           for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
             block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
@@ -385,13 +389,15 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
             block[which(block == 0)] = numblocks
           }
           
-          block.start<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
-          block.end<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+          block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
+          block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
           
           x$block <- block
           x$block.start <- block.start
           x$block.end <- block.end
           x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
+          
+          x<-x[order(x$block, x$id, studySecond),] #reorder x to ensure that block and individual ids are prioritized over dateTime information
           
           rm(list = c("totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
           
@@ -441,6 +447,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         }
         
       }else{ #If blocking == FALSE
+        
+        x<-x[order(x$id, lub.dates, daySecondList),] #order x (Note this is a bit different from how x should be ordered if blocking == TRUE)
+        rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+        
         durationTable <- durFinder.noblock(parallel, dist.threshold, sec.threshold, equidistant.time, nCores, environmentTag = thisEnvironment) #note that if blocking == FALSE, we can still improve speed a bit by parallelizing a later sub function. Further note that x isn't carried over because the function works in the master-function environment
       }
       
@@ -681,11 +691,11 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
     #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
     daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
     lub.dates = lubridate::date(x$dateTime)
-    x<-x[order(x$id, lub.dates, daySecondList),] #order x and rename it for simplicity
-    
-    rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
     
     if(blocking == TRUE){
+      
+      x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data
+      rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
       
       if(length(x$block) == 0){ #If there's no "block" column in dist.all output (i.e., blocking was "FALSE" when dist.all was run), then we need to define blocks here.
         
@@ -706,7 +716,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         if(blockUnit == "Weeks" || blockUnit == "WEEKS" || blockUnit == "weeks"){
           blockLength1 <- blockLength*60*60*24*7 #num seconds in a week
         }
-       
+        
         if(length(blockingStartTime) == 1){ #if the blockingStartTime argument is defined, we calculate how far it is away (in seconds) from the minimum timepoint in x
           
           blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
@@ -719,10 +729,14 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         
         #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
         totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
-        totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+        if(nrow(x) > length(totSecond)){
+          totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+        }else{
+          totSecond2 <- NULL
+        }
         studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
         
-        numblocks <- ceiling((max(studySecond) - 1)/blockLength1)
+        numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
         block <-rep(0,length(studySecond))
         for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
           block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
@@ -731,13 +745,15 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           block[which(block == 0)] = numblocks
         }
         
-        block.start<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
-        block.end<-as.character(as.POSIXct(x$dateTime[1]) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+        block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
+        block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
         
         x$block <- block
         x$block.start <- block.start
         x$block.end <- block.end
         x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
+        
+        x<-x[order(x$block, x$id, studySecond),] #reorder x to ensure that block and individual ids are prioritized over dateTime information
         
         rm(list = c("totSecond", "totSecond2", "studySecond", "block", "numblocks", "block.start", "block.end")) #remove these objects because they are no longer needed.
         
@@ -787,6 +803,10 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
       }
       
     }else{ #If blocking == FALSE
+      
+      x<-x[order(x$id, lub.dates, daySecondList),] #order x (Note this is a bit different from how x should be ordered if blocking == TRUE)
+      rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
+      
       durationTable <- durFinder.noblock(parallel, dist.threshold, sec.threshold, equidistant.time, nCores, environmentTag = thisEnvironment) #note that if blocking == FALSE, we can still improve speed a bit by parallelizing a later sub function. Further note that x isn't carried over because the function works in the master-function environment
     }
     
