@@ -9,7 +9,7 @@
 #'    frame containing the mean column values for each id (per block if 
 #'    importBlocks == TRUE).
 #' 
-#' This is a sub-function found within the contactTest and ntrkEdges function.
+#' This is a sub-function found within the contactTest and ntwrkEdges function.
 #' @param x Output from the contactDur.all or contactDur.area functions. Can 
 #'    be either a data frame or list of data frames.
 #' @param importBlocks Logical. If true, each block in x will be analyzed 

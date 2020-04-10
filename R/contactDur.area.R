@@ -380,14 +380,17 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           }
           studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
           
-          numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
-          block <-rep(0,length(studySecond))
-          for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
-            block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
-          }
-          if(length(which(block == 0)) > 0){ #identifies the last block
-            block[which(block == 0)] = numblocks
-          }
+          numblocks <- as.integer(ceiling(max(studySecond)/blockLength1))
+          block<- ceiling(studySecond/blockLength1)
+          
+          #numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
+          #block <-rep(0,length(studySecond))
+          #for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
+          #  block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
+          #}
+          #if(length(which(block == 0)) > 0){ #identifies the last block
+          #  block[which(block == 0)] = numblocks
+          #}
           
           block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
           block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
