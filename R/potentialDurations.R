@@ -71,7 +71,7 @@
 #' calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
 #'     lonlat = FALSE) #calculate distance between all individuals at each timepoint
 #'     
-#' calves.potentialContacts<-potentialDurations(x = calves.dist2, blocking = FALSE)
+#' calves.potentialContacts<-potentialDurations(x = calves.dist, blocking = FALSE)
 
 potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "hours", blockingStartTime = NULL, distFunction = "dist2All_df"){ 
   

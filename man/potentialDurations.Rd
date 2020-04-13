@@ -90,7 +90,7 @@ calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag,
 calves.dist<-dist2All_df(x = calves.agg, parallel = FALSE, dataType = "Point",
     lonlat = FALSE) #calculate distance between all individuals at each timepoint
     
-calves.potentialContacts<-potentialDurations(x = calves.dist2, blocking = FALSE)
+calves.potentialContacts<-potentialDurations(x = calves.dist, blocking = FALSE)
 }
 \keyword{contact}
 \keyword{data-processing}

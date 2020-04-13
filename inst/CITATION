@@ -1,7 +1,7 @@
 citHeader("To cite contact in publications use:")
 
 citEntry(entry = "Article",
-         title        = "Accounting for space and uncertainty in real-time-location-system-derived contact networks",
+         title        = "Accounting for space and uncertainty in real-time location system-derived contact networks",
          author       = personList(as.person("Trevor S. Farthing"),
                                    as.person("Daniel E. Dawson"),
                                    as.person("Mike W. Sanderson"),
@@ -11,12 +11,12 @@ citEntry(entry = "Article",
          volume       = "",
          number       = "",
          pages        = "",
-         url          = "",
+         url          = "https://doi.org/10.1002/ece3.6225",
          
          textVersion  =
            paste("Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. (in Press).",
-                 "Accounting for space and uncertainty in real-time-location-system-derived contact networks.",
-                 "Ecology and Evolution")
+                 "Accounting for space and uncertainty in real-time location system-derived contact networks.",
+                 "Ecology and Evolution. https://doi.org/10.1002/ece3.6225.")
 )
 
 

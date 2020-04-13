@@ -67,7 +67,7 @@ If x is a list, and avg == TRUE, this function will produce an extra data
    frame containing the mean column values for each id (per block if 
    importBlocks == TRUE).
 
-This is a sub-function found within the contactTest and ntrkEdges function.
+This is a sub-function found within the contactTest and ntwrkEdges function.
 }
 \examples{
 data(calves)

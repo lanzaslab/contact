@@ -25,4 +25,10 @@
 
   - Fixed a bug introduced in version 1.2.0, as required by CRAN
 
+## contact 1.2.2
+
+  - Fixed bug associated with temporal sorting of data spanning multiple
+    years.
+  - Improved efficiency temporal blocking functions.
+
 \`\`\`

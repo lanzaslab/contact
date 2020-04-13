@@ -20,7 +20,10 @@ Description: Process spatially- and temporally-discrete data into contact and
    between individuals and fixed areas (e.g., home ranges, water bodies, 
    buildings, etc.). As such, this package is an incredibly useful resource 
    for facilitating epidemiological, ecological, ethological and sociological 
-   research.
+   research. Reference: Farthing, T.S., Dawson, D.E., Sanderson, M.W., and 
+   Lanzas, C. (in Press). Accounting for space and uncertainty in real-time 
+   location system-derived contact networks. Ecology and Evolution. 
+   doi:10.1002/ece3.6225.
 Depends: R (>= 3.6.0)
 Imports:
     ape (>= 5.3),
