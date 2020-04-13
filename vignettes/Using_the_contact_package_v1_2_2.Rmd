@@ -28,7 +28,7 @@ Here we demonstrate how to use contact functions to:
 ###2.) Create polygon-intersection-based contact networks using point-location data
 ###3.) Test networks against NULL models
 
-Please note that a manuscript detailing novel methodologies we've developed for accounting for space and real-time-location-system accuracy when creating contact networks from point-location data is currently in Press for publication in *Ecology and Evolution*. This same manuscript will introduce the *contact* package to the scientific community. Our methods are described briefly in this vignette, but are presented in much greater detail in our manuscript. An early access version of our manuscript is available at https://doi.org/10.1002/ece3.6225.
+Please note that a manuscript detailing novel methodologies we've developed for accounting for space and real-time location-system accuracy when creating contact networks from point-location data was recently published in *Ecology and Evolution*. This same manuscript introduces the *contact* package to the scientific community. Our methods are described briefly in this vignette, but are presented in much greater detail in our manuscript, which is available at https://doi.org/10.1002/ece3.6225.
 
 ```{r setup}
 #load the contact package
@@ -166,7 +166,7 @@ The steps for direct-contact-network creation are described below.
 
 **D.) Derive calf head and body polygons from point locations.**
 
-  Note: This is done using a novel methodology described in brief on the contact::referencePoint2Polygon and contact::referencePoint2Polygon help pages, and in detail in a manuscript currently in press with *Ecology and Evolution* (the same manuscript in which we introduce this package to the scientific community).
+  Note: This is done using a novel methodology described in brief on the contact::referencePoint2Polygon and contact::referencePoint2Polygon help pages, and in detail in Farthing *et al.* 2020 (the same manuscript in which we introduce this package to the scientific community).
 
 **E.) Calculate inter-animal distances at each time step.**
 
@@ -256,7 +256,7 @@ head(calf_heads)
 
 ```
 
-When creating the head polygons, we set direction == NULL because we do not have gyroscopic data detailing movement directions associated with each relocation event. Thus, polygons are subject to the assumptions pertaining to deriving polygons from point-locations as described by Farthing *et al.* (in Press). (*see* the contact::referencePoint2Polygon help page for a brief description of these assumptions).
+When creating the head polygons, we set direction == NULL because we do not have gyroscopic data detailing movement directions associated with each relocation event. Thus, polygons are subject to the assumptions pertaining to deriving polygons from point-locations as described by Farthing *et al.* (2020). (*see* the contact::referencePoint2Polygon help page for a brief description of these assumptions).
 
 Note that the referencePoint2Polygon function assumes the input point-locations represent a single vertex of desired polygons. Because calves' heads are not the same width as their bodies (i.e., 1.167 m X 0.5 m ; L X W), and are assumed to be centered at the front of the body, however, we must move reference points (on the left ear) to the left by 0.0835 m to reposition them at the upper-left corner of calves bodies before creating body polygons. Additionally, note that we are assuming ears are parallel to shoulder-tips.
 
@@ -276,7 +276,7 @@ head(leftShoulder.point)
 
 See that moving the points changed the calculated dx,dy values from those associated with empirical data points. Therefore, movement angles calculated from these data points will differ from values calculated using the empirical observations. Because of that, when creating body polygons, we must specify that the function use angle values from the empirical data set. Luckily, the function allows for this very easily.  
 
-Additionally, the differing calculated-distance values will potentially cause misalignment errors when unioning the head and body polygons if either is created with a specified immobility threshold (*see* referencePoint2Polygon help page). As outlined by Farthing *et al.* (in Press), in the absence of accompanying gyroscopic data, movement angles are calculated based on observed relocation events with the assumption that all individuals are forward-facing when moving. Thus, specifying an immobility threshold (i.e., observed relocation distance required for us to state that movement actually occurred) is necessary to reduce directional errors by discounting observed movements so miniscule that the majority of the modeled physical-space is likely unaffected (e.g., head shaking), and therefore would not be repositioned. Thus, prior to unioning the polygons, we will not implement an immobility threshold.
+Additionally, the differing calculated-distance values will potentially cause misalignment errors when unioning the head and body polygons if either is created with a specified immobility threshold (*see* referencePoint2Polygon help page). As outlined by Farthing *et al.* (2020), in the absence of accompanying gyroscopic data, movement angles are calculated based on observed relocation events with the assumption that all individuals are forward-facing when moving. Thus, specifying an immobility threshold (i.e., observed relocation distance required for us to state that movement actually occurred) is necessary to reduce directional errors by discounting observed movements so miniscule that the majority of the modeled physical-space is likely unaffected (e.g., head shaking), and therefore would not be repositioned. Thus, prior to unioning the polygons, we will not implement an immobility threshold.
 
 Moving forward, let's generate the vertices for calves' anterior- and posterior-body polygons (i.e., we're dividing body polygons into two halves). Rather than running the referencePoint2Polygon function twice, we instead set MidPoints = TRUE, which will effectively identify vertices for the bottom of anterior body sections/top of posterior ones. 
 
@@ -633,7 +633,7 @@ mantelOutput #based on the reported p-value, given an alpha-level of 0.05, we ca
 
 Farine, D.R., 2017. A guide to null models for animal social network analysis. *Methods in Ecology and Evolution* 8:1309-1320. https://doi.org/10.1111/2041-210X.12772.
 
-Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. in Press. Accounting for space and uncertainty in real-time location system-derived contact networks. *Ecology and Evolution.* https://doi.org/10.1002/ece3.6225.
+Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. 2020. Accounting for space and uncertainty in real-time location system-derived contact networks. *Ecology and Evolution* 00:1-14. https://doi.org/10.1002/ece3.6225.
 
 Mantel, N. 1967. The detection of disease clustering and a generalized regression approach. *Cancer Research* 27:209–220.
 

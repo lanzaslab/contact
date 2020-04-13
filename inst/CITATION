@@ -1,4 +1,4 @@
-citHeader("To cite contact in publications use:")
+citHeader("To cite our package in publications, please use:")
 
 citEntry(entry = "Article",
          title        = "Accounting for space and uncertainty in real-time location system-derived contact networks",
@@ -7,16 +7,16 @@ citEntry(entry = "Article",
                                    as.person("Mike W. Sanderson"),
                                    as.person("Cristina Lanzas")),
          journal      = "Ecology and Evolution",
-         year         = "in Press",
-         volume       = "",
+         year         = "2020",
+         volume       = "00",
          number       = "",
-         pages        = "",
+         pages        = "1-14",
          url          = "https://doi.org/10.1002/ece3.6225",
          
          textVersion  =
-           paste("Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. (in Press).",
+           paste("Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, C. (2020).",
                  "Accounting for space and uncertainty in real-time location system-derived contact networks.",
-                 "Ecology and Evolution. https://doi.org/10.1002/ece3.6225.")
+                 "Ecology and Evolution 00:1-14. https://doi.org/10.1002/ece3.6225.")
 )
 
 
