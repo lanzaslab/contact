@@ -238,6 +238,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
            warning = W)
     }
 
+    output<-NULL #create empty object
     
     indivSummaryTest<- ifelse(length(grep("contactDuration_Indiv", colnames(empirical))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
     
@@ -726,7 +727,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       on.exit(parallel::stopCluster(cl), add = TRUE) #ensure the cluster is closed out when the function ends. This is added to the previous on.exit call that resets user's warning settings.
       
       chisqOut.list <- foreach::foreach(j = blockSeq) %dopar% {
-        
         x.summaryBlock <- droplevels(subset(x.summary, block == j)) #subset x.summary by block
         x.potentialBlock <- droplevels(subset(x.potential, block == j)) #subset x.potential by block
 

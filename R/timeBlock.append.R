@@ -16,7 +16,7 @@
 #'    column with the colname "dateTime" exists in x. Defaults to NULL.
 #' @param blockUnit Character string taking the values, "secs," "mins," 
 #'    "hours," "days," or "weeks." Defaults to "hours."
-#' @param blockLength Integer. Describes the number blockUnits within each 
+#' @param blockLength Integer. Describes the number of blockUnits within each 
 #'    temporal block. Defaults to 1.
 #' @param blockingStartTime Character string or date object describing the date
 #'     OR dateTime starting point of the first time block. For example, if 
