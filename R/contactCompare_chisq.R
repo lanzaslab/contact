@@ -6,9 +6,12 @@
 #'    function works by comparing an empirical contact distribution (generated 
 #'    using x.summary and x.potential) to a NULL distribution (generated using 
 #'    y.summary and y.potential) using a X-squared goodness-of-fit test. Note
-#'    that this function SHOULD NOT be used to compare two empirical networks 
-#'    using Chi-squared tests, as the function assumes x.summary and y.summary 
-#'    represent observed and expected values, respectively.
+#'    that here, the NULL hypothesis is that empirical data are consistent with
+#'    the NULL distribution, and the alternative hypothesis is that the data
+#'    are NOT consistent. This function SHOULD NOT be used to compare two 
+#'    empirical networks using Chi-squared tests, as the function assumes 
+#'    x.summary and y.summary represent observed and expected values, 
+#'    respectively.
 #'    
 #' This function was inspired by the methods described by Spiegel et al. 2016. 
 #'    They determined individuals to be expressing social behavior when nodes 
@@ -59,6 +62,8 @@
 #'    approximations of p may not be correct (and in fact, all estimates will 
 #'    be poor). It may be best to weight these tests differently. To address 
 #'    this, We've added the function reported that results may be inaccurate. 
+#'    In the event that this is the case, \code{\link{contactCompare_binom} 
+#'    can be used to obtain more-accurate estimates.
 #'
 #' @param x.summary List or single-data frame output from the summarizeContacts
 #'    function refering to the empirical data. Note that if x.summary is a list
@@ -86,6 +91,11 @@
 #'    randomizePaths function) was used to randomize the y.summary data 
 #'    set(s). Takes the values "0," "1," or "2." This is important because 
 #'    there are different assumptions associated with each shuffle.type.
+#' @param pairContacts Logical. If TRUE individual id columns from x.summary 
+#'    and y.summary inputs will be included in analyses. Defaults to TRUE.
+#' @param totalContacts Logical. If TRUE totalDegree and totalContactDurations
+#'    columns from x.summary and y.summary inputs will be included in analyses.
+#'    Defaults to TRUE.
 #' @param popLevelOutput Logical. If TRUE a secondary output describing 
 #'    population-level comparisons will be appended to the standard, 
 #'    individual-level function output.
@@ -95,6 +105,7 @@
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).
+#' @param ... Other arguments to be passed to the chisq.test function.
 #' @keywords network-analysis social-network
 #' @return Output format is dependent on \code{popLevelOutput} value.
 #' 
@@ -179,8 +190,6 @@
 #'                                     blockUnit = "hours", blockLength = 1, 
 #'                                     distFunction = "dist2All_df") 
 #' 
-#' 
-#' 
 #' calves.agg.rand<-randomizePaths(x = calves.agg, id = "id",
 #'                        dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL,
 #'                        parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE,
@@ -213,7 +222,7 @@
 #'                      popLevelOut = TRUE, parallel = FALSE) #blocking
 #'    }
 
-contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1, popLevelOutput = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
+contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1, pairContacts = TRUE, totalContacts = TRUE, popLevelOutput = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), ...){
   
   #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
   block <- NULL
@@ -224,7 +233,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   block.x<-NULL
   
   
-  chisq.forLoop<-function(x, empirical, randomized, emp.potential, rand.potential){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work. Note "x" here is not x.summary or x.potential. Those are represented by the empirical and emp.potential arguments, respectively.
+  chisq.forLoop<-function(x, empirical, randomized, emp.potential, rand.potential, ...){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work. Note "x" here is not x.summary or x.potential. Those are represented by the empirical and emp.potential arguments, respectively.
     
     tryCatch.W.E <- function(expr) #this function comes from https://stat.ethz.ch/pipermail/r-help/2010-December/262626.html
     {
@@ -364,8 +373,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         assign("last.warning", NULL, envir = baseenv()) #clears the warnings
         
-        test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value
-        warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message
+        test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb, ...))$value
+        warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb, ...))$warning$message
         
         if(length(warn1) == 0){
           warn1 = ""
@@ -708,6 +717,21 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   empiricalColNames <- c("totalDegree", "totalContactDurations", substring(names(x.summary[,4:max(grep("contactDuration_", names(x.summary)))]), 22)) #identifies which field each column relates to in x.summary
   loopFrame <- expand.grid(idSeq, empiricalColNames, stringsAsFactors = TRUE) #create the loopFrame to run through the chisqLoop function by combining the 2 previously-created vectors
   
+  #based on the pairContacts and totalContacts arguments, users can choose to exclude certain comparisons to speed up processing
+  if(pairContacts == FALSE){
+    loopFrame<- droplevels(loopFrame[c(which(loopFrame$Var2 == "totalDegree"), which(loopFrame$Var2 == "totalContactDurations")),]) #remove othe observations
+  }
+  
+  if(totalContacts == FALSE){
+    loopFrame<- droplevels(loopFrame[-c(which(loopFrame$Var2 == "totalDegree"), which(loopFrame$Var2 == "totalContactDurations")),]) #keep only these observations
+  }
+  
+  if(pairContacts == FALSE & totalContacts == FALSE){
+    
+    stop("All observed contacts have been removed prior to analyses because both pairContacts AND totalContacts are set to FALSE.")
+    
+  }
+  
   #ensure that warnings in the chisq.forLoop function are able to be recorded in output
   ##before executing the tests we must ensure that warnings for sub-level functions will not be silenced (so that we can record them as they occur, allowing users to pinpoint what part of their output might be erroneous).
   oldw <- getOption("warn") #pull the current warn setting 
@@ -740,7 +764,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         y.summaryBlock <- droplevels(subset(y.summary, block == block.y)) #subset y.summary by block
         y.potentialBlock <- droplevels(subset(y.potential, block == block.y)) #subset x.potential by block
-        chisqOut<-chisq.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock) #generate the individual-level chisq output.
+        chisqOut<-chisq.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock, ...) #generate the individual-level chisq output.
         ##add block information to chisqOut (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
         chisqOut$block.x <- j
         chisqOut$block.start.x <- unique(x.summaryBlock$block.start)
@@ -770,7 +794,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         y.summaryBlock <- droplevels(subset(y.summary, block == block.y)) #subset y.summary by block
         y.potentialBlock <- droplevels(subset(y.potential, block == block.y)) #subset x.potential by block
-        chisqOut<-chisq.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock) #generate the individual-level chisq output.
+        chisqOut<-chisq.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock, ...) #generate the individual-level chisq output.
         ##add block information to chisqOut (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
         chisqOut$block.x <- j
         chisqOut$block.start.x <- unique(x.summaryBlock$block.start)
@@ -882,7 +906,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     
   }else{ #if importBlocks == FALSE
     
-    chisqOut<-chisq.forLoop(loopFrame, empirical = x.summary, randomized = y.summary, emp.potential = x.potential, rand.potential = y.potential) #generate the individual-level chisq output.
+    chisqOut<-chisq.forLoop(loopFrame, empirical = x.summary, randomized = y.summary, emp.potential = x.potential, rand.potential = y.potential, ...) #generate the individual-level chisq output.
     
     if(popLevelOutput == TRUE){
       
