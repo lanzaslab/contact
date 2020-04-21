@@ -1,12 +1,12 @@
-#' Compare Observed Contacts to a Random Distribution Using Chi-Square GoF
+#' Exact Binomial Test for Comparing Observed Contacts to a Random Distribution
 #' 
 #' This function is used to determine if tracked individuals in an 
 #'    empirical dataset had more or fewer contacts with other tracked 
 #'    individuals/specified locations than would be expected at random. The
 #'    function works by comparing an empirical contact distribution (generated 
 #'    using x.summary and x.potential) to a NULL distribution (generated using 
-#'    y.summary and y.potential) using a X-square goodness-of-fit test. Note
-#'    that here, the NULL hypothesis is that empirical data are consistent with
+#'    y.summary and y.potential) using an exact binomial goodness-of-fit test.
+#'    Note here, the NULL hypothesis is that empirical data are consistent with
 #'    the NULL distribution, and the alternative hypothesis is that the data
 #'    are NOT consistent. This function SHOULD NOT be used to compare two 
 #'    empirical networks using Chi-squared tests, as the function assumes 
@@ -57,12 +57,6 @@
 #'    per block in y.summary and y.potential, are representative of mean 
 #'    randomized durations per block across each shuffle unit (e.g., day 1 is 
 #'    represntative of day 3, etc.).
-#'    
-#' Finally, if X-square expected values will be very small, 
-#'    approximations of p may not be correct (and in fact, all estimates will 
-#'    be poor). It may be best to weight these tests differently. In the event 
-#'    that this is the case, \code{\link{contactCompare_binom} may be used to 
-#'    obtain more-accurate estimates.
 #'
 #' @param x.summary List or single-data frame output from the summarizeContacts
 #'    function refering to the empirical data. Note that if x.summary is a list
@@ -104,7 +98,7 @@
 #' @param nCores Integer. Describes the number of cores to be dedicated to 
 #'    parallel processes. Defaults to half of the maximum number of cores 
 #'    available (i.e., (parallel::detectCores()/2)).
-#' @param ... Other arguments to be passed to the chisq.test function.
+#' @param ... Other arguments to be passed to the binom.test function.
 #' @keywords network-analysis social-network
 #' @return Output format is dependent on \code{popLevelOutput} value.
 #' 
@@ -119,9 +113,8 @@
 #'    totalContactDurations, individual 2, etc.). Content will 
 #'    change depending on which data frame is being observed.}
 #'    \item{method}{Statistical test used to determine significance.}
-#'    \item{X.squared}{Test statistic associated with the comparison.}
+#'    \item{probEstimate}{Probability of "successful" contact events.}
 #'    \item{p.val}{p.values associated with each comparison.}
-#'    \item{df}{Degrees of freedom associated with the statistical test.}
 #'    \item{contactDurations.x}{Describes the number of observed events
 #'    in x.summary.}
 #'    \item{contactDurations.y}{Describes the number of observed events in 
@@ -152,12 +145,15 @@
 #'    frames: The one described above, and second describing the 
 #'    population-level comparisons. Columns in each data frame are identical.
 #'    
-#' @references Agresti, A. 2007. An introduction to categorical data analysis, 
-#'    2nd ed. New York: John Wiley & Sons. 38.
+#' @references Conover, W.J. 1971. Practical nonparametric statistics. New 
+#'    York: John Wiley & Sons. 97–104.
 #' 
 #'    Farine, D.R., 2017. A guide to null models for animal social 
 #'    network analysis. Methods in Ecology and Evolution 8:1309-1320.
 #'    https://doi.org/10.1111/2041-210X.12772.
+#'    
+#'    Hollander, M. & Wolfe, D.A. 1973. Nonparametric statistical methods. 
+#'    New York: John Wiley & Sons. 15–22.
 #'    
 #'    Spiegel, O., Leu, S.T., Sih, A., and C.M. Bull. 2016. Socially 
 #'    interacting or indifferent neighbors? Randomization of movement paths to 
@@ -192,6 +188,8 @@
 #'                                     blockUnit = "hours", blockLength = 1, 
 #'                                     distFunction = "dist2All_df") 
 #' 
+#' 
+#' 
 #' calves.agg.rand<-randomizePaths(x = calves.agg, id = "id",
 #'                        dateTime = "dateTime", point.x = "x", point.y = "y", poly.xy = NULL,
 #'                        parallel = FALSE, dataType = "Point", numVertices = 1, blocking = TRUE,
@@ -213,18 +211,18 @@
 #'                                      distFunction = "dist2All_df") 
 #' 
 #' 
-#' contactCompare_chisq(x.summary = emp.summary, y.summary = rand.summary, 
+#' contactCompare_binom(x.summary = emp.summary, y.summary = rand.summary, 
 #'                      x.potential = emp.potential, y.potential = rand.potential,
 #'                      importBlocks = FALSE, shuffle.type = 0, 
 #'                      popLevelOut = TRUE, parallel = FALSE) #no blocking
 #' 
-#' contactCompare_chisq(x.summary = emp.summary, y.summary = rand.summary, 
+#' contactCompare_binom(x.summary = emp.summary, y.summary = rand.summary, 
 #'                      x.potential = emp.potential, y.potential = rand.potential,
 #'                      importBlocks = TRUE, shuffle.type = 0, 
 #'                      popLevelOut = TRUE, parallel = FALSE) #blocking
 #'    }
 
-contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1, pairContacts = TRUE, totalContacts = TRUE, popLevelOutput = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), ...){
+contactCompare_binom<-function(x.summary, y.summary, x.potential, y.potential = NULL, importBlocks = FALSE, shuffle.type = 1, pairContacts = TRUE, totalContacts = TRUE, popLevelOutput = FALSE, parallel = FALSE, nCores = (parallel::detectCores()/2), ...){
   
   #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
   block <- NULL
@@ -235,7 +233,9 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   block.x<-NULL
   
   
-  chisq.forLoop<-function(x, empirical, randomized, emp.potential, rand.potential, ...){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work. Note "x" here is not x.summary or x.potential. Those are represented by the empirical and emp.potential arguments, respectively.
+  binom.forLoop<-function(x, empirical, randomized, emp.potential, rand.potential, ...){ #I hate that I have to do this in a for-loop, but I couldn't get the apply functions to work. Note "x" here is not x.summary or x.potential. Those are represented by the empirical and emp.potential arguments, respectively.
+    
+    #the majority of this function was taken chisq.forLoop sub-function in contactCompare_chisq. As such, there are some inefficiencies here that will be addressed in a later version.
     
     tryCatch.W.E <- function(expr) #this function comes from https://stat.ethz.ch/pipermail/r-help/2010-December/262626.html
     {
@@ -248,7 +248,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
                                        warning = w.handler),
            warning = W)
     }
-
+    
     output<-NULL #create empty object
     
     indivSummaryTest<- ifelse(length(grep("contactDuration_Indiv", colnames(empirical))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
@@ -283,7 +283,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         empDurations<- empirical[which(empirical$id == unlist(unname(ids[i]))), grep(unlist(unname(cols[i])),colnames(empirical))] #pull the value of a given column for a specific id 
         
       }
-      
       
       empDurations<-empDurations[is.na(empDurations) == FALSE] #remove the NAs
       summaryFrame<-NULL
@@ -362,36 +361,51 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           maxDurations.rand <- 0
         }
         
-        observedVec <- c(sum(empDurations), maxDurations-sum(empDurations)) #create a vector describing observed counts
-
+        observedVec <- c(sum(empDurations), maxDurations-sum(empDurations)) #create a vector describing observed counts of "successful" and "failed" contact events
+        
         if(maxDurations.rand > 0){ #we must prevent dividing by zero here. 
           expectedProb <- c((sum(randDurations)/maxDurations.rand), ((maxDurations.rand-sum(randDurations))/maxDurations.rand)) #convert the observed random durations to probabilities.
-
+          
         }else{ #if maxDurations.rand == 0, expectedProb will always be c(0,0) and therefore chisq.test will return an error
           
           expectedProb <- c(0,1) #here we force expected probability to be (0, 1) (i.e., 100% probability of no contact), which would be the case if the individual was not observed.
           
         }
         
+        #here is where the differences from chisq.forLoop begin (there will be some overlap with what was defined above)
+        
+        #emp.success = sum(empDurations) #number of "successful" contact events in the empirical set
+        #emp.fail = (maxDurations - sum(empDurations)) #number of "failed" contact events in the empirical set
+        #rand.success = sum(randDurations) #number of "successful" contact events in the randomized set
+        #rand.fail = (maxDurations.rand - sum(randDurations)) #number of "failed" contact events in the randomized set
+        
+        expectedProb1 <- expectedProb[1] #unline the chisq.test function, the binom.test function only accepts a vector of length one as the probability argument
+
         assign("last.warning", NULL, envir = baseenv()) #clears the warnings
         
-        test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb, ...))$value
-        warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb, ...))$warning$message
+        test<-tryCatch.W.E(stats::binom.test(x = observedVec, p = expectedProb1, ...))$value
+        warn1<-tryCatch.W.E(stats::binom.test(x = observedVec, p = expectedProb1, ...))$warning$message
         
         if(length(warn1) == 0){
           warn1 = ""
         }
+    
+        binom.pval <- test$p.value #pull the p value
         
-        summaryFrame <- data.frame(id = unlist(unname(ids[i])), metric = unlist(unname(cols[i])), method = unname(test[4]), X.squared = unname(test[1]), 
-                                   df = unname(test[2]), p.val = unname(test[3]), empiricalContactDurations = sum(empDurations), 
+        if(isTRUE(binom.pval) == TRUE){ #if the binom.test function cannot return a pvalue, it returns "TRUE" instead
+          binom.pval<-NA #redine the pvalue as NA
+        }
+        
+        binom.estimate <- test$estimate #pull the probability estimate if that's what is desired
+        
+        summaryFrame <- data.frame(id = unlist(unname(ids[i])), metric = unlist(unname(cols[i])), method = test$method, probEstimate = binom.estimate, 
+                                   p.val = binom.pval, empiricalContactDurations = sum(empDurations), 
                                    randContactDurations.mean = sum(randDurations), empiricalNoContactDurations = (maxDurations - sum(empDurations)), 
                                    randNoContactDurations.mean = (maxDurations.rand - sum(randDurations)), difference = abs((maxDurations - sum(empDurations)) - (maxDurations.rand - sum(randDurations))), 
                                    warning = warn1, stringsAsFactors = TRUE)
-
-        colnames(summaryFrame)<-c("id", "metric", "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
+        
+        colnames(summaryFrame)<-c("id", "metric", "method", "probEstimate", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
                                   "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
-        
-        
         
         rownames(summaryFrame) <-1
         
@@ -448,7 +462,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
   }
   
   colnames(x.summary)<- gsub("avg..","",colnames(x.summary)) #if x.summary represents the average summary report (from the summarizeContacts function), all colnames may be preceded by "avg..". This line removes that tag from all relevant columns.
-
+  
   if(importBlocks == TRUE){ #if importBlocks == TRUE, but there is no block information in x.summary, the function stops and returns an error.
     
     if(length(x.summary$block) == 0){
@@ -606,7 +620,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           x.potential$potenDegree <- length(grep("potentialContactDurations_", colnames(x.potential))) #the potential degree is the maximum number of edges that can extend from any one node in the network
         }        
       }
-
+      
     }
     
   }
@@ -626,7 +640,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         #return y.potential as if importBlocks == FALSE and no block column exists in y.potential then repeat it for each block
         y.potential<-stats::aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
-
+        
         y.potentialBlock<-NULL #create an empty object to contain new block information
         
         for(i in unique(x.potential$block)){
@@ -637,37 +651,37 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         }
         
         y.potential <- data.frame(y.potentialBlock, stringsAsFactors = TRUE) #redefine y.potential as the object containing block information
-
+        
       }else{ #If there IS a block column, we average observations by id AND block
         
         blockSeq1<-unique(y.potentialAgg$block) #there may be differences in blocks containing contact info between the empirical and randomized data sets
         meanTab <- apply(data.frame(blockSeq1, stringsAsFactors = TRUE), 1, summaryAgg.block1, y = y.potentialAgg) #Note that block information MUST be included in the y.potentialAgg input
         y.potential <- data.frame(data.table::rbindlist(meanTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
-
+        
       }
       
     }else{ #if importBlocks == FALSE we only average the data by id.
       
       if(length(y.potentialAgg$block) > 0){ #Alternatively, #if there ARE blocks in y.potential, but importBlocks == FALSE, we have to recreate y.potential without the blocking information.
         
-          for(i in 1:length(y.potential)){ #add replicateID to the input. This was not required when processing x.summary because only the first entry of the list is returned.
-            y.potential[[i]]$replicateID = i}
+        for(i in 1:length(y.potential)){ #add replicateID to the input. This was not required when processing x.summary because only the first entry of the list is returned.
+          y.potential[[i]]$replicateID = i}
         
-          y.potentialAgg<- data.frame(data.table::rbindlist(y.potential, fill = TRUE), stringsAsFactors = TRUE) #remake y.potentialAgg
-          repSeq<-unique(y.potentialAgg$replicateID) #make a vector of the unique replicateIDs
-          sumTab <- apply(data.frame(repSeq, stringsAsFactors = TRUE), 1, summaryAgg.block2, y = y.potentialAgg) #sum across columns by id and replicateID
-          y.potentialAgg <- data.frame(data.table::rbindlist(sumTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
-          ##and now we have an object contained summed averages by id, replicateID. However, we may need to retractively adjust potenDegree values (see summaryAgg.block2)
-          indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
-          
-          if(indivSummaryTest.y == TRUE){ #if x.summary was derived from dist2All (Note that this assumes x.summary and x.potential are derived from the same distance function)
-            y.potentialAgg$potenDegree <- y.potentialAgg$potenDegree - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
-          }
-          
+        y.potentialAgg<- data.frame(data.table::rbindlist(y.potential, fill = TRUE), stringsAsFactors = TRUE) #remake y.potentialAgg
+        repSeq<-unique(y.potentialAgg$replicateID) #make a vector of the unique replicateIDs
+        sumTab <- apply(data.frame(repSeq, stringsAsFactors = TRUE), 1, summaryAgg.block2, y = y.potentialAgg) #sum across columns by id and replicateID
+        y.potentialAgg <- data.frame(data.table::rbindlist(sumTab, fill = TRUE), stringsAsFactors = TRUE) #We keep the same name for simplicity's sake below. 
+        ##and now we have an object contained summed averages by id, replicateID. However, we may need to retractively adjust potenDegree values (see summaryAgg.block2)
+        indivSummaryTest.y<- ifelse(length(grep("contactDuration_Indiv", colnames(y.summary))) >0, TRUE, FALSE) #the summarizeContacts function can either represent contacts with individuals OR fixed areas. We need to confirm which it is here. 
+        
+        if(indivSummaryTest.y == TRUE){ #if x.summary was derived from dist2All (Note that this assumes x.summary and x.potential are derived from the same distance function)
+          y.potentialAgg$potenDegree <- y.potentialAgg$potenDegree - 1 #the potential degree is the maximum number of edges that can extend from any one node in the network
+        }
+        
       }
       ##now we take the average across all replicateIDs
       y.potential<-stats::aggregate(y.potentialAgg[,-match("id", colnames(y.potentialAgg))], list(id = y.potentialAgg$id), mean) #this not only calculates the mean of each column by id, but also adds the "id" column back into the data set. #We keep the same name for simplicity's sake below. 
-
+      
     }
     
   }else{ #if y.potential is only a single data frame
@@ -711,13 +725,13 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     }
   }
   
-  #OK. Now we have x.summary, y.summary, x.potential, and y.potential objects that are gauranteed to work with the chisq.forLoop function.
+  #OK. Now we have x.summary, y.summary, x.potential, and y.potential objects that are gauranteed to work with the binom.forLoop function.
   
   #define the loop objects.
   
   idSeq <- unique(c(x.summary$id, y.summary$id)) #pulls the unique ids for each individual
   empiricalColNames <- c("totalDegree", "totalContactDurations", substring(names(x.summary[,4:max(grep("contactDuration_", names(x.summary)))]), 22)) #identifies which field each column relates to in x.summary
-  loopFrame <- expand.grid(idSeq, empiricalColNames, stringsAsFactors = TRUE) #create the loopFrame to run through the chisqLoop function by combining the 2 previously-created vectors
+  loopFrame <- expand.grid(idSeq, empiricalColNames, stringsAsFactors = TRUE) #create the loopFrame to run through the binomLoop function by combining the 2 previously-created vectors
   
   #based on the pairContacts and totalContacts arguments, users can choose to exclude certain comparisons to speed up processing
   if(pairContacts == FALSE){
@@ -734,13 +748,13 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
     
   }
   
-  #ensure that warnings in the chisq.forLoop function are able to be recorded in output
+  #ensure that warnings in the binom.forLoop function are able to be recorded in output
   ##before executing the tests we must ensure that warnings for sub-level functions will not be silenced (so that we can record them as they occur, allowing users to pinpoint what part of their output might be erroneous).
   oldw <- getOption("warn") #pull the current warn setting 
   options(warn = 1) #make warnings appear as they occur, rather than be stored until the top-level function returns
   on.exit(options(warn = oldw)) #ensure that when the function ends, users' options are reset.
   
-  #run the chisq.forLoop function
+  #run the binom.forLoop function
   
   if(length(x.summary$block) > 0){ #importBlocks == TRUE and blocks exist in the inputs (note: if importBlocks == FALSE, code above ensures that no "block" column will exist at this point.)
     
@@ -752,10 +766,10 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
       doParallel::registerDoParallel(cl) #register the cluster
       on.exit(parallel::stopCluster(cl), add = TRUE) #ensure the cluster is closed out when the function ends. This is added to the previous on.exit call that resets user's warning settings.
       
-      chisqOut.list <- foreach::foreach(j = blockSeq) %dopar% {
+      binomOut.list <- foreach::foreach(j = blockSeq) %dopar% {
         x.summaryBlock <- droplevels(subset(x.summary, block == j)) #subset x.summary by block
         x.potentialBlock <- droplevels(subset(x.potential, block == j)) #subset x.potential by block
-
+        
         if(shuffle.type == 2){ #recall that shuffle.type 2 (from the randomizeLocations function) produces only 1 shuffle.unit's worth of data, rather than a dataset with the same length of x. As such, there may be a different number of blocks in y compared to x. Here we assume that the mean randomized durations per block, are representative of mean randomized durations per block across each shuffle unit (e.g., day)
           blockSeq.integ <- as.integer(as.character(blockSeq)) #ensure that the blocks in blockSeq are integers so that they can be put through mathematical operations
           blockSeqY.integ <- as.integer(as.character(unique(y.summary$block))) #do the same thing for the y input
@@ -766,22 +780,22 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         y.summaryBlock <- droplevels(subset(y.summary, block == block.y)) #subset y.summary by block
         y.potentialBlock <- droplevels(subset(y.potential, block == block.y)) #subset x.potential by block
-        chisqOut<-chisq.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock, ...) #generate the individual-level chisq output.
-        ##add block information to chisqOut (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
-        chisqOut$block.x <- j
-        chisqOut$block.start.x <- unique(x.summaryBlock$block.start)
-        chisqOut$block.end.x <- unique(x.summaryBlock$block.end)
-        chisqOut$block.y <- block.y
-        chisqOut$block.start.y <- unique(y.summaryBlock$block.start)
-        chisqOut$block.end.y <- unique(y.summaryBlock$block.end)
+        binomOut<-binom.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock, ...) #generate the individual-level binom output.
+        ##add block information to binomOut (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
+        binomOut$block.x <- j
+        binomOut$block.start.x <- unique(x.summaryBlock$block.start)
+        binomOut$block.end.x <- unique(x.summaryBlock$block.end)
+        binomOut$block.y <- block.y
+        binomOut$block.start.y <- unique(y.summaryBlock$block.start)
+        binomOut$block.end.y <- unique(y.summaryBlock$block.end)
         
-        return(chisqOut)
+        return(binomOut)
         
       }
       
     }else{ #if parallel == FALSE
       
-      chisqOut.list <- foreach::foreach(j = blockSeq) %do% {
+      binomOut.list <- foreach::foreach(j = blockSeq) %do% {
         
         x.summaryBlock <- droplevels(subset(x.summary, block == j)) #subset x.summary by block
         x.potentialBlock <- droplevels(subset(x.potential, block == j)) #subset x.potential by block
@@ -796,22 +810,22 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
         y.summaryBlock <- droplevels(subset(y.summary, block == block.y)) #subset y.summary by block
         y.potentialBlock <- droplevels(subset(y.potential, block == block.y)) #subset x.potential by block
-        chisqOut<-chisq.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock, ...) #generate the individual-level chisq output.
-        ##add block information to chisqOut (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
-        chisqOut$block.x <- j
-        chisqOut$block.start.x <- unique(x.summaryBlock$block.start)
-        chisqOut$block.end.x <- unique(x.summaryBlock$block.end)
-        chisqOut$block.y <- block.y
-        chisqOut$block.start.y <- unique(y.summaryBlock$block.start)
-        chisqOut$block.end.y <- unique(y.summaryBlock$block.end)
+        binomOut<-binom.forLoop(loopFrame, empirical = x.summaryBlock, randomized = y.summaryBlock, emp.potential = x.potentialBlock, rand.potential = y.potentialBlock, ...) #generate the individual-level binom output.
+        ##add block information to binomOut (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
+        binomOut$block.x <- j
+        binomOut$block.start.x <- unique(x.summaryBlock$block.start)
+        binomOut$block.end.x <- unique(x.summaryBlock$block.end)
+        binomOut$block.y <- block.y
+        binomOut$block.start.y <- unique(y.summaryBlock$block.start)
+        binomOut$block.end.y <- unique(y.summaryBlock$block.end)
         
-        return(chisqOut)
+        return(binomOut)
         
       }
       
     }
     
-    chisqOut <- data.frame(data.table::rbindlist(chisqOut.list, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together
+    binomOut <- data.frame(data.table::rbindlist(binomOut.list, fill = TRUE), stringsAsFactors = TRUE) #bind the lists together
     
     if(popLevelOutput == TRUE){
       
@@ -827,8 +841,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
              warning = W)
       }
       
-      uniqueMetrics <- unique(chisqOut$metric) #pull out the unique metrics for the data set
-      blocks <- unique(chisqOut$block.x) #pull out the unique empirical blocks in chisqOut
+      uniqueMetrics <- unique(binomOut$metric) #pull out the unique metrics for the data set
+      blocks <- unique(binomOut$block.x) #pull out the unique empirical blocks in binomOut
       
       processFrame<- expand.grid(uniqueMetrics, blocks, stringsAsFactors = TRUE) #create the frame to loop through below
       
@@ -837,15 +851,15 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         summaryFrame <- data.frame(matrix(ncol = 11, nrow = 1), stringsAsFactors = TRUE) #just in case there are no entries in summaryFrame, all entries in this summaryFrame will be NA
         summaryFrame[1,] <- NA
         
-        popLevelMetric <- droplevels(subset(chisqOut, metric == processFrame[i,1] & block.x == processFrame[i,2])) # pull the unique value of interest
+        popLevelMetric <- droplevels(subset(binomOut, metric == processFrame[i,1] & block.x == processFrame[i,2])) # pull the unique value of interest
         
         if(nrow(popLevelMetric) > 0){
           
-          observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-          maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
-          expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-          maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
-        
+          observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(binomOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(binomOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(binomOut))], popLevelMetric[,match("noContactDurations.x", colnames(binomOut))])) #total number of random temporal sampling-windows observed. 
+          expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(binomOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(binomOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(binomOut))], popLevelMetric[,match("noContactDurations.y", colnames(binomOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
+          
           maxDurations.y<-maxDurations.y[is.na(maxDurations.y) == FALSE] #remove the NAs
           if(length(maxDurations.y) == 0){ #if removing the NAs removed the only observations, then maxDurations.y reverts to 0
             maxDurations.y <- 0
@@ -854,61 +868,69 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           if(maxDurations.y > 0){ #we must prevent dividing by zero here. 
             expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
             
-          }else{ #if maxDurations.y == 0, expectedProb will always be c(0,0) and therefore chisq.test will return an error
+          }else{ #if maxDurations.y == 0, expectedProb will always be c(0,0) and therefore binom.test will return an error
             
             expectedProb <- c(0,1) #here we force expected probability to be (0, 1) (i.e., 100% probability of no contact), which would be the case if the individual was not observed.
             
           }
           
-          assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
-        
-          test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
-          warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
-        
+          #emp.success = sum(empDurations) #number of "successful" contact events in the empirical set
+          #emp.fail = (maxDurations - sum(empDurations)) #number of "failed" contact events in the empirical set
+          #rand.success = sum(randDurations) #number of "successful" contact events in the randomized set
+          #rand.fail = (maxDurations.rand - sum(randDurations)) #number of "failed" contact events in the randomized set
+          
+          expectedProb1 <- expectedProb[1] #unline the chisq.test function, the binom.test function only accepts a vector of length one as the probability argument
+          
+          assign("last.warning", NULL, envir = baseenv()) #clears the warnings
+          
+          test<-tryCatch.W.E(stats::binom.test(x = observedVec, p = expectedProb1, ...))$value
+          warn1<-tryCatch.W.E(stats::binom.test(x = observedVec, p = expectedProb1, ...))$warning$message
+          
           if(length(warn1) == 0){
             warn1 = ""
           }
-        
-          summaryFrame <- data.frame(metric = processFrame[i,1], method = unname(test[4]), X.squared = unname(test[1]), 
-                                   df = unname(test[2]), p.val = unname(test[3]), empiricalContactDurations = observedVec[1], 
-                                   randContactDurations.mean = expectedVec[1], empiricalNoContactDurations = observedVec[2], 
-                                   randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
-                                   warning = warn1, stringsAsFactors = TRUE)
-        
+          
+          binom.pval <- test$p.value #pull the p value
+          
+          if(isTRUE(binom.pval) == TRUE){ #if the binom.test function cannot return a pvalue, it returns "TRUE" instead
+            binom.pval<-NA #redine the pvalue as NA
+          }
+          
+          binom.estimate <- test$estimate #pull the probability estimate if that's what is desired
+          
+          summaryFrame <- data.frame(metric = processFrame[i,1], method = test$method, probEstimate = binom.estimate, 
+                                     p.val = binom.pval, empiricalContactDurations = observedVec[1], 
+                                     randContactDurations.mean = expectedVec[1], empiricalNoContactDurations = observedVec[2], 
+                                     randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
+                                     warning = warn1, stringsAsFactors = TRUE)
+          
         }
-          colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
+        
+        colnames(summaryFrame)<-c("metric", "method", "probEstimate", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
                                   "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
-          ##add block information to summaryFrame (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
-          #summaryFrame$block.x <- unique(popLevelMetric$block.x)
-          #summaryFrame$block.start.x <- unique(popLevelMetric$block.start.x)
-          #summaryFrame$block.end.x <- unique(popLevelMetric$block.end.x)
-          #summaryFrame$block.y <- unique(popLevelMetric$block.y)
-          #summaryFrame$block.start.y <- unique(popLevelMetric$block.start.y)
-          #summaryFrame$block.end.y <- unique(popLevelMetric$block.end.y)
-          
-          summaryFrame$block.x <- unique(droplevels(processFrame[i,2]))
-          summaryFrame$block.start.x <- unique(chisqOut$block.start.x[which(chisqOut$block.x == processFrame[i,2])])
-          summaryFrame$block.end.x <- unique(chisqOut$block.end.x[which(chisqOut$block.x == processFrame[i,2])])
-          summaryFrame$block.y <- unique(chisqOut$block.y[which(chisqOut$block.x == processFrame[i,2])])
-          summaryFrame$block.start.y <- unique(chisqOut$block.start.y[which(chisqOut$block.x == processFrame[i,2])])
-          summaryFrame$block.end.y <- unique(chisqOut$block.end.y[which(chisqOut$block.x == processFrame[i,2])])
+        summaryFrame$block.x <- unique(droplevels(processFrame[i,2]))
+        summaryFrame$block.start.x <- unique(binomOut$block.start.x[which(binomOut$block.x == processFrame[i,2])])
+        summaryFrame$block.end.x <- unique(binomOut$block.end.x[which(binomOut$block.x == processFrame[i,2])])
+        summaryFrame$block.y <- unique(binomOut$block.y[which(binomOut$block.x == processFrame[i,2])])
+        summaryFrame$block.start.y <- unique(binomOut$block.start.y[which(binomOut$block.x == processFrame[i,2])])
+        summaryFrame$block.end.y <- unique(binomOut$block.end.y[which(binomOut$block.x == processFrame[i,2])])
         
-          rownames(summaryFrame) <-1
-          
+        rownames(summaryFrame) <-1
+        
         return(summaryFrame)
         
-        }
+      }
       
       popLevelOut<- data.frame(data.table::rbindlist(popLevelOut), stringsAsFactors = TRUE) #bind these frames together
       
-      chisqOut <- list(chisqOut, popLevelOut) #group the outputs together
-      names(chisqOut) <- c("individualLevel", "populationLevel") #rename the objects in the list
+      binomOut <- list(binomOut, popLevelOut) #group the outputs together
+      names(binomOut) <- c("individualLevel", "populationLevel") #rename the objects in the list
     }
     
   }else{ #if importBlocks == FALSE
     
-    chisqOut<-chisq.forLoop(loopFrame, empirical = x.summary, randomized = y.summary, emp.potential = x.potential, rand.potential = y.potential, ...) #generate the individual-level chisq output.
+    binomOut<-binom.forLoop(loopFrame, empirical = x.summary, randomized = y.summary, emp.potential = x.potential, rand.potential = y.potential, ...) #generate the individual-level binom output.
     
     if(popLevelOutput == TRUE){
       
@@ -924,22 +946,22 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
              warning = W)
       }
       
-      uniqueMetrics <- unique(chisqOut$metric) #pull out the unique metrics for the data set
+      uniqueMetrics <- unique(binomOut$metric) #pull out the unique metrics for the data set
       
       popLevelOut<-foreach::foreach(i = uniqueMetrics) %do% { #no need to make this parallel. Doing so would only slow things down.
         
         summaryFrame <- data.frame(matrix(ncol = 11, nrow = 1), stringsAsFactors = TRUE) #just in case there are no entries in summaryFrame, all entries in this summaryFrame will be NA
         summaryFrame[1,] <- NA
-         
-        popLevelMetric <- droplevels(subset(chisqOut, metric == i)) # pull the unique value of interest
+        
+        popLevelMetric <- droplevels(subset(binomOut, metric == i)) # pull the unique value of interest
         
         if(nrow(popLevelMetric) > 0){
-        
-          observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-          maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.x", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. 
-          expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
-          maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(chisqOut))], popLevelMetric[,match("noContactDurations.y", colnames(chisqOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
-      
+          
+          observedVec <- c(sum(popLevelMetric[,match("contactDurations.x", colnames(binomOut))]), sum(popLevelMetric[,match("noContactDurations.x", colnames(binomOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.x <- sum(c(popLevelMetric[,match("contactDurations.x", colnames(binomOut))], popLevelMetric[,match("noContactDurations.x", colnames(binomOut))])) #total number of random temporal sampling-windows observed. 
+          expectedVec <- c(sum(popLevelMetric[,match("contactDurations.y", colnames(binomOut))]), sum(popLevelMetric[,match("noContactDurations.y", colnames(binomOut))])) #create a vector describing total observed counts of empirical contacts and non-contacting timepoints
+          maxDurations.y <- sum(c(popLevelMetric[,match("contactDurations.y", colnames(binomOut))], popLevelMetric[,match("noContactDurations.y", colnames(binomOut))])) #total number of random temporal sampling-windows observed. This will be used to created the probability distribution for the NULL model
+          
           maxDurations.y<-maxDurations.y[is.na(maxDurations.y) == FALSE] #remove the NAs
           if(length(maxDurations.y) == 0){ #if removing the NAs removed the only observations, then maxDurations.y reverts to 0
             maxDurations.y <- 0
@@ -948,30 +970,45 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           if(maxDurations.y > 0){ #we must prevent dividing by zero here. 
             expectedProb <- c((expectedVec[1]/maxDurations.y), (expectedVec[2]/maxDurations.y)) #convert the observed random durations to probabilities.
             
-          }else{ #if maxDurations.y == 0, expectedProb will always be c(0,0) and therefore chisq.test will return an error
+          }else{ #if maxDurations.y == 0, expectedProb will always be c(0,0) and therefore binom.test will return an error
             
             expectedProb <- c(0,1) #here we force expected probability to be (0, 1) (i.e., 100% probability of no contact), which would be the case if the individual was not observed.
             
           }
-        
-          assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
-        
-          test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
-          warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
-        
+          
+          #emp.success = sum(empDurations) #number of "successful" contact events in the empirical set
+          #emp.fail = (maxDurations - sum(empDurations)) #number of "failed" contact events in the empirical set
+          #rand.success = sum(randDurations) #number of "successful" contact events in the randomized set
+          #rand.fail = (maxDurations.rand - sum(randDurations)) #number of "failed" contact events in the randomized set
+          
+          expectedProb1 <- expectedProb[1] #unline the chisq.test function, the binom.test function only accepts a vector of length one as the probability argument
+          
+          assign("last.warning", NULL, envir = baseenv()) #clears the warnings
+          
+          test<-tryCatch.W.E(stats::binom.test(x = observedVec, p = expectedProb1, ...))$value
+          warn1<-tryCatch.W.E(stats::binom.test(x = observedVec, p = expectedProb1, ...))$warning$message
+          
           if(length(warn1) == 0){
             warn1 = ""
           }
-        
-          summaryFrame <- data.frame(metric = i, method = unname(test[4]), X.squared = unname(test[1]), 
-                                   df = unname(test[2]), p.val = unname(test[3]), empiricalContactDurations = observedVec[1], 
-                                   randContactDurations.mean = expectedVec[1], empiricalNoContactDurations = observedVec[2], 
-                                   randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
-                                   warning = warn1, stringsAsFactors = TRUE)
-        
+          
+          binom.pval <- test$p.value #pull the p value
+          
+          if(isTRUE(binom.pval) == TRUE){ #if the binom.test function cannot return a pvalue, it returns "TRUE" instead
+            binom.pval<-NA #redine the pvalue as NA
+          }
+          
+          binom.estimate <- test$estimate #pull the probability estimate if that's what is desired
+          
+          summaryFrame <- data.frame(metric = i, method = test$method, probEstimate = binom.estimate, 
+                                     p.val = binom.pval, empiricalContactDurations = observedVec[1], 
+                                     randContactDurations.mean = expectedVec[1], empiricalNoContactDurations = observedVec[2], 
+                                     randNoContactDurations.mean = expectedVec[2], difference = abs((maxDurations.x - observedVec[1]) - (maxDurations.y - expectedVec[1])), 
+                                     warning = warn1, stringsAsFactors = TRUE)
+
         }
         
-        colnames(summaryFrame)<-c("metric",  "method", "X.squared", "df", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
+        colnames(summaryFrame)<-c("metric", "method", "probEstimate", "p.val", "contactDurations.x", "contactDurations.y", "noContactDurations.x", 
                                   "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
         rownames(summaryFrame) <-1
@@ -980,14 +1017,14 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
         
       }
       
-       popLevelOut<- data.frame(data.table::rbindlist(popLevelOut), stringsAsFactors = TRUE) #bind these frames together
-       
-       chisqOut <- list(chisqOut, popLevelOut) #group the outputs together
-       names(chisqOut) <- c("individualLevel", "populationLevel") #rename the objects in the list
+      popLevelOut<- data.frame(data.table::rbindlist(popLevelOut), stringsAsFactors = TRUE) #bind these frames together
+      
+      binomOut <- list(binomOut, popLevelOut) #group the outputs together
+      names(binomOut) <- c("individualLevel", "populationLevel") #rename the objects in the list
     }
     
   }
-
-  return(chisqOut) #outputs the chisqOut object (Note that this can be either a single data frame or a list of 2 data frames)
+  
+  return(binomOut) #outputs the binomOut object (Note that this can be either a single data frame or a list of 2 data frames)
   
 }
