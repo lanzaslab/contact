@@ -93,6 +93,11 @@
 
 socialEdges<-function(x, alpha = 0.05, weight = NULL, removeDuplicates = TRUE){
   
+  #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
+  i <- NULL
+  j <- NULL
+  block <- NULL
+  
   #we first remove any instances of totalDegree and totalContactDurations if they exist
   
   if(length(grep("totalDegree", x$metric)) > 0){

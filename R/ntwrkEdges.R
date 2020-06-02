@@ -71,6 +71,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
   #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
   i <- NULL
   j <- NULL
+  
   dupAction<-removeDuplicates
   
   #write the sub-functions
@@ -350,6 +351,11 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
     
     if(removeDuplicates == TRUE){
       rm_Vec<- unlist(foreach::foreach(i = unique(potential_edges$to)) %do% { #creates a vector of rows describing duplicated edges.
+        if(is.factor(i) == TRUE){ #if i is a factor, change it to a character string. This prevents it from returning an error
+          
+          i <- as.character(i)
+          
+        }
         last_edge<-max(which(potential_edges$to == i)) #identifies the last observation of an edge attached to node i
         rm<-(which(potential_edges$from[(last_edge + 1):nrow(potential_edges)] == i) + last_edge) #identifies which rows after max describe edges attached to node i
         return(rm)
@@ -366,6 +372,9 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
     return(confirmed_edges)
   }
   edgeGenerator.Block<-function(x, removeDuplicates = dupAction, par = parallel, cores = nCores){
+    
+    block <-NULL #bind this to the global environment to prevent a check flag.
+    
     confirm_edges.Block<-function(x,y){ #x = potential edges, y = contactSummary; essentially presents contact summary results in long form
       if(length(levels(unname(unlist(x[2])))) > 1){ #This has to be here to avoid an error when trying to coerce output into the out.frame
         x2.id <- droplevels(unname(unlist(x[2])))
