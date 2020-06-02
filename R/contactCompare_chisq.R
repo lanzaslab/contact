@@ -61,7 +61,7 @@
 #' Finally, if X-square expected values will be very small, 
 #'    approximations of p may not be correct (and in fact, all estimates will 
 #'    be poor). It may be best to weight these tests differently. In the event 
-#'    that this is the case, \code{\link{contactCompare_binom} may be used to 
+#'    that this is the case, \code{\link{contactCompare_binom}} may be used to 
 #'    obtain more-accurate estimates.
 #'
 #' @param x.summary List or single-data frame output from the summarizeContacts

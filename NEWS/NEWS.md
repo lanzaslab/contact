@@ -31,4 +31,8 @@
     years.
   - Improved efficiency temporal blocking functions.
 
-\`\`\`
+## contact 1.2.3
+
+  - Fixed bug that forced times in tempAggregate output to begin at
+    00:00:00 on the first day in the data set.
+  - Added socialEdges function. \`\`\`

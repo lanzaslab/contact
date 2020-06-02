@@ -22,7 +22,7 @@ detailing the relevant colname in x, that denotes what dateTime
 information will be used. If argument == NULL, the function assumes a 
 column with the colname "dateTime" exists in x. Defaults to NULL.}
 
-\item{blockLength}{Integer. Describes the number blockUnits within each 
+\item{blockLength}{Integer. Describes the number of blockUnits within each 
 temporal block. Defaults to 1.}
 
 \item{blockUnit}{Character string taking the values, "secs," "mins," 

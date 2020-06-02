@@ -82,7 +82,7 @@ igraph::E(calves.network1)$width <- calves.edges1$duration
 igraph::E(calves.network1)$color <- "black"
 igraph::plot.igraph(calves.network1, vertex.label.cex=0.4,
    layout = igraph::layout.circle, main = "Inter-Calf Contacts") #plot the network
-   
+
 }
 \keyword{contact}
 \keyword{data-processing}
