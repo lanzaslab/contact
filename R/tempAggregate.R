@@ -158,7 +158,7 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
     dateSeq <- unique(originTab$date) #pull the unique dates, in order, to be used later on 
     start_dateTime <- as.POSIXct(originTab$dateTime[1]) - originTab$daySecond[1] #record the first timepoint of the first day in the data to be used later on
     
-    originTab$totalSecond <- as.integer(difftime(originTab$dateTime ,originTab$dateTime[1] , units = c("secs"))) #calculates the total second of each timepoint in x
+    originTab$totalSecond <- as.integer(difftime(originTab$dateTime ,start_dateTime , units = c("secs"))) #calculates the total second of each timepoint in x (note that the first second used here is time 0 of the first day of the data set)
     
     leftExtrap = extrapolate.left
     rightExtrap = extrapolate.right
@@ -182,12 +182,12 @@ tempAggregate <- function(x = NULL, id = NULL, point.x = NULL, point.y = NULL, d
       }
 
       #we need to determine how many days span the distribution of dates in the data set
-      dateSeq<- unique(originTab$date) #identify the unique days in the data
+      dateSeq<- unique(originTab$date)[order(unique(originTab$date))] #identify the unique days in the data. We make sure it's ordered correctly to ensure proper counting of days
       nDays<- as.integer(max(difftime(dateSeq, dateSeq[1], units = c("days")))) + 1 #max(difftime) returns the maximum difference between days. The +1 transforms this number to "the number of days within the timespan of the data"
       
       coord.tmp<-matrix(rep(0,nDays*24*60*60*2),ncol=2) #create a matrix populated by zeroes for x and y coordinates at every second within the time span
 
-      data.one=originTab[c(brk.point[1]:brk.point[2]),]
+      data.one=originTab[c(brk.point[1]:brk.point[2]),] #using brk.point, pull information for the individual
       data.len=nrow(data.one)
       xcol<-match("x", names(data.one))
       ycol<-match("y", names(data.one))
