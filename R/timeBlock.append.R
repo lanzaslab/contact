@@ -80,14 +80,18 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
   daySecondList = lubridate::hour(x$dateTime) * 3600 + lubridate::minute(x$dateTime) * 60 + lubridate::second(x$dateTime) #This calculates a day-second
   lub.dates = lubridate::date(x$dateTime)
   x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
+  if(class(x)[1] != "data.frame"){ #if x was only defined by the dateTime argument, ordering it as we do above may change it from a data frame into a POSIXct object. We need to fix that.
+    x <- data.frame(x)
+    colnames(x) <- "dateTime"
+  }
   rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
   
   ##totalSecond<- difftime(x$dateTime ,x$dateTime[1] , units = c("secs")) #calculate total seconds
   ##studySecond <- (totalSecond -min(totalSecond)) + 1
   
   if(length(blockingStartTime) == 1){ #if the blockingStartTime argument is defined, we calculate how far it is away (in seconds) from the minimum timepoint in x
-    
-    blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
+
+      blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
     
   }else{ #if the blockingStartTime argument is NOT defined, the adjustment is 0
     
