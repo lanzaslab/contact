@@ -70,7 +70,7 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
   }else{ # length(x) > 0
     if(length(dateTime) > 0){ #dateTime == NULL, the function assumes that there is a "dateTime" column in x.
       if(length(dateTime) == 1 && is.na(match(dateTime[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
-        x$dateTime <- x[,match(dateTime, names(x))]
+        x$dateTime <- as.character(x[,match(dateTime, names(x))])
       }else{ #if length(dateTime) > 1
         x$dateTime = dateTime
       }
@@ -81,7 +81,7 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
   lub.dates = lubridate::date(x$dateTime)
   x<-x[order(lub.dates, daySecondList),] #in case this wasn't already done, we order by date and second. Note that we must order it in this round-about way (using the date and daySecond vectors) to prevent ordering errors that sometimes occurs with dateTime data. It takes a bit longer (especially with larger data sets), but that's the price of accuracy
   if(class(x)[1] != "data.frame"){ #if x was only defined by the dateTime argument, ordering it as we do above may change it from a data frame into a POSIXct object. We need to fix that.
-    x <- data.frame(x)
+    x <- data.frame(as.character(x))
     colnames(x) <- "dateTime"
   }
   rm(list = c("daySecondList", "lub.dates")) #remove these objects because they are no longer needed.
