@@ -72,7 +72,7 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
       if(length(dateTime) == 1 && is.na(match(dateTime[1], names(x))) == FALSE){ #added 1/14 to accompany the list-processing functionality. If x is a list, rather than point.x being a vector of length(nrow(x)), it may be necessary to designate the colname for intended "point.x" values (i.e., if the x-coordinate values in different list entries are different)
         x$dateTime <- as.character(x[,match(dateTime, names(x))])
       }else{ #if length(dateTime) > 1
-        x$dateTime = dateTime
+        x$dateTime = as.character(dateTime)
       }
     }
   }
