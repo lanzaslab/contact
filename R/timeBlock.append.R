@@ -123,7 +123,7 @@ timeBlock.append<-function(x = NULL, dateTime = NULL, blockLength = 1, blockUnit
   block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
   block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
   
-  x$block <- block
+  x$block <- as.integer(block)
   x$block.start <- block.start
   x$block.end <- block.end
   x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
