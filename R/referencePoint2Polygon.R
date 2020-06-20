@@ -235,8 +235,132 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
           return(output)
         }
         
-        if(nrow(x) <= 1){ #there needs to be at least 2 rows in x, so that we know which direction animals are facing.
-          polygonMatrix <- NULL #if there are fewer than 2 rows, the function output is NULL
+        if(nrow(x) == 1){ #there needs to be at least 2 rows in x, so that we know which direction animals are facing if direction == NULL.
+          
+          if(length(x$eta..) == 0){
+            polygonMatrix <- NULL #if there are fewer than 2 rows, the function output is NULL
+            
+            polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+            colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
+            
+            polygonMatrix$id = x$id
+            polygonMatrix$cornerPoint1.x = NA #if there's only observation, this is NA
+            polygonMatrix$cornerPoint1.y = NA #if there's only observation, this is NA
+            polygonMatrix$cornerPoint2.x = NA #if there's only observation, this is NA
+            polygonMatrix$cornerPoint2.y = NA #if there's only observation, this is NA
+            polygonMatrix$cornerPoint3.x = NA #if there's only observation, this is NA
+            polygonMatrix$cornerPoint3.y = NA #if there's only observation, this is NA
+            polygonMatrix$cornerPoint4.x = NA #if there's only observation, this is NA
+            polygonMatrix$cornerPoint4.y = NA #if there's only observation, this is NA
+            polygonMatrix$movementDirection = NA #if there's only observation, this is NA
+            polygonMatrix$startLocation = StartLocation
+            polygonMatrix$upDownRepositionLength = UpDownRepositionLen
+            polygonMatrix$leftRightRepositionLength = LeftRightRepositionLen
+            polygonMatrix$immobThreshold = immobThreshold
+            polygonMatrix$dateTime = x$dateTime
+            polygonMatrix$dt = x$dt
+            
+            polygonMatrix$immob = NA #if there's only observation, this is NA
+            
+            
+            if(CenterPoint == TRUE){
+              polygonMatrix$centroid.x = NA #if there's only observation, this is NA
+              polygonMatrix$centroid.y = NA #if there's only observation, this is NA
+            }else{polygonMatrix <- polygonMatrix[,-c(match("centroid.x", names(polygonMatrix)),match("centroid.y", names(polygonMatrix)))]}
+            
+            if(MidPoints == TRUE){
+              polygonMatrix$midPoint1.x = NA #if there's only observation, this is NA
+              polygonMatrix$midPoint1.y = NA #if there's only observation, this is NA
+              polygonMatrix$midPoint2.x = NA #if there's only observation, this is NA
+              polygonMatrix$midPoint2.y = NA #if there's only observation, this is NA
+              polygonMatrix$midPoint3.x = NA #if there's only observation, this is NA
+              polygonMatrix$midPoint3.y = NA #if there's only observation, this is NA
+              polygonMatrix$midPoint4.x = NA #if there's only observation, this is NA
+              polygonMatrix$midPoint4.y = NA #if there's only observation, this is NA
+            }else{polygonMatrix <- polygonMatrix[,-c(match("midPoint1.x", names(polygonMatrix)),match("midPoint1.y", names(polygonMatrix)),match("midPoint2.x", names(polygonMatrix)),match("midPoint2.y", names(polygonMatrix)),match("midPoint3.x", names(polygonMatrix)),match("midPoint3.y", names(polygonMatrix)),match("midPoint4.x", names(polygonMatrix)),match("midPoint4.y", names(polygonMatrix)))]}
+            
+            
+          }
+          
+          if(length(x$eta..) > 0){
+            
+            eta <- x$eta.. #define the eta object
+
+            #simplify eta (i.e., make all observations fall between 0 and 359)
+            eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+            eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+            
+            if (StartLocation == "UL"){
+              ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+              newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+              newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the adjusted top-right-corner point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
+              newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
+            }
+            
+            if (StartLocation == "UR"){
+              ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+              newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
+              newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
+              newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+              
+            }
+            
+            if (StartLocation == "DR"){
+              ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+              newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-left corner of the polygon.
+              newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the adjusted bottom-left-corner point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+              newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
+            }
+            
+            if (StartLocation == "DL"){
+              ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+              newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+              newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
+              newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-right corner of the polygon.
+            }
+            
+            
+            polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+            colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
+            
+            polygonMatrix$id = x$id
+            polygonMatrix$cornerPoint1.x = x$x
+            polygonMatrix$cornerPoint1.y = x$y
+            polygonMatrix$cornerPoint2.x = newCoordinates1$x.adjusted
+            polygonMatrix$cornerPoint2.y = newCoordinates1$y.adjusted
+            polygonMatrix$cornerPoint3.x = newCoordinates2$x.adjusted
+            polygonMatrix$cornerPoint3.y = newCoordinates2$y.adjusted
+            polygonMatrix$cornerPoint4.x = newCoordinates3$x.adjusted
+            polygonMatrix$cornerPoint4.y = newCoordinates3$y.adjusted
+            polygonMatrix$movementDirection = eta.simplified
+            polygonMatrix$startLocation = StartLocation
+            polygonMatrix$upDownRepositionLength = UpDownRepositionLen
+            polygonMatrix$leftRightRepositionLength = LeftRightRepositionLen
+            polygonMatrix$immobThreshold = immobThreshold
+            polygonMatrix$dateTime = x$dateTime
+            polygonMatrix$dt = x$dt
+            
+            polygonMatrix$immob = NA #if there's only observation, this is NA
+            
+            
+            if(CenterPoint == TRUE){
+              polygonMatrix$centroid.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint3.x)/2)
+              polygonMatrix$centroid.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint3.y)/2)
+            }else{polygonMatrix <- polygonMatrix[,-c(match("centroid.x", names(polygonMatrix)),match("centroid.y", names(polygonMatrix)))]}
+            
+            if(MidPoints == TRUE){
+              polygonMatrix$midPoint1.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint2.x)/2)
+              polygonMatrix$midPoint1.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint2.y)/2)
+              polygonMatrix$midPoint2.x = ((polygonMatrix$cornerPoint2.x + polygonMatrix$cornerPoint3.x)/2)
+              polygonMatrix$midPoint2.y = ((polygonMatrix$cornerPoint2.y + polygonMatrix$cornerPoint3.y)/2)
+              polygonMatrix$midPoint3.x = ((polygonMatrix$cornerPoint3.x + polygonMatrix$cornerPoint4.x)/2)
+              polygonMatrix$midPoint3.y = ((polygonMatrix$cornerPoint3.y + polygonMatrix$cornerPoint4.y)/2)
+              polygonMatrix$midPoint4.x = ((polygonMatrix$cornerPoint4.x + polygonMatrix$cornerPoint1.x)/2)
+              polygonMatrix$midPoint4.y = ((polygonMatrix$cornerPoint4.y + polygonMatrix$cornerPoint1.y)/2)
+            }else{polygonMatrix <- polygonMatrix[,-c(match("midPoint1.x", names(polygonMatrix)),match("midPoint1.y", names(polygonMatrix)),match("midPoint2.x", names(polygonMatrix)),match("midPoint2.y", names(polygonMatrix)),match("midPoint3.x", names(polygonMatrix)),match("midPoint3.y", names(polygonMatrix)),match("midPoint4.x", names(polygonMatrix)),match("midPoint4.y", names(polygonMatrix)))]}
+            
+          }
+          
         }else{ #if there are at least 2 rows in x.
           
           distCoordinates = data.frame(x1 = x$x[1:(nrow(x) - 1)], y1 = x$y[1:(nrow(x) - 1)], x2 = x$x[2:nrow(x)], y2 = x$y[2:nrow(x)], stringsAsFactors = TRUE)
@@ -377,7 +501,6 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         return(polygonMatrix)
       }
       
-      
       if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors.
         x = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)
       }
@@ -507,148 +630,271 @@ referencePoint2Polygon <-function(x = NULL, id = NULL, dateTime = NULL, point.x 
         return(output)
       }
       
-      if(nrow(x) <= 1){ #there needs to be at least 2 rows in x, so that we know which direction animals are facing.
-        polygonMatrix <- NULL #if there are fewer than 2 rows, the function output is NULL
-      }else{ #if there are at least 2 rows in x.
-      
-      distCoordinates = data.frame(x1 = x$x[1:(nrow(x) - 1)], y1 = x$y[1:(nrow(x) - 1)], x2 = x$x[2:nrow(x)], y2 = x$y[2:nrow(x)], stringsAsFactors = TRUE)
-      
-      dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
-      dist = c(dist, NA) #to make dist the same length as nrow(x)
-      
-      dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
-      dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
-      
-      timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
-      
-      dt = apply(timesFrame, 1, timeDifference)
-      dt = c(dt, NA)  #to make length(dt) == nrow(x)
-      
-      idVec = unique(x$id)
-      idSeqVec = x$id
-      idVecForDtRemoval = idVec[-length(idVec)] #There's no need to remove the max point of the final id point b/c there's already an NA there.
-      for(a in idVecForDtRemoval){ #This loop removes the dt value at points describing the last point in each individual's path
-        dx[max(which(idSeqVec == a))] = NA
-        dy[max(which(idSeqVec == a))] = NA
-        dt[max(which(idSeqVec == a))] = NA
-      }
-      x$dx = dx
-      x$dy = dy
-      x$dt = dt
-      x$dist<-dist
-      
-      dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
-      
-      for(b in idVec){ #This code replaces dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
-        dataShift[min(which(idSeqVec == b)),] = NA
-      }
-      
-      #eta was defined earlier and appended to x as part of the efficiency improvement implemented on 02/20. Here we vectorize it again here, and remove the appended column in x
-      if(length(x$eta..) > 0){ #the other x inputs are required, but direction is not
+      if(nrow(x) == 1){ #there needs to be at least 2 rows in x, so that we know which direction animals are facing if direction == NULL.
         
-        eta <- x$eta..
-        x<- droplevels(x[,-match("eta..", colnames(x))])
-        
-      }else{ #if length(direction) == 0 in the master function input
-        eta <- atan2(dataShift$dy,dataShift$dx)*(180/pi) + 360 #calculate the relative angle of movements given point (x1,y1) lies on the axes' origin. Multiplying by 180/pi converts radians to degrees and adding 360 ensures positive values.
-      }
-      
-      #simplify eta (i.e., make all observations fall between 0 and 359)
-      eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
-      eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
-      
-      if (StartLocation == "UL"){
-        ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
-        newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
-        newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the adjusted top-right-corner point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
-        newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
-      }
-      
-      if (StartLocation == "UR"){
-        ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
-        newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
-        newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
-        newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
-        
-      }
-      
-      if (StartLocation == "DR"){
-        ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
-        newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-left corner of the polygon.
-        newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the adjusted bottom-left-corner point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
-        newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
-      }
-      
-      if (StartLocation == "DL"){
-        ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
-        newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
-        newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
-        #newCoordinates2 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 45, distV = repositionHypoteneuse) #repositions the adjusted bottom-right-corner point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
-        newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-right corner of the polygon.
-      }
-      
-      
-      polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
-      colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
-      
-      polygonMatrix$id = x$id
-      polygonMatrix$cornerPoint1.x = x$x
-      polygonMatrix$cornerPoint1.y = x$y
-      polygonMatrix$cornerPoint2.x = newCoordinates1$x.adjusted
-      polygonMatrix$cornerPoint2.y = newCoordinates1$y.adjusted
-      polygonMatrix$cornerPoint3.x = newCoordinates2$x.adjusted
-      polygonMatrix$cornerPoint3.y = newCoordinates2$y.adjusted
-      polygonMatrix$cornerPoint4.x = newCoordinates3$x.adjusted
-      polygonMatrix$cornerPoint4.y = newCoordinates3$y.adjusted
-      polygonMatrix$movementDirection = eta.simplified
-      polygonMatrix$startLocation = StartLocation
-      polygonMatrix$upDownRepositionLength = UpDownRepositionLen
-      polygonMatrix$leftRightRepositionLength = LeftRightRepositionLen
-      polygonMatrix$immobThreshold = immobThreshold
-      polygonMatrix$dateTime = x$dateTime
-      polygonMatrix$dt = x$dt
-      
-      polygonMatrix$immob = ifelse(dataShift$dist > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
-      
-      standlist = which(polygonMatrix$immob == 1)
-      
-      if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
-        
-        immobVec = polygonMatrix$immob
-        immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.polygon(k, locMatrix = polygonMatrix, immobVec)
-        immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
-        
-        if(nrow(immobFrame) > 0){
-          polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.x", names(polygonMatrix))] = immobFrame$replacePoint2.x
-          polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.y", names(polygonMatrix))] = immobFrame$replacePoint2.y
-          polygonMatrix[immobFrame$replaceRow,match("cornerPoint3.x", names(polygonMatrix))] = immobFrame$replacePoint3.x
-          polygonMatrix[immobFrame$replaceRow,match("cornerPoint3.y", names(polygonMatrix))] = immobFrame$replacePoint3.y
-          polygonMatrix[immobFrame$replaceRow,match("cornerPoint4.x", names(polygonMatrix))] = immobFrame$replacePoint4.x
-          polygonMatrix[immobFrame$replaceRow,match("cornerPoint4.y", names(polygonMatrix))] = immobFrame$replacePoint4.y
+        if(length(x$eta..) == 0){
+          polygonMatrix <- NULL #if there are fewer than 2 rows, the function output is NULL
+          
+          polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+          colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
+          
+          polygonMatrix$id = x$id
+          polygonMatrix$cornerPoint1.x = NA #if there's only observation, this is NA
+          polygonMatrix$cornerPoint1.y = NA #if there's only observation, this is NA
+          polygonMatrix$cornerPoint2.x = NA #if there's only observation, this is NA
+          polygonMatrix$cornerPoint2.y = NA #if there's only observation, this is NA
+          polygonMatrix$cornerPoint3.x = NA #if there's only observation, this is NA
+          polygonMatrix$cornerPoint3.y = NA #if there's only observation, this is NA
+          polygonMatrix$cornerPoint4.x = NA #if there's only observation, this is NA
+          polygonMatrix$cornerPoint4.y = NA #if there's only observation, this is NA
+          polygonMatrix$movementDirection = NA #if there's only observation, this is NA
+          polygonMatrix$startLocation = StartLocation
+          polygonMatrix$upDownRepositionLength = UpDownRepositionLen
+          polygonMatrix$leftRightRepositionLength = LeftRightRepositionLen
+          polygonMatrix$immobThreshold = immobThreshold
+          polygonMatrix$dateTime = x$dateTime
+          polygonMatrix$dt = x$dt
+          
+          polygonMatrix$immob = NA #if there's only observation, this is NA
+          
+          
+          if(CenterPoint == TRUE){
+            polygonMatrix$centroid.x = NA #if there's only observation, this is NA
+            polygonMatrix$centroid.y = NA #if there's only observation, this is NA
+          }else{polygonMatrix <- polygonMatrix[,-c(match("centroid.x", names(polygonMatrix)),match("centroid.y", names(polygonMatrix)))]}
+          
+          if(MidPoints == TRUE){
+            polygonMatrix$midPoint1.x = NA #if there's only observation, this is NA
+            polygonMatrix$midPoint1.y = NA #if there's only observation, this is NA
+            polygonMatrix$midPoint2.x = NA #if there's only observation, this is NA
+            polygonMatrix$midPoint2.y = NA #if there's only observation, this is NA
+            polygonMatrix$midPoint3.x = NA #if there's only observation, this is NA
+            polygonMatrix$midPoint3.y = NA #if there's only observation, this is NA
+            polygonMatrix$midPoint4.x = NA #if there's only observation, this is NA
+            polygonMatrix$midPoint4.y = NA #if there's only observation, this is NA
+          }else{polygonMatrix <- polygonMatrix[,-c(match("midPoint1.x", names(polygonMatrix)),match("midPoint1.y", names(polygonMatrix)),match("midPoint2.x", names(polygonMatrix)),match("midPoint2.y", names(polygonMatrix)),match("midPoint3.x", names(polygonMatrix)),match("midPoint3.y", names(polygonMatrix)),match("midPoint4.x", names(polygonMatrix)),match("midPoint4.y", names(polygonMatrix)))]}
+          
+          
         }
-      }
-      
-      if(CenterPoint == TRUE){
-        polygonMatrix$centroid.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint3.x)/2)
-        polygonMatrix$centroid.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint3.y)/2)
-      }else{polygonMatrix <- polygonMatrix[,-c(match("centroid.x", names(polygonMatrix)),match("centroid.y", names(polygonMatrix)))]}
-      
-      if(MidPoints == TRUE){
-        polygonMatrix$midPoint1.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint2.x)/2)
-        polygonMatrix$midPoint1.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint2.y)/2)
-        polygonMatrix$midPoint2.x = ((polygonMatrix$cornerPoint2.x + polygonMatrix$cornerPoint3.x)/2)
-        polygonMatrix$midPoint2.y = ((polygonMatrix$cornerPoint2.y + polygonMatrix$cornerPoint3.y)/2)
-        polygonMatrix$midPoint3.x = ((polygonMatrix$cornerPoint3.x + polygonMatrix$cornerPoint4.x)/2)
-        polygonMatrix$midPoint3.y = ((polygonMatrix$cornerPoint3.y + polygonMatrix$cornerPoint4.y)/2)
-        polygonMatrix$midPoint4.x = ((polygonMatrix$cornerPoint4.x + polygonMatrix$cornerPoint1.x)/2)
-        polygonMatrix$midPoint4.y = ((polygonMatrix$cornerPoint4.y + polygonMatrix$cornerPoint1.y)/2)
-      }else{polygonMatrix <- polygonMatrix[,-c(match("midPoint1.x", names(polygonMatrix)),match("midPoint1.y", names(polygonMatrix)),match("midPoint2.x", names(polygonMatrix)),match("midPoint2.y", names(polygonMatrix)),match("midPoint3.x", names(polygonMatrix)),match("midPoint3.y", names(polygonMatrix)),match("midPoint4.x", names(polygonMatrix)),match("midPoint4.y", names(polygonMatrix)))]}
-      
+        
+        if(length(x$eta..) > 0){
+          
+          eta <- x$eta.. #define the eta object
+          
+          #simplify eta (i.e., make all observations fall between 0 and 359)
+          eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+          eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+          
+          if (StartLocation == "UL"){
+            ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+            newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+            newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the adjusted top-right-corner point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
+            newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
+          }
+          
+          if (StartLocation == "UR"){
+            ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+            newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
+            newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
+            newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+            
+          }
+          
+          if (StartLocation == "DR"){
+            ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+            newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-left corner of the polygon.
+            newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the adjusted bottom-left-corner point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+            newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
+          }
+          
+          if (StartLocation == "DL"){
+            ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+            newCoordinates1 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+            newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
+            newCoordinates3 <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-right corner of the polygon.
+          }
+          
+          
+          polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+          colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
+          
+          polygonMatrix$id = x$id
+          polygonMatrix$cornerPoint1.x = x$x
+          polygonMatrix$cornerPoint1.y = x$y
+          polygonMatrix$cornerPoint2.x = newCoordinates1$x.adjusted
+          polygonMatrix$cornerPoint2.y = newCoordinates1$y.adjusted
+          polygonMatrix$cornerPoint3.x = newCoordinates2$x.adjusted
+          polygonMatrix$cornerPoint3.y = newCoordinates2$y.adjusted
+          polygonMatrix$cornerPoint4.x = newCoordinates3$x.adjusted
+          polygonMatrix$cornerPoint4.y = newCoordinates3$y.adjusted
+          polygonMatrix$movementDirection = eta.simplified
+          polygonMatrix$startLocation = StartLocation
+          polygonMatrix$upDownRepositionLength = UpDownRepositionLen
+          polygonMatrix$leftRightRepositionLength = LeftRightRepositionLen
+          polygonMatrix$immobThreshold = immobThreshold
+          polygonMatrix$dateTime = x$dateTime
+          polygonMatrix$dt = x$dt
+          
+          polygonMatrix$immob = NA #if there's only observation, this is NA
+          
+          
+          if(CenterPoint == TRUE){
+            polygonMatrix$centroid.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint3.x)/2)
+            polygonMatrix$centroid.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint3.y)/2)
+          }else{polygonMatrix <- polygonMatrix[,-c(match("centroid.x", names(polygonMatrix)),match("centroid.y", names(polygonMatrix)))]}
+          
+          if(MidPoints == TRUE){
+            polygonMatrix$midPoint1.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint2.x)/2)
+            polygonMatrix$midPoint1.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint2.y)/2)
+            polygonMatrix$midPoint2.x = ((polygonMatrix$cornerPoint2.x + polygonMatrix$cornerPoint3.x)/2)
+            polygonMatrix$midPoint2.y = ((polygonMatrix$cornerPoint2.y + polygonMatrix$cornerPoint3.y)/2)
+            polygonMatrix$midPoint3.x = ((polygonMatrix$cornerPoint3.x + polygonMatrix$cornerPoint4.x)/2)
+            polygonMatrix$midPoint3.y = ((polygonMatrix$cornerPoint3.y + polygonMatrix$cornerPoint4.y)/2)
+            polygonMatrix$midPoint4.x = ((polygonMatrix$cornerPoint4.x + polygonMatrix$cornerPoint1.x)/2)
+            polygonMatrix$midPoint4.y = ((polygonMatrix$cornerPoint4.y + polygonMatrix$cornerPoint1.y)/2)
+          }else{polygonMatrix <- polygonMatrix[,-c(match("midPoint1.x", names(polygonMatrix)),match("midPoint1.y", names(polygonMatrix)),match("midPoint2.x", names(polygonMatrix)),match("midPoint2.y", names(polygonMatrix)),match("midPoint3.x", names(polygonMatrix)),match("midPoint3.y", names(polygonMatrix)),match("midPoint4.x", names(polygonMatrix)),match("midPoint4.y", names(polygonMatrix)))]}
+          
+        }
+        
+      }else{ #if there are at least 2 rows in x.
+        
+        distCoordinates = data.frame(x1 = x$x[1:(nrow(x) - 1)], y1 = x$y[1:(nrow(x) - 1)], x2 = x$x[2:nrow(x)], y2 = x$y[2:nrow(x)], stringsAsFactors = TRUE)
+        
+        dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
+        dist = c(dist, NA) #to make dist the same length as nrow(x)
+        
+        dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
+        dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
+        
+        timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
+        
+        dt = apply(timesFrame, 1, timeDifference)
+        dt = c(dt, NA)  #to make length(dt) == nrow(x)
+        
+        idVec = unique(x$id)
+        idSeqVec = x$id
+        idVecForDtRemoval = idVec[-length(idVec)] #There's no need to remove the max point of the final id point b/c there's already an NA there.
+        for(a in idVecForDtRemoval){ #This loop removes the dt value at points describing the last point in each individual's path
+          dx[max(which(idSeqVec == a))] = NA
+          dy[max(which(idSeqVec == a))] = NA
+          dt[max(which(idSeqVec == a))] = NA
+        }
+        x$dx = dx
+        x$dy = dy
+        x$dt = dt
+        x$dist<-dist
+        
+        dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+        
+        for(b in idVec){ #This code replaces dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
+          dataShift[min(which(idSeqVec == b)),] = NA
+        }
+        
+        #eta was defined earlier and appended to x as part of the efficiency improvement implemented on 02/20. Here we vectorize it again here, and remove the appended column in x
+        if(length(x$eta..) > 0){ #the other x inputs are required, but direction is not
+          
+          eta <- x$eta..
+          x<- droplevels(x[,-match("eta..", colnames(x))])
+          
+        }else{ #if length(direction) == 0 in the master function input
+          eta <- atan2(dataShift$dy,dataShift$dx)*(180/pi) + 360 #calculate the relative angle of movements given point (x1,y1) lies on the axes' origin. Multiplying by 180/pi converts radians to degrees and adding 360 ensures positive values.
+        }
+        
+        #simplify eta (i.e., make all observations fall between 0 and 359)
+        eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+        eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+        
+        if (StartLocation == "UL"){
+          ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+          newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+          newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the adjusted top-right-corner point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
+          newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
+        }
+        
+        if (StartLocation == "UR"){
+          ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+          newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 270, distV = UpDownRepositionLen) #repositions the empirical point directly to the South (i.e., down) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-right corner of the polygon.
+          newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the Bottom-left corner of the polygon.
+          newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+          
+        }
+        
+        if (StartLocation == "DR"){
+          ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+          newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 180, distV = LeftRightRepositionLen) #repositions the empirical point directly to the West (i.e., left) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-left corner of the polygon.
+          newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the adjusted bottom-left-corner point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+          newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
+        }
+        
+        if (StartLocation == "DL"){
+          ##newCoordinates here calculate the other 3 corners of the polygon (the original xy coordinates are always going to be the first corner point)
+          newCoordinates1 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 90, distV = UpDownRepositionLen) #repositions the empirical point directly to the North (i.e., up) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-left corner of the polygon.
+          newCoordinates2 <-translate(x = newCoordinates1$x.adjusted, y = newCoordinates1$y.adjusted, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the adjusted bottom-right-corner point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
+          #newCoordinates2 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 45, distV = repositionHypoteneuse) #repositions the adjusted bottom-right-corner point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the upper-right corner of the polygon.
+          newCoordinates3 <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = 0, distV = LeftRightRepositionLen) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the bottom-right corner of the polygon.
+        }
+        
+        
+        polygonMatrix = data.frame(matrix(nrow = nrow(x), ncol = 27), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+        colnames(polygonMatrix) = c("id","cornerPoint1.x","cornerPoint1.y","midPoint1.x","midPoint1.y","cornerPoint2.x","cornerPoint2.y","midPoint2.x","midPoint2.y","cornerPoint3.x","cornerPoint3.y","midPoint3.x","midPoint3.y","cornerPoint4.x","cornerPoint4.y","midPoint4.x","midPoint4.y","centroid.x","centroid.y","startLocation","movementDirection","upDownRepositionLength","leftRightRepositionLength","immob","immobThreshold", "dateTime","dt")
+        
+        polygonMatrix$id = x$id
+        polygonMatrix$cornerPoint1.x = x$x
+        polygonMatrix$cornerPoint1.y = x$y
+        polygonMatrix$cornerPoint2.x = newCoordinates1$x.adjusted
+        polygonMatrix$cornerPoint2.y = newCoordinates1$y.adjusted
+        polygonMatrix$cornerPoint3.x = newCoordinates2$x.adjusted
+        polygonMatrix$cornerPoint3.y = newCoordinates2$y.adjusted
+        polygonMatrix$cornerPoint4.x = newCoordinates3$x.adjusted
+        polygonMatrix$cornerPoint4.y = newCoordinates3$y.adjusted
+        polygonMatrix$movementDirection = eta.simplified
+        polygonMatrix$startLocation = StartLocation
+        polygonMatrix$upDownRepositionLength = UpDownRepositionLen
+        polygonMatrix$leftRightRepositionLength = LeftRightRepositionLen
+        polygonMatrix$immobThreshold = immobThreshold
+        polygonMatrix$dateTime = x$dateTime
+        polygonMatrix$dt = x$dt
+        
+        polygonMatrix$immob = ifelse(dataShift$dist > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
+        
+        standlist = which(polygonMatrix$immob == 1)
+        
+        if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
+          
+          immobVec = polygonMatrix$immob
+          immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.polygon(k, locMatrix = polygonMatrix, immobVec)
+          immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
+          
+          if(nrow(immobFrame) > 0){
+            polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.x", names(polygonMatrix))] = immobFrame$replacePoint2.x
+            polygonMatrix[immobFrame$replaceRow,match("cornerPoint2.y", names(polygonMatrix))] = immobFrame$replacePoint2.y
+            polygonMatrix[immobFrame$replaceRow,match("cornerPoint3.x", names(polygonMatrix))] = immobFrame$replacePoint3.x
+            polygonMatrix[immobFrame$replaceRow,match("cornerPoint3.y", names(polygonMatrix))] = immobFrame$replacePoint3.y
+            polygonMatrix[immobFrame$replaceRow,match("cornerPoint4.x", names(polygonMatrix))] = immobFrame$replacePoint4.x
+            polygonMatrix[immobFrame$replaceRow,match("cornerPoint4.y", names(polygonMatrix))] = immobFrame$replacePoint4.y
+          }
+        }
+        
+        if(CenterPoint == TRUE){
+          polygonMatrix$centroid.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint3.x)/2)
+          polygonMatrix$centroid.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint3.y)/2)
+        }else{polygonMatrix <- polygonMatrix[,-c(match("centroid.x", names(polygonMatrix)),match("centroid.y", names(polygonMatrix)))]}
+        
+        if(MidPoints == TRUE){
+          polygonMatrix$midPoint1.x = ((polygonMatrix$cornerPoint1.x + polygonMatrix$cornerPoint2.x)/2)
+          polygonMatrix$midPoint1.y = ((polygonMatrix$cornerPoint1.y + polygonMatrix$cornerPoint2.y)/2)
+          polygonMatrix$midPoint2.x = ((polygonMatrix$cornerPoint2.x + polygonMatrix$cornerPoint3.x)/2)
+          polygonMatrix$midPoint2.y = ((polygonMatrix$cornerPoint2.y + polygonMatrix$cornerPoint3.y)/2)
+          polygonMatrix$midPoint3.x = ((polygonMatrix$cornerPoint3.x + polygonMatrix$cornerPoint4.x)/2)
+          polygonMatrix$midPoint3.y = ((polygonMatrix$cornerPoint3.y + polygonMatrix$cornerPoint4.y)/2)
+          polygonMatrix$midPoint4.x = ((polygonMatrix$cornerPoint4.x + polygonMatrix$cornerPoint1.x)/2)
+          polygonMatrix$midPoint4.y = ((polygonMatrix$cornerPoint4.y + polygonMatrix$cornerPoint1.y)/2)
+        }else{polygonMatrix <- polygonMatrix[,-c(match("midPoint1.x", names(polygonMatrix)),match("midPoint1.y", names(polygonMatrix)),match("midPoint2.x", names(polygonMatrix)),match("midPoint2.y", names(polygonMatrix)),match("midPoint3.x", names(polygonMatrix)),match("midPoint3.y", names(polygonMatrix)),match("midPoint4.x", names(polygonMatrix)),match("midPoint4.y", names(polygonMatrix)))]}
+        
       }
       
       return(polygonMatrix)
     }
-    
     
     if(length(x) == 0){ #This if statement allows users to input either a series of vectors (id, dateTime, point.x and point.y), a dataframe with columns named the same, or a combination of dataframe and vectors.
       x = data.frame(id = id, x = point.x, y = point.y, dateTime = dateTime, stringsAsFactors = TRUE)

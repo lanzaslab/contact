@@ -164,10 +164,10 @@
 #' @examples
 #' \donttest{
 #' data("calves")
-#' calves.dateTime<-contact::datetime.append(calves, date = calves$date, 
+#' calves.dateTime<-datetime.append(calves, date = calves$date, 
 #'    time = calves$time) #create a dataframe with dateTime identifiers for location fixes.
 #' 
-#' calves.agg<-contact::tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
+#' calves.agg<-tempAggregate(calves.dateTime, id = calves.dateTime$calftag, 
 #'    dateTime = calves.dateTime$dateTime, point.x = calves.dateTime$x, 
 #'    point.y = calves.dateTime$y, secondAgg = 300, extrapolate.left = FALSE, 
 #'    extrapolate.right = FALSE, resolutionLevel = "reduced", parallel = FALSE, 
@@ -232,8 +232,59 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
           return(dt)
         }
         
-        if(nrow(x) <= 1){#there needs to be at least 2 rows in x, so that we know which direction animals are facing.
-          RepositionMatrix <- NULL #if there are fewer than 2 rows, the function output is NULL
+        if(nrow(x) == 1){#there needs to be at least 2 rows in x, so that we know which direction animals are facing (if eta wasn't pre-defined).
+          
+          if(length(x$eta..) == 0){ #if eta is not pre-defined, we cannot reposition points in a data set of length 1
+            
+            RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+            colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
+            RepositionMatrix$id = x$id
+            RepositionMatrix$x.original = x$x
+            RepositionMatrix$y.original = x$y
+            RepositionMatrix$dist.original = NA #if there's only 1 data point, this is just NA  
+            RepositionMatrix$dx.original = NA #if there's only 1 data point, this is just NA  
+            RepositionMatrix$dy.original = NA #if there's only 1 data point, this is just NA  
+            RepositionMatrix$movementDirection = NA #if there's only 1 data point, this is just NA  
+            RepositionMatrix$repositionAngle = repositionAngle
+            RepositionMatrix$repositionDist = repositionDist
+            RepositionMatrix$immobThreshold = immobThreshold
+            RepositionMatrix$dateTime = x$dateTime
+            RepositionMatrix$dt = NA #if there's only 1 data point, this is just NA  
+            RepositionMatrix$x.adjusted = NA #if there's only 1 data point, this is just NA  
+            RepositionMatrix$y.adjusted = NA #if there's only 1 data point, this is just NA  
+            RepositionMatrix$immob = NA #if there's only 1 data point, this is just NA        
+          }
+          
+          if(length(x$eta..) > 0){
+            
+            eta <- x$eta.. #define the eta object
+            #simplify eta (i.e., make all observations fall between 0 and 359)
+            eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+            eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+            
+            #translate the empirical coordinates to create the new ones
+            newCoordinates <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+            
+            RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+            colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
+            RepositionMatrix$id = x$id
+            RepositionMatrix$x.original = x$x
+            RepositionMatrix$y.original = x$y
+            RepositionMatrix$dist.original = x$dist
+            RepositionMatrix$dx.original = x$dx
+            RepositionMatrix$dy.original = x$dy
+            RepositionMatrix$movementDirection = eta.simplified
+            RepositionMatrix$repositionAngle = repositionAngle
+            RepositionMatrix$repositionDist = repositionDist
+            RepositionMatrix$immobThreshold = immobThreshold
+            RepositionMatrix$dateTime = x$dateTime
+            RepositionMatrix$dt = x$dt
+            RepositionMatrix$x.adjusted = newCoordinates$x.adjusted
+            RepositionMatrix$y.adjusted = newCoordinates$y.adjusted
+            RepositionMatrix$immob = NA #if there's only 1 data point, this is just NA
+            
+          }
+          
         }else{ #if there are at least 2 rows in x.
           
           distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)], stringsAsFactors = TRUE)
@@ -454,101 +505,152 @@ repositionReferencePoint <- function(x = NULL, id = NULL, dateTime = NULL, point
         return(dt)
       }
       
-      if(nrow(x) <= 1){#there needs to be at least 2 rows in x, so that we know which direction animals are facing.
-        RepositionMatrix <- NULL #if there are fewer than 2 rows, the function output is NULL
-      }else{ #if there are at least 2 rows in x.
-      
-      distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)], stringsAsFactors = TRUE)
-
-      dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
-      dist = c(dist, NA) #to make dist the same length as nrow(x)
-      
-      dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
-      dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
-      
-      timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
-
-      dt = apply(timesFrame, 1, timeDifference)
-      dt = c(dt, NA) #to make dt the same length as nrow(x)
-
-      idVec = unique(x$id) ; idSeqVec = x$id; idVecForDtRemoval = idVec[-length(idVec)] #There's no need to remove the max point of the final id point b/c there's already an NA there.
-      for(a in idVecForDtRemoval){ #This loop removes the dt value at points describing the last point in each individual's path
-        dx[max(which(idSeqVec == a))] = NA
-        dy[max(which(idSeqVec == a))] = NA
-        dist[max(which(idSeqVec == a))] = NA
-        dt[max(which(idSeqVec == a))] = NA
-      }
-      x$dx = dx
-      x$dy = dy
-      x$dist = dist
-      x$dt = dt
-      
-      dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
-      for(b in idVec){ #This code replaces dist, dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
-        dataShift[min(which(idSeqVec == b)),] = NA
-      }
-  
-      #eta was defined earlier and appended to x as part of the efficiency improvement implemented on 02/20. Here we vectorize it again here, and remove the appended column in x
-      if(length(x$eta..) > 0){ #the other x inputs are required, but direction is not
+      if(nrow(x) == 1){#there needs to be at least 2 rows in x, so that we know which direction animals are facing (if eta wasn't pre-defined).
         
-        eta <- x$eta..
-        x<- droplevels(x[,-match("eta..", colnames(x))])
+        if(length(x$eta..) == 0){ #if eta is not pre-defined, we cannot reposition points in a data set of length 1
+          
+          RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+          colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
+          RepositionMatrix$id = x$id
+          RepositionMatrix$x.original = x$x
+          RepositionMatrix$y.original = x$y
+          RepositionMatrix$dist.original = NA #if there's only 1 data point, this is just NA  
+          RepositionMatrix$dx.original = NA #if there's only 1 data point, this is just NA  
+          RepositionMatrix$dy.original = NA #if there's only 1 data point, this is just NA  
+          RepositionMatrix$movementDirection = NA #if there's only 1 data point, this is just NA  
+          RepositionMatrix$repositionAngle = repositionAngle
+          RepositionMatrix$repositionDist = repositionDist
+          RepositionMatrix$immobThreshold = immobThreshold
+          RepositionMatrix$dateTime = x$dateTime
+          RepositionMatrix$dt = NA #if there's only 1 data point, this is just NA  
+          RepositionMatrix$x.adjusted = NA #if there's only 1 data point, this is just NA  
+          RepositionMatrix$y.adjusted = NA #if there's only 1 data point, this is just NA  
+          RepositionMatrix$immob = NA #if there's only 1 data point, this is just NA        
+          }
         
-      }else{ #if length(direction) == 0 in the master function input
-        eta <- atan2(dataShift$dy,dataShift$dx)*(180/pi) + 360 #calculate the relative angle of movements given point (x1,y1) lies on the axes' origin. Multiplying by 180/pi converts radians to degrees and adding 360 ensures positive values.
-      }
-      
-      #simplify eta (i.e., make all observations fall between 0 and 359)
-      eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
-      eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
-      
-      #translate the empirical coordinates to create the new ones
-      newCoordinates <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
-      
-      RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
-      colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
-      RepositionMatrix$id = x$id
-      RepositionMatrix$x.original = x$x
-      RepositionMatrix$y.original = x$y
-      RepositionMatrix$dist.original = x$dist
-      RepositionMatrix$dx.original = x$dx
-      RepositionMatrix$dy.original = x$dy
-      RepositionMatrix$movementDirection = eta.simplified
-      RepositionMatrix$repositionAngle = repositionAngle
-      RepositionMatrix$repositionDist = repositionDist
-      RepositionMatrix$immobThreshold = immobThreshold
-      RepositionMatrix$dateTime = x$dateTime
-      RepositionMatrix$dt = x$dt
-      RepositionMatrix$x.adjusted = newCoordinates$x.adjusted
-      RepositionMatrix$y.adjusted = newCoordinates$y.adjusted
-      RepositionMatrix$immob = ifelse(dataShift$dist > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
-      
-      standlist = which(RepositionMatrix$immob == 1)
-      
-      if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
-        
-        immobVec = RepositionMatrix$immob
-        immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.point(k, locMatrix = RepositionMatrix, immobVec)
-        immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
-        
-        if(nrow(immobFrame) > 0){
-          RepositionMatrix[immobFrame$replaceRow,match("x.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.x
-          RepositionMatrix[immobFrame$replaceRow,match("y.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.y
+        if(length(x$eta..) > 0){
+          
+          eta <- x$eta.. #define the eta object
+          #simplify eta (i.e., make all observations fall between 0 and 359)
+          eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+          eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+          
+          #translate the empirical coordinates to create the new ones
+          newCoordinates <-translate(x = x$x, y = x$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+          
+          RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+          colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
+          RepositionMatrix$id = x$id
+          RepositionMatrix$x.original = x$x
+          RepositionMatrix$y.original = x$y
+          RepositionMatrix$dist.original = x$dist
+          RepositionMatrix$dx.original = x$dx
+          RepositionMatrix$dy.original = x$dy
+          RepositionMatrix$movementDirection = eta.simplified
+          RepositionMatrix$repositionAngle = repositionAngle
+          RepositionMatrix$repositionDist = repositionDist
+          RepositionMatrix$immobThreshold = immobThreshold
+          RepositionMatrix$dateTime = x$dateTime
+          RepositionMatrix$dt = x$dt
+          RepositionMatrix$x.adjusted = newCoordinates$x.adjusted
+          RepositionMatrix$y.adjusted = newCoordinates$y.adjusted
+          RepositionMatrix$immob = NA #if there's only 1 data point, this is just NA
+          
         }
+        
+      }else{ #if there are at least 2 rows in x.
+        
+        distCoordinates = data.frame(x$x[1:(nrow(x) - 1)], x$y[1:(nrow(x) - 1)], x$x[2:nrow(x)], x$y[2:nrow(x)], stringsAsFactors = TRUE)
+        
+        dist = apply(distCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
+        dist = c(dist, NA) #to make dist the same length as nrow(x)
+        
+        dx = c((distCoordinates[,3] - distCoordinates[,1]),NA) #calculate differences in x (x2 - x1) and put an NA at the end to ensure it is of equal length to the input data
+        dy = c((distCoordinates[,4] - distCoordinates[,2]),NA) #calculate differences in y (y2 - y1) and put an NA at the end to ensure it is of equal length to the input data
+        
+        timesFrame = data.frame(x$dateTime[1:(nrow(x) - 1)], x$dateTime[2:nrow(x)], stringsAsFactors = TRUE)
+        
+        dt = apply(timesFrame, 1, timeDifference)
+        dt = c(dt, NA) #to make dt the same length as nrow(x)
+        
+        idVec = unique(x$id) ; idSeqVec = x$id; idVecForDtRemoval = idVec[-length(idVec)] #There's no need to remove the max point of the final id point b/c there's already an NA there.
+        for(a in idVecForDtRemoval){ #This loop removes the dt value at points describing the last point in each individual's path
+          dx[max(which(idSeqVec == a))] = NA
+          dy[max(which(idSeqVec == a))] = NA
+          dist[max(which(idSeqVec == a))] = NA
+          dt[max(which(idSeqVec == a))] = NA
+        }
+        x$dx = dx
+        x$dy = dy
+        x$dist = dist
+        x$dt = dt
+        
+        dataShift = data.frame(x = x$x, y = x$y, dx = c(NA,x$dx[1:(nrow(x) - 1)]), dy = c(NA,x$dy[1:(nrow(x) - 1)]), dist = c(NA,x$dist[1:(nrow(x) - 1)]), stringsAsFactors = TRUE) #This is necessary because of the way we calculated/listed these values above. These columns (dist, dx, and dt) refer to the changes a point must make to reach the subsequent point. However, later on in this function, we are not interested in future point alterations. Rather, we need to know how tracked individuals moved during the preceding time step to reach their current point (to determine directionality of movement) #Note that this code shifts values down, but remember that beacuse values are downshifted, the first observation for each id individual will be incorrect. Code below addresses this issue.
+        for(b in idVec){ #This code replaces dist, dx, and dy values in the row when a new individual (id) is first observed with NAs to fix the problem noted above. #Note that this loop assumes that the data is sorted by id (i.e., a given id will not repeat in the dataset, after a new id has appeared)
+          dataShift[min(which(idSeqVec == b)),] = NA
+        }
+        
+        #eta was defined earlier and appended to x as part of the efficiency improvement implemented on 02/20. Here we vectorize it again here, and remove the appended column in x
+        if(length(x$eta..) > 0){ #the other x inputs are required, but direction is not
+          
+          eta <- x$eta..
+          x<- droplevels(x[,-match("eta..", colnames(x))])
+          
+        }else{ #if length(direction) == 0 in the master function input
+          eta <- atan2(dataShift$dy,dataShift$dx)*(180/pi) + 360 #calculate the relative angle of movements given point (x1,y1) lies on the axes' origin. Multiplying by 180/pi converts radians to degrees and adding 360 ensures positive values.
+        }
+        
+        #simplify eta (i.e., make all observations fall between 0 and 359)
+        eta360s <- floor(eta/360) # determine how many times individuals turn in complete circles
+        eta.simplified <- eta - (eta360s*360) #this reduces direction values to between 0 and 359
+        
+        #translate the empirical coordinates to create the new ones
+        newCoordinates <-translate(x = dataShift$x, y = dataShift$y, eta = eta.simplified, etaStar = modelOrientation, theta = repositionAngle, distV = repositionDist) #repositions the empirical point directly to the East (i.e., right) in a planar model oriented to 90-degrees (i.e., etaStar == 90). Forms the top-right corner of the polygon.
+        
+        RepositionMatrix <- data.frame(matrix(nrow = nrow(x), ncol = (18)), stringsAsFactors = TRUE) #One row for each observation, Columns listed below
+        colnames(RepositionMatrix) <- c("id","x.original","y.original","dist.original", "dx.original", "dy.original","x.adjusted","y.adjusted", "dist.adjusted", "dx.adjusted", "dy.adjusted","movementDirection","repositionAngle","repositionDist","immob","immobThreshold", "dateTime","dt")
+        RepositionMatrix$id = x$id
+        RepositionMatrix$x.original = x$x
+        RepositionMatrix$y.original = x$y
+        RepositionMatrix$dist.original = x$dist
+        RepositionMatrix$dx.original = x$dx
+        RepositionMatrix$dy.original = x$dy
+        RepositionMatrix$movementDirection = eta.simplified
+        RepositionMatrix$repositionAngle = repositionAngle
+        RepositionMatrix$repositionDist = repositionDist
+        RepositionMatrix$immobThreshold = immobThreshold
+        RepositionMatrix$dateTime = x$dateTime
+        RepositionMatrix$dt = x$dt
+        RepositionMatrix$x.adjusted = newCoordinates$x.adjusted
+        RepositionMatrix$y.adjusted = newCoordinates$y.adjusted
+        RepositionMatrix$immob = ifelse(dataShift$dist > immobThreshold, 0, 1) #if the distance individuals moved was less than / equal to the noted immobThreshold, individuals are said to be "immob," and their position will not change relative to their previous one. (i.e., you assume that any observed movement less than immobThreshold was due to errors or miniscule bodily movements (e.g., head shaking) that are not indicative of actual movement.)
+        
+        standlist = which(RepositionMatrix$immob == 1)
+        
+        if ((length(standlist) >= 1)){ #To save processing time and reduce chances of errors, this evaluation will not take place if there is only one observation.
+          
+          immobVec = RepositionMatrix$immob
+          immob.list <- foreach::foreach(k = standlist) %do% immobAdjustment.point(k, locMatrix = RepositionMatrix, immobVec)
+          immobFrame <- data.frame(data.table::rbindlist(immob.list), stringsAsFactors = TRUE)
+          
+          if(nrow(immobFrame) > 0){
+            RepositionMatrix[immobFrame$replaceRow,match("x.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.x
+            RepositionMatrix[immobFrame$replaceRow,match("y.adjusted", colnames(RepositionMatrix))] = immobFrame$replacePoint.y
+          }
+        }
+        
+        newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)], stringsAsFactors = TRUE)
+        
+        newDist = apply(newDistCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
+        newDist = c(newDist, NA)
+        
+        RepositionMatrix$dist.adjusted = newDist
+        
+        newdx = c((newDistCoordinates[,3] - newDistCoordinates[,1]),NA)
+        newdy = c((newDistCoordinates[,4] - newDistCoordinates[,2]),NA)
+        RepositionMatrix$dx.adjusted = newdx
+        RepositionMatrix$dy.adjusted = newdy
       }
-      
-      newDistCoordinates = data.frame(RepositionMatrix$x.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$y.adjusted[1:(nrow(RepositionMatrix) - 1)], RepositionMatrix$x.adjusted[2:nrow(RepositionMatrix)], RepositionMatrix$y.adjusted[2:nrow(RepositionMatrix)], stringsAsFactors = TRUE)
-      
-      newDist = apply(newDistCoordinates,1,euc) #This calculates the new distance between adjusted xy coordinates. Reported distances are distances an individual at a given point must travel to reach the subsequent point. Because there is no previous point following the final observation in the dataset, the distance observation at RepositionMatrix[nrow(RepositionMatrix),] is always going to be NA
-      newDist = c(newDist, NA)
-      
-      RepositionMatrix$dist.adjusted = newDist
-      
-      newdx = c((newDistCoordinates[,3] - newDistCoordinates[,1]),NA)
-      newdy = c((newDistCoordinates[,4] - newDistCoordinates[,2]),NA)
-      RepositionMatrix$dx.adjusted = newdx
-      RepositionMatrix$dy.adjusted = newdy
-    }
       return(RepositionMatrix)
     }
     
