@@ -282,11 +282,6 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
         return(dist.all)
       }
       
-      date_hourSub.func<-function(x, data){ #added 02/20/2020 #This function will be used to break down data sets into hourly time blocks prior to further processing to increase speed. Admittedly, this is not a pretty fix for increasing efficiency of processing large data sets, but it's a working fix nonetheless. 
-        date_hour <- droplevels(data[which(data$date_hour == unname(unlist(x[1]))),]) #subset data
-        return(date_hour)
-      }
-      
       day_listDistance <- function(x, data.list,y, x.id, y.id, dateTime, point.x, point.y, poly.xy, parallel, dataType, lonlat, numVertices, nCores){ #Because this function slows down when trying to process large data frames AND large list sets, we must concattenate both here. We did so to the former by breaking the data frame into hourly lists, and the latter by breaking these lists into daily subsets with this function.
         
         #browser()
@@ -471,7 +466,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
       if(length(date_hour.vec) == 1){ #the processing step requires a list of data frames. If there's only a single hour represented in originTab, we can just create the list using the "list" function
         data.list <- list(originTab)
       }else{
-        data.list <- foreach::foreach(i = date_hour.vec) %do% date_hourSub.func(i, originTab)
+        data.list <- split(originTab, originTab$date_hour) #split originTab by date_hour values
       }
       
       names(data.list)<-date_hour.vec #add names to list to pull for date lists below
