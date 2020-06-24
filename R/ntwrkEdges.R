@@ -388,12 +388,12 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       }
       out.frame<-data.frame(from = x2.id, to = x3.id, stringsAsFactors = TRUE) #must be made into a data frame to avoid the "listCoercing LHS to a list" warning.
       y.ContactNames<-c(NA,NA,NA,substring((names(y[grep("contactDuration_", names(y))])),22)) #The three NAs represent the first 3 columns in y, which are irrelevent for our needs.
-      duration <- unname(unlist(y[which(y$id == x2.id), which(y.ContactNames == x3.id)]))
+      duration <- unname(unlist(y[which(y$id == x2.id & y$block == unname(unlist(x[1]))), which(y.ContactNames == x3.id)]))
       duration.corrected<-ifelse(duration > 0, duration, NA) 
       out.frame$durations<-duration.corrected #this is the total number of durations individuals were observed in contact with others
       out.frame$block <- unname(unlist(x[1])) #add block information
-      out.frame$block.start <- unname(unlist(x[4]))
-      out.frame$block.end <- unname(unlist(x[5]))
+      out.frame$block.start <- unname(unlist(as.character(x[4])))
+      out.frame$block.end <- unname(unlist(as.character(x[5])))
       return(out.frame)
     }
     contactSummary<-summarizeContacts(x, importBlocks = TRUE, parallel = par, nCores = cores) #generate a summary of the contact table using the summarizeContacts function (available in the package as a stand-alone function)
