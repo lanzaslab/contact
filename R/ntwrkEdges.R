@@ -4,7 +4,7 @@
 #'    generates a data frame showing the list of edges in the contact network.
 #' 
 #' @param x Output from the contactDur.all or contactDur.area functions. Can be
-#'    either a data frame or list.
+#'    either a data frame or list of data frames.
 #' @param importBlocks Logical. If true blocks will be carried over from x 
 #'    input, allowing for time-ordered and time-aggregated network creation. 
 #'    Defaults to FALSE.
@@ -48,7 +48,7 @@
 #'    sec.threshold=10, blocking = FALSE, equidistant.time = FALSE,
 #'    parallel = FALSE, reportParameters = TRUE) 
 #' 
-#' calves.edges1<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE,
+#' calves.edges<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE,
 #'    removeDuplicates = TRUE)  
 #' 
 #' head(calves.edges1)
@@ -63,7 +63,7 @@
 #' igraph::plot.igraph(calves.network1, vertex.label.cex=0.4,
 #'    layout = igraph::layout.circle, main = "Inter-Calf Contacts") #plot the network
 #'
-#' @import foreach
+#' @import foreach igraph
 #' @export
 
 ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel = FALSE, nCores = (parallel::detectCores()/2)){
@@ -71,12 +71,15 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
   #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
   i <- NULL
   j <- NULL
+  k <- NULL
   
   dupAction<-removeDuplicates
+  par = parallel
+  cores = nCores
   
   #write the sub-functions
   
-  summarizeContacts<- function(x, importBlocks, avg, parallel, nCores){
+  summarizeContacts<- function(x, importBlocks, avg = FALSE, parallel, nCores){
     
     #bind the following variables to the global environment so that the CRAN check doesn't flag them as potential problems
     i <- NULL
@@ -344,32 +347,79 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       return(out.frame)
     }
     contactSummary<-summarizeContacts(x, importBlocks = FALSE, parallel = par, nCores = cores) #generate a summary of the contact table using the summarizeContacts function (available in the package as a stand-alone function)
-    contactSummary.node1 <- unique(contactSummary$id)
-    contactSummary.node2 <- substring((names(contactSummary[grep("contactDuration_", names(contactSummary))])),22) #pulls out the contacted IDs
-    potential_edges <- expand.grid(contactSummary.node1, contactSummary.node2, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
-    names(potential_edges) <- c("from", "to")
     
-    if(removeDuplicates == TRUE){
-      rm_Vec<- unlist(foreach::foreach(i = unique(potential_edges$to)) %do% { #creates a vector of rows describing duplicated edges.
-        if(is.factor(i) == TRUE){ #if i is a factor, change it to a character string. This prevents it from returning an error
+    if(is.data.frame(contactSummary) == FALSE & is.list(contactSummary) == TRUE){
+    
+      if (parallel == TRUE){
+        
+        cl <- parallel::makeCluster(nCores)
+        doParallel::registerDoParallel(cl)
+        on.exit(parallel::stopCluster(cl))
+        confirmed_edges.list <- foreach::foreach(k = 1:length(contactSummary), .packages = "foreach") %dopar% {
           
-          i <- as.character(i)
+          contactSummary.frame <- contactSummary[[k]]
+          contactSummary.node1 <- unique(contactSummary.frame$id)
+          contactSummary.node2 <- substring((names(contactSummary.frame[grep("contactDuration_", names(contactSummary.frame))])),22) #pulls out the contacted IDs
+          potential_edges <- expand.grid(contactSummary.node1, contactSummary.node2, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
+          names(potential_edges) <- c("from", "to")
           
+          if(removeDuplicates == TRUE){
+            
+            potential.ntwrk <- igraph::simplify(igraph::graph_from_data_frame(potential_edges, directed = FALSE), remove.multiple = TRUE) #create a simplified network object
+            potential_edges <- igraph::as_data_frame(potential.ntwrk) #convert back to data frame
+          }
+          
+          edgelist<-apply(potential_edges,1,confirm_edges.noBlock, y=contactSummary.frame) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
+          edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
+          confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
+          rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
+          return(confirmed_edges)
         }
-        last_edge<-max(which(potential_edges$to == i)) #identifies the last observation of an edge attached to node i
-        rm<-(which(potential_edges$from[(last_edge + 1):nrow(potential_edges)] == i) + last_edge) #identifies which rows after max describe edges attached to node i
-        return(rm)
-      })
-      if(length(rm_Vec > 0)){ #this if statement ensures that no empty edgelist results from trying to remove an empty rm_Vec
-        potential_edges<- potential_edges[-rm_Vec,] #now we have our potential network edge set with no duplicate edges.
-      }
+        
+      }else{ #if parallel == FALSE
+      confirmed_edges.list <- foreach::foreach(k = 1:length(contactSummary), .packages = "foreach") %do% {
+      
+        contactSummary.frame <- contactSummary[[k]]
+        contactSummary.node1 <- unique(contactSummary.frame$id)
+        contactSummary.node2 <- substring((names(contactSummary.frame[grep("contactDuration_", names(contactSummary.frame))])),22) #pulls out the contacted IDs
+        potential_edges <- expand.grid(contactSummary.node1, contactSummary.node2, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
+        names(potential_edges) <- c("from", "to")
+    
+        if(removeDuplicates == TRUE){
+          
+          potential.ntwrk <- igraph::simplify(igraph::graph_from_data_frame(potential_edges, directed = FALSE), remove.multiple = TRUE) #create a simplified network object
+          potential_edges <- igraph::as_data_frame(potential.ntwrk) #convert back to data frame
     }
     
-    edgelist<-apply(potential_edges,1,confirm_edges.noBlock, y=contactSummary) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
-    edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
-    confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
-    rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
-    return(confirmed_edges)
+        edgelist<-apply(potential_edges,1,confirm_edges.noBlock, y=contactSummary.frame) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
+        edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
+        confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
+        rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
+        return(confirmed_edges)
+      }
+      }
+    return(confirmed_edges.list)
+    
+    }else{ #if contactSummary is not a list of data frames
+      
+      contactSummary.node1 <- unique(contactSummary$id)
+      contactSummary.node2 <- substring((names(contactSummary[grep("contactDuration_", names(contactSummary))])),22) #pulls out the contacted IDs
+      potential_edges <- expand.grid(contactSummary.node1, contactSummary.node2, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
+      names(potential_edges) <- c("from", "to")
+      
+      if(removeDuplicates == TRUE){
+        
+        potential.ntwrk <- igraph::simplify(igraph::graph_from_data_frame(potential_edges, directed = FALSE), remove.multiple = TRUE) #create a simplified network object
+        potential_edges <- igraph::as_data_frame(potential.ntwrk) #convert back to data frame
+      }
+      
+      edgelist<-apply(potential_edges,1,confirm_edges.noBlock, y=contactSummary) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
+      edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
+      confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
+      rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
+      return(confirmed_edges)
+      
+    }
   }
   edgeGenerator.Block<-function(x, removeDuplicates = dupAction, par = parallel, cores = nCores){
     
@@ -397,6 +447,94 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       return(out.frame)
     }
     contactSummary<-summarizeContacts(x, importBlocks = TRUE, parallel = par, nCores = cores) #generate a summary of the contact table using the summarizeContacts function (available in the package as a stand-alone function)
+    
+    if(is.data.frame(contactSummary) == FALSE & is.list(contactSummary) == TRUE){
+      
+      if (parallel == TRUE){
+        
+        cl <- parallel::makeCluster(nCores)
+        doParallel::registerDoParallel(cl)
+        on.exit(parallel::stopCluster(cl))
+        confirmed_edges.list <- foreach::foreach(k = 1:length(contactSummary), .packages = "foreach") %dopar% {
+          
+          contactSummary.frame <- contactSummary[[k]]
+          
+          contactSummary.node1 <- unique(contactSummary.frame$id)
+          contactSummary.node2 <- substring((names(contactSummary.frame[grep("contactDuration_", names(contactSummary.frame))])),22) #pulls out the contacted IDs
+          block_info<-data.frame(block = unique(contactSummary.frame$block), block.start = unique(contactSummary.frame$block.start), block.end = unique(contactSummary.frame$block.end), stringsAsFactors = TRUE) #pulls the block information from contactSummary
+          potential_edges1 <- expand.grid(contactSummary.node1, contactSummary.node2, block_info$block, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
+          names(potential_edges1) <- c("from", "to", "block")
+          potential_edges2<-merge(potential_edges1, block_info, by = "block") #note that this merge reorders the columns, by placing the "block" column first.
+          potential_edges2<-potential_edges2[order(as.numeric(as.character(potential_edges2$block))),] #orders rows by ascending block number.
+          
+          if(removeDuplicates == TRUE){ 
+            
+            blocks.adjusted<- foreach::foreach(j = unique(potential_edges2$block), .packages = "foreach") %do% { #creates a vector of rows describing duplicated edges.
+              
+              blockSub<- droplevels(subset(potential_edges2, block == j)) #subset the data by block
+              
+              potential.ntwrk <- igraph::simplify(igraph::graph_from_data_frame(blockSub[,c(2,3)], directed = FALSE), remove.multiple = TRUE) #create a simplified network object. Note that we exclude block info from this function (because it will return an error if included)
+              blockSub.edges <- igraph::as_data_frame(potential.ntwrk) #convert back to data frame
+              blockSub.out <- data.frame(block = unique(blockSub$block), from = blockSub.edges$from, to = blockSub.edges$to, block.start = unique(blockSub$block.start), block.end = unique(blockSub$block.end)) #append block info to the simplified data frame & ensure that columns are arranged as they were in potentialEdges2
+              return(blockSub.out) #return the blockSub.out data frame
+            }
+            
+            potential_edges2 <- data.frame(data.table::rbindlist(blocks.adjusted)) #bind the adjusted block sets together to redefine potential_edges2
+          }
+          
+          edgelist<-apply(potential_edges2,1,confirm_edges.Block, y=contactSummary.frame) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
+          edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
+          confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
+          rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
+          
+          return(confirmed_edges)
+          
+        }
+        
+        }else{ #if parallel == FALSE
+          
+          confirmed_edges.list <- foreach::foreach(k = 1:length(contactSummary), .packages = "foreach") %do% {
+            
+            contactSummary.frame <- contactSummary[[k]]
+            
+            contactSummary.node1 <- unique(contactSummary.frame$id)
+            contactSummary.node2 <- substring((names(contactSummary.frame[grep("contactDuration_", names(contactSummary.frame))])),22) #pulls out the contacted IDs
+            block_info<-data.frame(block = unique(contactSummary.frame$block), block.start = unique(contactSummary.frame$block.start), block.end = unique(contactSummary.frame$block.end), stringsAsFactors = TRUE) #pulls the block information from contactSummary
+            potential_edges1 <- expand.grid(contactSummary.node1, contactSummary.node2, block_info$block, stringsAsFactors = TRUE) #create a data frame detailing all the potential edges that may have occurred in the dataset (including loops, but loops will ultimately be removed later).
+            names(potential_edges1) <- c("from", "to", "block")
+            potential_edges2<-merge(potential_edges1, block_info, by = "block") #note that this merge reorders the columns, by placing the "block" column first.
+            potential_edges2<-potential_edges2[order(as.numeric(as.character(potential_edges2$block))),] #orders rows by ascending block number.
+            
+            if(removeDuplicates == TRUE){ 
+              
+              blocks.adjusted<- foreach::foreach(j = unique(potential_edges2$block), .packages = "foreach") %do% { #creates a vector of rows describing duplicated edges.
+                
+                blockSub<- droplevels(subset(potential_edges2, block == j)) #subset the data by block
+                
+                potential.ntwrk <- igraph::simplify(igraph::graph_from_data_frame(blockSub[,c(2,3)], directed = FALSE), remove.multiple = TRUE) #create a simplified network object. Note that we exclude block info from this function (because it will return an error if included)
+                blockSub.edges <- igraph::as_data_frame(potential.ntwrk) #convert back to data frame
+                blockSub.out <- data.frame(block = unique(blockSub$block), from = blockSub.edges$from, to = blockSub.edges$to, block.start = unique(blockSub$block.start), block.end = unique(blockSub$block.end)) #append block info to the simplified data frame & ensure that columns are arranged as they were in potentialEdges2
+                return(blockSub.out) #return the blockSub.out data frame
+              }
+              
+              potential_edges2 <- data.frame(data.table::rbindlist(blocks.adjusted)) #bind the adjusted block sets together to redefine potential_edges2
+            }
+            
+            edgelist<-apply(potential_edges2,1,confirm_edges.Block, y=contactSummary.frame) #confirm whether edges existed or not. If "durations" is NA, then no edge existed. 
+            edgeFrame<-data.frame(data.table::rbindlist(edgelist), stringsAsFactors = TRUE)
+            confirmed_edges <- edgeFrame[is.na(edgeFrame$duration) == FALSE,] #So now we have a data frame detailing the undirected edges we observed and the number of contacts associated with them. 
+            rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
+            
+            return(confirmed_edges)
+            
+          }
+          
+        }
+      
+      return(confirmed_edges.list)
+      
+    }else{ #if contactSummary is NOT a list of data frames
+      
     contactSummary.node1 <- unique(contactSummary$id)
     contactSummary.node2 <- substring((names(contactSummary[grep("contactDuration_", names(contactSummary))])),22) #pulls out the contacted IDs
     block_info<-data.frame(block = unique(contactSummary$block), block.start = unique(contactSummary$block.start), block.end = unique(contactSummary$block.end), stringsAsFactors = TRUE) #pulls the block information from contactSummary
@@ -410,19 +548,11 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
       blocks.adjusted<- foreach::foreach(j = unique(potential_edges2$block), .packages = "foreach") %do% { #creates a vector of rows describing duplicated edges.
         
         blockSub<- droplevels(subset(potential_edges2, block == j)) #subset the data by block
-        
-        rm_block<-unlist(foreach::foreach(i = unique(blockSub$to)) %do% {
           
-          last_edge<-max(which(blockSub$to == i)) #identifies the last observation of an edge attached to node i
-          rm<-(which(blockSub$from[(last_edge + 1):nrow(blockSub)] == i) + last_edge) #identifies which rows should be removed to ensure duplicates are taken out of each block
-          return(rm)
-        })
-        
-        if(length(rm_block) > 0){ #if there are any identified rows in the rm.vec, we remove them from blockSub
-          blockSub<- droplevels(blockSub[-rm_block,]) #remove duplicates
-        }
-        
-        return(blockSub) #return the blockSub data frame
+        potential.ntwrk <- igraph::simplify(igraph::graph_from_data_frame(blockSub[,c(2,3)], directed = FALSE), remove.multiple = TRUE) #create a simplified network object. Note that we exclude block info from this function (because it will return an error if included)
+        blockSub.edges <- igraph::as_data_frame(potential.ntwrk) #convert back to data frame
+        blockSub.out <- data.frame(block = unique(blockSub$block), from = blockSub.edges$from, to = blockSub.edges$to, block.start = unique(blockSub$block.start), block.end = unique(blockSub$block.end)) #append block info to the simplified data frame & ensure that columns are arranged as they were in potentialEdges2
+        return(blockSub.out) #return the blockSub.out data frame
       }
       
       potential_edges2 <- data.frame(data.table::rbindlist(blocks.adjusted)) #bind the adjusted block sets together to redefine potential_edges2
@@ -434,6 +564,7 @@ ntwrkEdges<-function(x, importBlocks = FALSE, removeDuplicates = TRUE, parallel 
     rownames(confirmed_edges)<-seq(1,nrow(confirmed_edges))
     
     return(confirmed_edges)
+    }
   }
   
   if(importBlocks == FALSE){
