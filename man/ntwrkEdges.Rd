@@ -14,7 +14,7 @@ ntwrkEdges(
 }
 \arguments{
 \item{x}{Output from the contactDur.all or contactDur.area functions. Can be
-either a data frame or list.}
+either a data frame or list of data frames.}
 
 \item{importBlocks}{Logical. If true blocks will be carried over from x 
 input, allowing for time-ordered and time-aggregated network creation. 
@@ -26,8 +26,9 @@ both a to- and a from-node). If removeDuplicates == true, duplicated
 edges are removed. Defaults to TRUE.}
 
 \item{parallel}{Logical. If TRUE, sub-functions within the ntwrkEdges
-wrapper will be parallelized. Note that the only sub-function 
-parallelized here is called ONLY when importBlocks == TRUE.}
+wrapper will be parallelized. Note that the only sub-functions 
+parallelized here are called ONLY when importBlocks == TRUE, or when x is
+a list of data frames.}
 
 \item{nCores}{Integer. Describes the number of cores to be dedicated to 
 parallel processes. Defaults to half of the maximum number of cores 
@@ -68,7 +69,7 @@ calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1,
    sec.threshold=10, blocking = FALSE, equidistant.time = FALSE,
    parallel = FALSE, reportParameters = TRUE) 
 
-calves.edges1<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE,
+calves.edges<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE,
    removeDuplicates = TRUE)  
 
 head(calves.edges1)
