@@ -1,12 +1,11 @@
 #' Identify Potential Contact Durations
 #'
-#' This function uses the output from dist2All to determine the potential 
-#'    maximum number of direct-contact durations between individuals in a data 
-#'    set. The max number of durations potentially observed is the number of 
-#'    TSWs both individuals (or an individual and fixed area) were observed at 
-#'    the same time over the study period/temporal block. The output of this 
-#'    function is required for using the "chisq" test argument in the 
-#'    contactTest function. 
+#' This function uses the output from dist2... functions to determine the 
+#'    potential maximum number of direct-contact durations between 
+#'    individuals in a data set. The max number of durations potentially 
+#'    observed is the number of TSWs both individuals (or an individual and 
+#'    fixed area) were simulataneously observed at the same time over the 
+#'    study period/temporal block.
 #'     
 #' @param x Output from the dist2All or dist2Area function. Can be either a 
 #'     data frame or non-data-frame list.

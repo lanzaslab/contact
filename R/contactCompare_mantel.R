@@ -1,7 +1,7 @@
 #' Statistically Compare Two Contact Matrices
 #'
 #' Tests for similarity of the x.summary input to y.summary. Please note that 
-#'    this is function of convience that is essentially a wrapper for the 
+#'    this is a function of convience that is essentially a wrapper for the 
 #'    ape::mantel.test function, that allows users to easily compare contact
 #'    networks created using our pipeline of contact:: functions.
 #'    Please understand that ape::mantel.test does not allow for missing

@@ -11,7 +11,10 @@
 #'    are NOT consistent. This function SHOULD NOT be used to compare two 
 #'    empirical networks using Chi-squared tests, as the function assumes 
 #'    x.summary and y.summary represent observed and expected values, 
-#'    respectively.
+#'    respectively. Please note that this is a function of convience that is 
+#'    essentially a wrapper for the chisq.test function, that allows users to 
+#'    easily compare contact networks created using our pipeline of contact:: 
+#'    functions.
 #'    
 #' This function was inspired by the methods described by Spiegel et al. 2016. 
 #'    They determined individuals to be expressing social behavior when nodes 

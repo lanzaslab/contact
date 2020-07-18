@@ -198,7 +198,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
             }
             distMat = data.frame(distMat, stringsAsFactors = TRUE)
             timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(timestepIndivSeq),1), stringsAsFactors = TRUE)
-            distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, timestepIndivSeq,time, origin.y)), stringsAsFactors = TRUE) 
+            distTab = data.frame(data.table::rbindlist(foreach(q = 1:nrow(timestepIndivSeqFrame)) %do% create.distFrame(timestepIndivSeqFrame[q,],distMat, indivSeq, timestepIndivSeq,time, origin.y)), stringsAsFactors = TRUE)  #replaced lapply with foreach on 07/18/2020 because the lapply suddenly started triggering an error....
             return(distTab)
           }
           
@@ -575,7 +575,7 @@ dist2Area_df<-function(x = NULL, y = NULL, x.id = NULL, y.id = NULL, dateTime = 
           }
           distMat = data.frame(distMat, stringsAsFactors = TRUE)
           timestepIndivSeqFrame = data.frame(id = unique(timestep$id), colnum = seq(1,length(timestepIndivSeq),1), stringsAsFactors = TRUE)
-          distTab = data.frame(data.table::rbindlist(apply(timestepIndivSeqFrame,1,create.distFrame,distMat,indivSeq, timestepIndivSeq,time, origin.y)), stringsAsFactors = TRUE) 
+          distTab = data.frame(data.table::rbindlist(foreach(q = 1:nrow(timestepIndivSeqFrame)) %do% create.distFrame(timestepIndivSeqFrame[q,],distMat, indivSeq, timestepIndivSeq,time, origin.y)), stringsAsFactors = TRUE)  #replaced lapply with foreach on 07/18/2020 because the lapply suddenly started triggering an error....
           return(distTab)
         }
         
