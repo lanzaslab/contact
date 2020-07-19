@@ -6,6 +6,19 @@
 #'    observed is the number of TSWs both individuals (or an individual and 
 #'    fixed area) were simulataneously observed at the same time over the 
 #'    study period/temporal block.
+#'    
+#'  Please note that this function assumes the desired minimum contact 
+#'     duration (MCD), as defined by Dawson et al. (2019), is 1 (i.e., a 
+#'     "contact" occurs when individuals are within a specified distance 
+#'     threshold for a single timestep). In a future version of this 
+#'     function we will aim to increase flexability by allowing for variable 
+#'     MCD values. For further clarification on the MCD definition and various
+#'     contact-determination assumptions, please see:
+#'     
+#'    Dawson, D.E., Farthing, T.S., Sanderson, M.W., and Lanzas, C. 
+#'    2019. Transmission on empirical dynamic contact networks is influenced by
+#'    data processing decisions. Epidemics 26:32-42. 
+#'    https://doi.org/10.1016/j.epidem.2018.08.003/
 #'     
 #' @param x Output from the dist2All or dist2Area function. Can be either a 
 #'     data frame or non-data-frame list.
@@ -147,15 +160,6 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
     numblocks <- as.integer(ceiling(max(studySecond)/blockLength1))
     block<- ceiling(studySecond/blockLength1)
     
-    #numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
-    #block <-rep(0,length(studySecond))
-    #for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
-    #  block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
-    #}
-    #if(length(which(block == 0)) > 0){ #identifies the last block
-    #  block[which(block == 0)] = numblocks
-    #}
-    
     block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
     block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
     
@@ -240,6 +244,7 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
     }
     
     potentialDurationsFrame<-data.frame(data.table::rbindlist(foreach::foreach(l = unique(x$block)) %do% blockBreak.function(l)), stringsAsFactors = TRUE)
+    potentialDurationsFrame<- potentialDurationsFrame[order(potentialDurationsFrame$block, potentialDurationsFrame$id),] #order the final output by block and id
     
   }else{ #if blocking == FALSE
   
@@ -293,6 +298,7 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       }
       
       potentialDurationsFrame<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
+      potentialDurationsFrame<- potentialDurationsFrame[order(potentialDurationsFrame$id),] #order the final output by id
       rm(fe1) #remove to free up memory
     
         }
@@ -444,7 +450,8 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
       }
       
       potentialDurationsFrame<-data.frame(data.table::rbindlist(foreach::foreach(l = unique(x$block)) %do% blockBreak.function(l)), stringsAsFactors = TRUE)
-
+      potentialDurationsFrame<- potentialDurationsFrame[order(potentialDurationsFrame$block, potentialDurationsFrame$id),] #order the final output by block and id
+      
     }
     else{ #if blocking == FALSE
       
@@ -495,6 +502,7 @@ potentialDurations<-function(x, blocking = FALSE, blockLength = 1, blockUnit = "
         }
         
         potentialDurationsFrame<-data.frame(data.table::rbindlist(fe1), stringsAsFactors = TRUE) #bind the data together
+        potentialDurationsFrame<- potentialDurationsFrame[order(potentialDurationsFrame$id),] #order the final output by id
         rm(fe1) #remove to free up memory
       
     }
