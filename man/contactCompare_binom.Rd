@@ -129,9 +129,11 @@ This function is used to determine if tracked individuals in an
    Note here, the NULL hypothesis is that empirical data are consistent with
    the NULL distribution, and the alternative hypothesis is that the data
    are NOT consistent. This function SHOULD NOT be used to compare two 
-   empirical networks using Chi-squared tests, as the function assumes 
-   x.summary and y.summary represent observed and expected values, 
-   respectively.
+   empirical networks, as the function assumes x.summary and y.summary 
+   represent observed and expected values, respectively. Please note that 
+   this is a function of convience that is essentially a wrapper for the 
+   binom.test function, that allows users to easily compare contact
+   networks created using our pipeline of contact:: functions.
    
 This function was inspired by the methods described by Spiegel et al. 2016. 
    They determined individuals to be expressing social behavior when nodes 
