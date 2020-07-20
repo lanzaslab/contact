@@ -32,16 +32,19 @@ locations for point 2. If == NULL, defaults to pWithin1 value.}
 threshold for contact.}
 }
 \value{
-Output is a named vector with 22 observations describing the mean, 
-   max, and upper 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75,
-   80, 85, 90, 95, 99-percent CI values, and the true-positive rate (i.e., 
-   TPR) calculated from the contact-distance distribution.
+Output is a list containing 3 named vectors. The first vector 
+   describes summary statistics of the simulated distance distribution. The
+   second vector described adjusted spTh values that will capture 
+   approximately 84, 98, and 100% of true contacts given the pre-determined
+   spTh value (all calculated using the Empirical rule). Finally, the third 
+   vector describes the observed frequency of contact observation given the
+   spTh adjustments listed in the second vector.
 }
 \description{
 Sample from a multivariate normal distribution to create "in-contact" n 
    point pairs based on real-time-location systems accuracy, and 
    generate a distribution describing observed distances between point
-   ppairs.
+   pairs.
 }
 \details{
 This function is for adjusting contact-distance thresholds (spTh) to account
@@ -50,6 +53,20 @@ This function is for adjusting contact-distance thresholds (spTh) to account
    Essentially this function can be used to determine an adjusted spTh value
    that likely includes >= 99-percent of true contacts defined using the 
    initial spTh.
+   
+   NOTE that the description given in our paper, Farthing et al. (2020) 
+   (full reference below), for how this function works is slightly 
+   incorrect. In the paper, we state that contact definitions should be 
+   updated according to an upper 99% confidence interval calculated from a 
+   distance distribution generated from a multivariate in-contact point 
+   distribution. THIS IS NOT CORRECT, however, as this confidence interval
+   relates to determination of the mean of the distance distribution (which
+   is not what we want). Instead, the desired spatial threshold should be 
+   updated based on standard deviations away from the mean. Because of the
+   empirical rule, we can capture the spatial threshold values capable of 
+   capturing roughly 84, 98 and 100% of observed contacts. We are in the 
+   process of writing another paper addressing this mistake and improving
+   the method.
 }
 \examples{
 findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL, 
@@ -58,8 +75,8 @@ findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL,
 }
 \references{
 Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-   C. in Press. Accounting for space and uncertainty in real-time-location-
-   system-derived contact networks. Ecology and Evolution.
+   C. 2020. Accounting for space and uncertainty in real-time-location-
+   system-derived contact networks. Ecology and Evolution 10(11):4702-4715.
 }
 \keyword{contact}
 \keyword{location}

@@ -3,7 +3,7 @@
 #' Sample from a multivariate normal distribution to create "in-contact" n 
 #'    point pairs based on real-time-location systems accuracy, and 
 #'    generate a distribution describing observed distances between point
-#'    ppairs. 
+#'    pairs. 
 #' 
 #' This function is for adjusting contact-distance thresholds (spTh) to account
 #'    for positional accuracy of real-time-location systems, assuming random 
@@ -11,6 +11,21 @@
 #'    Essentially this function can be used to determine an adjusted spTh value
 #'    that likely includes >= 99-percent of true contacts defined using the 
 #'    initial spTh.
+#'    
+#'    NOTE that the description given in our paper, Farthing et al. (2020) 
+#'    (full reference below), for how this function works is slightly 
+#'    incorrect. In the paper, we state that contact definitions should be 
+#'    updated according to an upper 99% confidence interval calculated from a 
+#'    distance distribution generated from a multivariate in-contact point 
+#'    distribution. THIS IS NOT CORRECT, however, as this confidence interval
+#'    relates to determination of the mean of the distance distribution (which
+#'    is not what we want). Instead, the desired spatial threshold should be 
+#'    updated based on standard deviations away from the mean. Because of the
+#'    empirical rule, we can capture the spatial threshold values capable of 
+#'    capturing roughly 84, 98 and 100% of observed contacts. We are in the 
+#'    process of writing another paper addressing this mistake and improving
+#'    the method.
+#'    
 #' @param n Integer. Number of "in-contact" point-pairs used in the 
 #'    expected-distance distribution(s). Defaults to 1000.
 #' @param acc.Dist1 Numerical. Accuracy distance for point 1.
@@ -24,13 +39,17 @@
 #'    threshold for contact.
 #' @keywords contact location point
 #' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-#'    C. in Press. Accounting for space and uncertainty in real-time-location-
-#'    system-derived contact networks. Ecology and Evolution.
+#'    C. 2020. Accounting for space and uncertainty in real-time-location-
+#'    system-derived contact networks. Ecology and Evolution 10(11):4702-4715.
+#' @import foreach
 #' @export
-#' @return Output is a named vector with 22 observations describing the mean, 
-#'    max, and upper 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75,
-#'    80, 85, 90, 95, 99-percent CI values, and the true-positive rate (i.e., 
-#'    TPR) calculated from the contact-distance distribution.
+#' @return Output is a list containing 3 named vectors. The first vector 
+#'    describes summary statistics of the simulated distance distribution. The
+#'    second vector described adjusted spTh values that will capture 
+#'    approximately 84, 98, and 100% of true contacts given the pre-determined
+#'    spTh value (all calculated using the Empirical rule). Finally, the third 
+#'    vector describes the observed frequency of contact observation given the
+#'    spTh adjustments listed in the second vector. 
 #' @examples
 #' findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL, 
 #'    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) 
@@ -38,7 +57,7 @@
 
 findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.666){
   
-  dist.distributionFunc<-function(x){ #generate an expected-distance distribution from two points pulled from normal distributions with mean values at point1 and point2 x- and y-values, and standard deviations derived from the acc.Dist and pWithin values. 
+  dist.distributionFunc<-function(x, simFPR, n.outOfContact, range.outOfContact){ #generate an expected-distance distribution from two points pulled from normal distributions with mean values at point1 and point2 x- and y-values, and standard deviations derived from the acc.Dist and pWithin values. 
   
     euc=function(x) {
       point1 = x.cor=unlist(c(unname(unlist(x[1])),unname(unlist(x[2]))))
@@ -70,26 +89,29 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     dist.distr<-apply(x1,1,euc)
     dist.mean<-mean(dist.distr)
     dist.sd<-stats::sd(dist.distr)
-    CIseq<-seq(5,95,5)
-    CIseq<-c(CIseq, 99)
-    CIvec<-NULL #create a vector to hold the upper 5-95% & 99% CI limits 
-    for(i in CIseq){
-      alphaOver2<-(1 - i/100)/2
-      marginOfError<-abs(stats::qnorm(alphaOver2))*(dist.sd/sqrt(unname(unlist(x[1])))) #calculate the margin of error. note that n = number of points used in the expected-distance distribution (i.e., n1).
-      CIvec<-c(CIvec, dist.mean + marginOfError) # Note that we're only interested in taking the upper limit, as this gaurentees that the true mean is covered.
-    }
+
+    dataFall84_98_100 <- c((dist.mean + dist.sd), (dist.mean + (dist.sd*2)), (dist.mean + (dist.sd*3))) #due to the empirical rule, approximately we can calculate where 68, 95, and 99% of data fall (i.e., the distances required to capture contacts in these cases).
+    names(dataFall84_98_100 ) <- c("spTh_84%Capture", "spTh_98%Capture", "spTh_100%Capture") #names
     
     TruePositive <- length(which(dist.distr <= as.numeric(x[6]))) #number of contacts correctly identified.
     TPR<- TruePositive/as.integer(x[1]) #True positive rate (i.e., sensitivity)
     
-    CIvec<-c(dist.mean, CIvec, max(dist.distr), TPR) #add the 0% (i.e., just the mean) and upper 100% (i.e., the max) CI limit
-    names(CIvec)<- c("mean", paste(CIseq, "%-CI", sep =""), "max", "TPR")
-    return(CIvec)
+    distr.summary <- c(dist.mean, dist.sd, min(dist.distr), max(dist.distr), TPR)
+    names(distr.summary) <- c("mean", "sd", "min", "max", "TPR")
+    
+    #dataFall.noise <- (unlist(foreach::foreach(i = 1:length(dataFall84_98_100)) %do% length(which(dist.distr <= as.numeric(dataFall84_98_100[i])))) / as.integer(x[1]))/TPR #this gives you the relative number of observed contact durations for each sd interval, relative to the SpTh value. It's a measure of noise, as we expect the TPR to be constant, but observed positive-contact rates reported here inflate this value. Divide any weighted contacts generated using the chosen CI value by the constant given here, to revert back to the TRUE positive rate associated with the original spTh value.
+    dataFall.noise <- (unlist(foreach::foreach(i = 1:length(dataFall84_98_100)) %do% length(which(dist.distr <= as.numeric(dataFall84_98_100[i])))) / as.integer(x[1])) #this gives you the proportion of observed contact durations for each sd interval, relative to the SpTh value. It's a measure of noise, as we expect the TPR to be constant, but observed positive-contact rates reported here inflate this value.
+    names(dataFall.noise) <- paste("freq_",c("84%Capture", "98%Capture", "100%Capture"), sep ="") 
+    
+    out.list <- list(distr.summary, dataFall84_98_100 , dataFall.noise)
+    names(out.list) <- c("distribution.summary", "spTh.adjustments", "contact.frequency")
+    
+    return(out.list)
   }
   
   if(is.null(pWithin2) == TRUE){pWithin2 = pWithin1} #If == NULL, defaults to pWithin1 value.
   if(is.null(acc.Dist2) == TRUE){acc.Dist2 = acc.Dist1} #If == NULL, defaults to acc.Dist1 value.
-  
+
   inputFrame<-data.frame(matrix(ncol =6, nrow = 1), stringsAsFactors = TRUE)
   inputFrame[,1]<-n
   inputFrame[,2]<-acc.Dist1
@@ -98,5 +120,5 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
   inputFrame[,5]<-pWithin2
   inputFrame[,6]<-spTh
   distributions<-apply(inputFrame,1,dist.distributionFunc) #creates a matrix of distance-distribution CI values
-  return(distributions[,1])
+  return(distributions[[1]]) #for some reason distributions is a nested list, so we have to designate that we want the further nested objects.
 }
