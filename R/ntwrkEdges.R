@@ -30,6 +30,7 @@
 #'    \item{durations}{The duration of each contact reported in \code{x}.}
 #'    \item{block}{(if applicable) time block during which reported contacts 
 #'    occurred.}
+#' @import igraph
 #' @examples
 #' data("calves")
 #' 
