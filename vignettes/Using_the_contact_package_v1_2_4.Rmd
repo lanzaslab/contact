@@ -213,7 +213,7 @@ system.time(calves_filter1 <- contact::mps(calves06012018, id = calves06012018$c
 
 Now we want to ensure that all points are within the specific feedlot pen boundaries. As calves could not escape fedlot pens, points outside the pen or adjacent feed bunks are erroneous.
 
-```{r, echo = TRUE, warning = FALSE, eval = TRUE}
+```{r, echo = TRUE, warning = FALSE, eval = FALSE}
 
 confinementCoords <- data.frame(object = c("feed", "feed", "feed", "feed","fence", "fence", "fence", "fence", "fence"), x = c(46.0118, 46.6482, 58.3415, 57.6507, 60.5775, 29.3054, 16.7602, 17.0590, 46.0309), y = c(197.0570, 197.4131, 175.9618, 175.6284, 170.4628, 153.6002, 176.5861, 181.6315, 197.1261)) #these are the x & y coordinates for the feedlot-pen fenceline and adjacent feedbunk vertices. Note that they are arranged in a clockwise order, as the confine function below requires input vertices to be ordered clockwise or counter-clockwise.
 
