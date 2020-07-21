@@ -156,8 +156,8 @@
 #'    to output data frame.
 #'    
 #' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-#'    C. in Press. Accounting for space and uncertainty in real-time-location-
-#'    system-derived contact networks. Ecology and Evolution.
+#'    C. 2020. Accounting for space and uncertainty in real-time-location-
+#'    system-derived contact networks. Ecology and Evolution 10(11):4702-4715.
 #' @export
 #' @examples
 #' \donttest{

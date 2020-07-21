@@ -35,4 +35,15 @@
 
   - Fixed bug that forced times in tempAggregate output to begin at
     00:00:00 on the first day in the data set.
-  - Added socialEdges function. \`\`\`
+  - Added socialEdges function.
+
+## contact 1.2.4
+
+  - Fixed various bugs
+  - Realized that the method the findDistThresh function was based on
+    was faulty due to a mistake in the paper (Farthing et al. 2020). We
+    updated the function to correctly do as intended and updated to
+    function documentation to acknowledge the mistake.
+  - Drastically improved efficiency of the ntwrkEdges function.
+
+\`\`\`

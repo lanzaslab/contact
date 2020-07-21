@@ -72,14 +72,12 @@ calves.contact.NOblock<-contactDur.all(x = calves.dist, dist.threshold=1,
 calves.edges<-ntwrkEdges(x =calves.contact.NOblock, importBlocks = FALSE,
    removeDuplicates = TRUE)  
 
-head(calves.edges1)
-
-calves.network1 <- igraph::graph_from_data_frame(d=calves.edges1,
+calves.network1 <- igraph::graph_from_data_frame(d=calves.edges,
    directed=FALSE)
 
 igraph::V(calves.network1)$color<- "orange1"
 igraph::V(calves.network1)$size <-13
-igraph::E(calves.network1)$width <- calves.edges1$duration
+igraph::E(calves.network1)$width <- calves.edges$duration
 igraph::E(calves.network1)$color <- "black"
 igraph::plot.igraph(calves.network1, vertex.label.cex=0.4,
    layout = igraph::layout.circle, main = "Inter-Calf Contacts") #plot the network

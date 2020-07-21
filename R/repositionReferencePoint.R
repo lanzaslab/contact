@@ -157,8 +157,8 @@
 #'    \item{dt}{The time between reported xy coordinates in row i to row 
 #'    i + 1 in each individuals' movement path.}
 #' @references Farthing, T.S., Dawson, D.E., Sanderson, M.W., and Lanzas, 
-#'    C. in Press. Accounting for space and uncertainty in real-time-location-
-#'    system-derived contact networks. Ecology and Evolution.
+#'    C. 2020. Accounting for space and uncertainty in real-time-location-
+#'    system-derived contact networks. Ecology and Evolution 10(11):4702-4715.
 #' @import foreach
 #' @export
 #' @examples

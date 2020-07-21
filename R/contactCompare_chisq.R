@@ -883,12 +883,6 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
                                   "noContactDurations.y", "difference", "warning") #for some reason the data.frame command above kept producing incorrect colNames.
         
           ##add block information to summaryFrame (Note: we add the information for both x AND y even though the y information will be redundant unless shuffle.type == 2)
-          #summaryFrame$block.x <- unique(popLevelMetric$block.x)
-          #summaryFrame$block.start.x <- unique(popLevelMetric$block.start.x)
-          #summaryFrame$block.end.x <- unique(popLevelMetric$block.end.x)
-          #summaryFrame$block.y <- unique(popLevelMetric$block.y)
-          #summaryFrame$block.start.y <- unique(popLevelMetric$block.start.y)
-          #summaryFrame$block.end.y <- unique(popLevelMetric$block.end.y)
           
           summaryFrame$block.x <- unique(droplevels(processFrame[i,2]))
           summaryFrame$block.start.x <- unique(chisqOut$block.start.x[which(chisqOut$block.x == processFrame[i,2])])
