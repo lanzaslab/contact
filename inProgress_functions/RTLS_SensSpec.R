@@ -111,19 +111,38 @@ RTLS_SensSpec<-function(inContact.n = 1000, outContact.n = NULL, acc.Dist1 = 0.5
 }
 
   
-estim.TrueContacts <- function(x, TPR, FPR, FNR){
+estim.TrueContacts <- function(obs, unobs, TPR, FPR){
   
-  #x is the sum of observed contacts
-  #y is a representation of the sum TRUE (i.e., real-world) contacts that is likely unobserved due to RTLS/GPS accuracy
   
-  #x = TPR*(y) + FNR*(y) - FPR*(y)  # observed contacts equals the sum of True contacts and false negatives taken from the theoretical distribution, minus the false positives. 
-  ##Because everything on the right-hand side is multiplied by y, this formula can be written as:
-  #x = ((TPR + FNR) - FPR)*(y) #note we add the extra parantheses just to ensure proper order of operations in the code.
-  #x / ((TPR + FNR) - FPR) = y #So, we can estimate TRUE contacts given that we know sensitivity and specificity of the system.
+  #This function is used to derive True contacts (i.e., the total number of real-world interactions) and true negatives (i.e., total number of real-world instances when people were outside contact thresholds) given known observed and unobserved contact counts, as well as known/estimated sensitivity and false-positive rates (meaning a users MUST know how many time points during the study period individuals were outside the contact threshold. This can be calculated by determining the potenial contact durations and subtracting the number of observed durations)
   
-  y <- (x / ((TPR + FNR) - FPR)) #solve for y
+  #basic equations needed to understand how calculations work
+  #x = TP + FN  ### x is the sum of the true in-contact distribution (i.e., true positives and false negatives in the system).
+  #y = FP + TN  ### y is the sum of the true out-of-contact distribution (i.e., true negatives and false positives in the system).
+  #z = x + y  ### z is the sum of in- and out-contacts.
+  #obs = TP + FP ### obs is the sum of observed contacts (these are contact durations observed when creating a contact network).
+  #unobs = TN + FN ### unobs is the sum of syncronized timestep durations (potential contacts) when no contacts were observed.
+  #z = obs + unobs ### z ALSO is the sum of obs and unobs.
   
-  return(y) #return the number of True contacts
+  #complex equations used to derive x
+  
+  #obs = TPR(x) + FPR(y) ### observed contacts can be derived from x and y if true- and false-positive rates are known.
+  #y = - (TPR(x) - obs)/FPR ### Using the equation above, y can be given as an expression of x.
+  #z = x - ((TPR(x) - obs)/FPR) ### Therefore z can be expressed as x as well.
+  #x = (z - (obs/FPR))/(1 - (TPR/FPR)) ###Finally, we can express in terms of z.
+  
+  ###This is a HUGE benefit of deriving contacts from GPS and RTLS point locations rather than using proximity loggers, cameras, etc.
+  ####Because we can calculate unobs (which is impossible with other methods as you can never know when individuals are truly NOT in contact with one another), we can estimate true contact distributions given estimate sensitivity and false positive rates.
+  
+  #solve for x and y
+  
+  z <- obs + unobs #total potential contact distribution
+  x <- (z - (obs/FPR))/(1 - (TPR/FPR)) #total TRUE in-contacts
+  y <- z- x #total TRUE out-contacts
+  out.vec <- c(x,y) #bind them together for output
+  names(out.vec) <- c("positives.total", "negatives.total")
+  
+  return(out.vec) #return the number of True contacts
   
 }  
 
@@ -333,7 +352,11 @@ spTh_finder<-function(spTH.init = 0, inContact.n = 1000, outContact.n = NULL, ac
     TNR<- TrueNegative/as.integer(outContact.n) #True negative rate (i.e., specificity). This is the same as calculating TN/ (FP + TN).
     FPR <- 1 - TNR #False positive rate
     
-    output <- FPR*FNR #generate output
+    trueProportion <- TruePositive/(TruePositive + FalsePositive) #generate the proportion of TRUE contacts relative to total observed contacts
+    
+    output <- -trueProportion #make negative because we the optim function seeks to minimize the output (but we're interested in maximizing it)
+    
+    #output <- FPR*FNR #generate output
     #if(output = 0){output = 1000000} #if output is 0, because either FPR or FNR is 0, we adjust it, so that optimization will skip this value.This value would indicate that either TPR or TNR was 100% or 0%, and we already know how to get there.
     
     return(output)
@@ -350,3 +373,4 @@ spTh_finder<-function(spTH.init = 0, inContact.n = 1000, outContact.n = NULL, ac
   
   return(out.list) 
 }
+
