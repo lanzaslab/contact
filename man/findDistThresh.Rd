@@ -32,13 +32,15 @@ locations for point 2. If == NULL, defaults to pWithin1 value.}
 threshold for contact.}
 }
 \value{
-Output is a list containing 3 named vectors. The first vector 
+Output is a list containing 5 named vectors. The first vector 
    describes summary statistics of the simulated distance distribution. The
-   second vector described adjusted spTh values that will capture 
-   approximately 84, 98, and 100% of true contacts given the pre-determined
-   spTh value (all calculated using the Empirical rule). Finally, the third 
-   vector describes the observed frequency of contact observation given the
-   spTh adjustments listed in the second vector.
+   second and third vectors describes varied confidence intervals (50-99%)
+   for the simulated distribiution. The fourth vector describes adjusted 
+   spTh values that will capture approximately 84, 98, and 100% of true 
+   contacts given the pre-determined spTh value (all calculated using the 
+   Empirical rule). Finally, the fifth vector describes the actial observed 
+   frequency of captured true contact given the spTh adjustments listed in 
+   the fourth vector.
 }
 \description{
 Sample from a multivariate normal distribution to create "in-contact" n 
@@ -51,22 +53,8 @@ This function is for adjusting contact-distance thresholds (spTh) to account
    for positional accuracy of real-time-location systems, assuming random 
    (non-biased) error in location-fix positions relative to true locations. 
    Essentially this function can be used to determine an adjusted spTh value
-   that likely includes >= 99-percent of true contacts defined using the 
+   that likely includes the majority of true contacts defined using the 
    initial spTh.
-   
-   NOTE that the description given in our paper, Farthing et al. (2020) 
-   (full reference below), for how this function works is slightly 
-   incorrect. In the paper, we state that contact definitions should be 
-   updated according to an upper 99% confidence interval calculated from a 
-   distance distribution generated from a multivariate in-contact point 
-   distribution. THIS IS NOT CORRECT, however, as this confidence interval
-   relates to determination of the mean of the distance distribution (which
-   is not what we want). Instead, the desired spatial threshold should be 
-   updated based on standard deviations away from the mean. Because of the
-   empirical rule, we can capture the spatial threshold values capable of 
-   capturing roughly 84, 98 and 100% of observed contacts. We are in the 
-   process of writing another paper addressing this mistake and improving
-   the method.
 }
 \examples{
 findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL, 
