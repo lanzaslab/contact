@@ -9,22 +9,9 @@
 #'    for positional accuracy of real-time-location systems, assuming random 
 #'    (non-biased) error in location-fix positions relative to true locations. 
 #'    Essentially this function can be used to determine an adjusted spTh value
-#'    that likely includes >= 99-percent of true contacts defined using the 
+#'    that likely includes the majority of true contacts defined using the 
 #'    initial spTh.
 #'    
-#'    NOTE that the description given in our paper, Farthing et al. (2020) 
-#'    (full reference below), for how this function works is slightly 
-#'    incorrect. In the paper, we state that contact definitions should be 
-#'    updated according to an upper 99% confidence interval calculated from a 
-#'    distance distribution generated from a multivariate in-contact point 
-#'    distribution. THIS IS NOT CORRECT, however, as this confidence interval
-#'    relates to determination of the mean of the distance distribution (which
-#'    is not what we want). Instead, the desired spatial threshold should be 
-#'    updated based on standard deviations away from the mean. Because of the
-#'    empirical rule, we can capture the spatial threshold values capable of 
-#'    capturing roughly 84, 98 and 100% of observed contacts. We are in the 
-#'    process of writing another paper addressing this mistake and improving
-#'    the method.
 #'    
 #' @param n Integer. Number of "in-contact" point-pairs used in the 
 #'    expected-distance distribution(s). Defaults to 1000.
@@ -43,13 +30,15 @@
 #'    system-derived contact networks. Ecology and Evolution 10(11):4702-4715.
 #' @import foreach
 #' @export
-#' @return Output is a list containing 3 named vectors. The first vector 
+#' @return Output is a list containing 5 named vectors. The first vector 
 #'    describes summary statistics of the simulated distance distribution. The
-#'    second vector described adjusted spTh values that will capture 
-#'    approximately 84, 98, and 100% of true contacts given the pre-determined
-#'    spTh value (all calculated using the Empirical rule). Finally, the third 
-#'    vector describes the observed frequency of contact observation given the
-#'    spTh adjustments listed in the second vector. 
+#'    second and third vectors describes varied confidence intervals (50-99%)
+#'    for the simulated distribiution. The fourth vector describes adjusted 
+#'    spTh values that will capture approximately 84, 98, and 100% of true 
+#'    contacts given the pre-determined spTh value (all calculated using the 
+#'    Empirical rule). Finally, the fifth vector describes the actial observed 
+#'    frequency of captured true contact given the spTh adjustments listed in 
+#'    the fourth vector. 
 #' @examples
 #' findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL, 
 #'    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) 
@@ -102,12 +91,27 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     distr.summary <- c(dist.mean, dist.sd, min(dist.distr), max(dist.distr), TPR)
     names(distr.summary) <- c("mean", "sd", "min", "max", "TPR")
     
-    #dataFall.noise <- (unlist(foreach::foreach(i = 1:length(dataFall84_98_100)) %do% length(which(dist.distr <= as.numeric(dataFall84_98_100[i])))) / as.integer(x[1]))/TPR #this gives you the relative number of observed contact durations for each sd interval, relative to the SpTh value. It's a measure of noise, as we expect the TPR to be constant, but observed positive-contact rates reported here inflate this value. Divide any weighted contacts generated using the chosen CI value by the constant given here, to revert back to the TRUE positive rate associated with the original spTh value.
     dataFall.noise <- (unlist(foreach::foreach(i = 1:length(dataFall84_98_100)) %do% length(which(dist.distr <= as.numeric(dataFall84_98_100[i])))) / as.integer(x[1])) #this gives you the proportion of observed contact durations for each sd interval, relative to the SpTh value. It's a measure of noise, as we expect the TPR to be constant, but observed positive-contact rates reported here inflate this value.
     names(dataFall.noise) <- paste("freq_",c("84%Capture", "98%Capture", "100%Capture"), sep ="") 
     
-    out.list <- list(distr.summary, dataFall84_98_100 , dataFall.noise)
-    names(out.list) <- c("distribution.summary", "spTh.adjustments", "contact.frequency")
+    #now we calculate various confidence intervals (50-99%) to report.
+    CIseq <- seq(50, 95, 5)
+    CIseq <- c(CIseq, 99)
+    CIvec_upper <- NULL
+    CIvec_lwr <- NULL
+    for (i in CIseq) {
+      alphaOver2 <- (1 - i/100)/2
+      marginOfError <- abs(stats::qnorm(alphaOver2)) *
+        (dist.sd/sqrt(unname(unlist(x[1]))))
+      CIvec_upper <- c(CIvec_upper, dist.mean + marginOfError)
+      CIvec_lwr <- c(CIvec_lwr, dist.mean - marginOfError)
+    }
+    names(CIvec_upper) <- paste(CIseq, "%-CI", sep = "")
+    names(CIvec_lwr) <- paste(CIseq, "%-CI", sep = "")
+    
+    
+    out.list <- list(distr.summary, CIvec_upper, CIvec_lwr, dataFall84_98_100 , dataFall.noise)
+    names(out.list) <- c("distribution.summary", "CI_upper", "CI_lwr", "spTh.adjustments", "contact.frequency")
     
     return(out.list)
   }
