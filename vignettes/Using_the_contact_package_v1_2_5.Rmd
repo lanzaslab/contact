@@ -571,7 +571,7 @@ mantelOutput #based on the reported p-value, given an alpha-level of 0.05, we ca
 
 ```
 
-##References
+**References**
 
 Farine, D.R., 2017. A guide to null models for animal social network analysis. *Methods in Ecology and Evolution* 8:1309-1320. https://doi.org/10.1111/2041-210X.12772.
 
