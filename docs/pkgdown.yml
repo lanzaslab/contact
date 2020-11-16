@@ -1,0 +1,14 @@
+pandoc: 2.3.1
+pkgdown: 1.6.1
+pkgdown_sha: ~
+articles:
+  Using_the_contact_package_v1_2_5: Using_the_contact_package_v1_2_5.html
+  old_vignettes/Using_the_contact_package: Using_the_contact_package.html
+  old_vignettes/Using_the_contact_package_v1.0.1: Using_the_contact_package_v1.0.1.html
+  old_vignettes/Using_the_contact_package_v1.2.0: Using_the_contact_package_v1.2.0.html
+  old_vignettes/Using_the_contact_package_v1_2_1: Using_the_contact_package_v1_2_1.html
+  old_vignettes/Using_the_contact_package_v1_2_2: Using_the_contact_package_v1_2_2.html
+  old_vignettes/Using_the_contact_package_v1_2_3: Using_the_contact_package_v1_2_3.html
+  old_vignettes/Using_the_contact_package_v1_2_4: Using_the_contact_package_v1_2_4.html
+last_built: 2020-11-16T04:42Z
+

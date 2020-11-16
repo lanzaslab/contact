@@ -12,3 +12,6 @@
 ^NEWS$
 ^vignettes/old_vignettes$
 ^README\.Rmd$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
