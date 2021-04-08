@@ -24,9 +24,9 @@ The contact package is intended to allow for easy processing of spatiotemporal d
 
 Here we demonstrate how to use contact functions to:
 
-###1.) Create a point-location-based environmental-contact network
-###2.) Create polygon-intersection-based contact networks using point-location data
-###3.) Test networks against NULL models
+#### 1.) Create a point-location-based environmental-contact network
+#### 2.) Create polygon-intersection-based contact networks using point-location data
+#### 3.) Test networks against NULL models
 
 Please note that a manuscript detailing novel methodologies we've developed for accounting for space and real-time location-system accuracy when creating contact networks from point-location data was recently published in *Ecology and Evolution*. This same manuscript introduces the *contact* package to the scientific community. Our methods are described briefly in this vignette, but are presented in much greater detail in our manuscript, which is available at https://doi.org/10.1002/ece3.6225.
 
@@ -34,7 +34,7 @@ Please note that a manuscript detailing novel methodologies we've developed for 
 #load the contact package
 library(contact)
 ```
-###Section 1.) Creating a point-location-based environmental contact network
+### Section 1.) Creating a point-location-based environmental contact network
 
 Here, we show how to create a contact network detailing the number of contacts each tracked individual has with fixed area/points. In this case, our network will represent contacts between calves in a single feedlot pen with their water trough (for which we know the coordinates). The data set we use, calves, is comprised of point-locations collected using a radio-telemetry-based real-time location system (RTLS) (Smartbow GmbH, Weibern, Austria) to monitor the locations of n = 10 steers in a single 30m X 35m feedlot pen located at the Kansas State University Beef Cattle Research Center in Manhattan, KS. Manufacturer-reported RTLS spatial resolution and accuracy was 0.5m and 90%, respectively (i.e., 90% of location fixes are within 0.5m of animals' true locations). Tracked steers were approximately 1.5 years old, with estimated 1.5-m nose-to-tail lengths and 0.5-m shoulder widths, and radio-frequency-identication (RFID) tracking devices were located on animals' left ears. Data in this set were collected continuously between 00:00:00 and 02:00:00 UTC on 06/01/2018 at a 5-10s temporal resolution (i.e., positional fixes for each individual were obtained every 5-10 seconds).
 
@@ -150,7 +150,7 @@ watercoords1<- igraph::layout_as_star(water.network, center = igraph::V(water.ne
 igraph::plot.igraph(water.network, layout = watercoords1)
 
 ```
-###Section 2.) Creating polygon-intersection-based direct-contacts network using point-location data
+### Section 2.) Creating polygon-intersection-based direct-contacts network using point-location data
 
 **Note that this section was run with eval = FALSE because otherwise the processing time for this vignette is longer than what is allotted by CRAN**
 
@@ -423,7 +423,7 @@ igraph::plot.igraph(fullBody.network, vertex.label.cex=0.4, layout = igraph::lay
 
 ```
 
-###Section 3.) Test networks against NULL models
+### Section 3.) Test networks against NULL models
 
 **Note that this section was run with eval = FALSE because otherwise the processing time for this vignette is longer than what is allotted by CRAN**
 
@@ -559,7 +559,7 @@ head(fullBody_NULLTest1[[2]])
 
 Note that the *contactCompare_chisq* function SHOULD NOT be used to compare two empirical networks, as the function assumes x.summary and y.summary represent observed and expected values, respectively. If users want to compare two empirical networks, we can compare network similarity using Mantel's permutation test (Mantel 1967) through the *contactCompare_mantel* function. 
 
-Below we test the similarity of the fullbody and head X head contact networks. See that like *contactCompare_chisq*, this function requires x.summary and y.summary inputs (though the y.summary does not HAVE to represent a NULL model). Recall that we have already made the x.summary object, which relates to the fullbody contact network. Before we can run the Mantel test, we must summarize the head X head contact network.
+Below we test the similarity of the fullbody and head X head contact networks. See that like *contactCompare_chisq*, this function requires x.summary and y.summary inputs (though the y.summary DOES NOT have to represent a NULL model). Recall that we have already made the x.summary object, which relates to the fullbody contact network. Before we can run the Mantel test, we must summarize the head X head contact network.
 
 ```{r, echo = TRUE, warning = FALSE, eval = FALSE}
 
