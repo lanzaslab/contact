@@ -308,7 +308,7 @@ This is an example of what a calf full-body polygon looks like.
 
 fullBodyExample <- data.frame(section = c("body", rep("head", 4), rep("body", 5)), x = unname(unlist(calf_FullBody[10,c(seq(2,21, by =2))])), y = unname(unlist(calf_FullBody[10,c(seq(3,21, by =2))])))
 
-{plot(fullBodyExample$x,fullBodyExample$y, col = fullBodyExample$section, lines(c(fullBodyExample$x, fullBodyExample$x[1]),c(fullBodyExample$y, fullBodyExample$y[1])), pch=16, main = "Calves' body shape")
+{plot(fullBodyExample$x,fullBodyExample$y, col = as.factor(fullBodyExample$section), lines(c(fullBodyExample$x, fullBodyExample$x[1]),c(fullBodyExample$y, fullBodyExample$y[1])), pch=16, main = "Calves' body shape")
  legend(39.2, 193.8, col = c(1,2), legend = c("body", "head"), cex = 0.7, pch = 16)}
 
 ```
@@ -331,7 +331,7 @@ calf_FullBody2 <- data.frame(calf_id = calf_bods2$id, vertex1.x = calf_bods2$cor
  
 fullBodyExample2 <- data.frame(section = c("body", rep("head", 4), rep("body", 5)), x = unname(unlist(calf_FullBody2[10,c(seq(2,21, by =2))])), y = unname(unlist(calf_FullBody2[10,c(seq(3,21, by =2))])))
 
-{plot(fullBodyExample2$x,fullBodyExample2$y, col = fullBodyExample2$section, lines(c(fullBodyExample2$x, fullBodyExample2$x[1]),c(fullBodyExample2$y, fullBodyExample2$y[1])), pch=16, main = "Calves' body shape", sub = "improper immobility-threshold specification")
+{plot(fullBodyExample2$x,fullBodyExample2$y, col = as.factor(fullBodyExample2$section), lines(c(fullBodyExample2$x, fullBodyExample2$x[1]),c(fullBodyExample2$y, fullBodyExample2$y[1])), pch=16, main = "Calves' body shape", sub = "improper immobility-threshold specification")
  legend(39.2, 193.8, col = c(1,2), legend = c("body", "head"), cex = 0.7, pch = 16)}
 
 ```
@@ -502,7 +502,7 @@ Having calculated inter-polygon distances at each time step, we can now create t
 
 ```{r, echo = TRUE, warning = FALSE, eval = FALSE}
 
-system.time(calf_fullBody_contacts.hr.random <- contact::contactDur.all(x = fullBody_distances.random, dist.threshold = polyCI_99, sec.threshold=10, blocking = TRUE, blockLength = 1, blockUnit = "hours", equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)) #Note that we do not set blocking == TRUE here. There's no point, as because we randomized data according to the Spiegel et al. (2016) method, each list entry is only an hour's worth of data (see contact::randomizePaths help page). 
+system.time(calf_fullBody_contacts.hr.random <- contact::contactDur.all(x = fullBody_distances.random, dist.threshold = polyCI_99, sec.threshold=10, blocking = TRUE, blockLength = 1, blockUnit = "hours", equidistant.time = FALSE, parallel = FALSE, reportParameters = TRUE)) 
 
 ```
 
