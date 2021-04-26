@@ -47,6 +47,7 @@
 #'    or the latitude of the data's centroid.}
 #'    \item{origin.distance}{Linear distance (m) between every point and the 
 #'    origin point.}
+#' @import rgdal
 #' @export
 #' @examples
 #' 

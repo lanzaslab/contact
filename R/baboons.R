@@ -49,7 +49,7 @@
 #' @references Crofoot MC, Kays RW, Wikelski M (2015) Data from: Shared 
 #'    decision-making drives collective movement in wild baboons. Movebank 
 #'    Data Repository. doi:10.5441/001/1.kn0816jn.
-#' @source \url{https://doi.org/10.5441/001/1.kn0816jn}
+#' @source \doi{10.5441/001/1.kn0816jn}
 #' @examples
 #' data("baboons") #alternatively, you may use the command: contact::baboons
 #' head(baboons)

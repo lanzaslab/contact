@@ -26,7 +26,7 @@ A data frame with 65140 rows and 5 variables:
 }
 }
 \source{
-\url{https://doi.org/10.5441/001/1.kn0816jn}
+\doi{10.5441/001/1.kn0816jn}
 }
 \usage{
 data(baboons)

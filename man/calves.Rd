@@ -15,7 +15,7 @@ A data frame with 11118 rows and 5 variables:
 }
 }
 \source{
-\url{https://doi.org/10.1016/j.epidem.2018.08.003}
+\doi{10.1016/j.epidem.2018.08.003}
 }
 \usage{
 data(calves)

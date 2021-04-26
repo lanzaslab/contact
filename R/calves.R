@@ -29,7 +29,7 @@
 #' @references Dawson, D.E., Farthing, T.S., Sanderson, M.W., and Lanzas, 
 #'    C. 2019. Transmission on empirical dynamic contact networks is 
 #'    influenced by data processing decisions. Epidemics 26:32-42. 
-#' @source \url{https://doi.org/10.1016/j.epidem.2018.08.003}
+#' @source \doi{10.1016/j.epidem.2018.08.003}
 #' @examples
 #' data("calves") #alternatively, you may use the command: contact::calves
 #' head(calves)
