@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Test environments
-* local macOS Catalina (10.15.3), R 3.6.2 (checked with run_dont_test = TRUE)
+* local macOS Catalina (10.15.3), R 4.0.3 (checked with run_dont_test = TRUE)
 * winbuilder (release) 
 * winbuilder (devel) 
 

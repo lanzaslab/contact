@@ -50,5 +50,7 @@ knitr::opts_chunk$set(echo = TRUE)
 * Updated syntax to ensure continued CRAN compliance.
 * Fixed errors in the vignette.
 
+## contact 1.2.7
+* Fixed error in the contactTest functions that prevent examples from being run in development environments with last.warning logs locked.
 
 ```
