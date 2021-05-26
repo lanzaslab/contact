@@ -179,17 +179,6 @@ Take care to ensure that the same shuffle.type is denoted as was originally
    per block in y.summary and y.potential, are representative of mean 
    randomized durations per block across each shuffle unit (e.g., day 1 is 
    representative of day 3, etc.).
-   
-Finally, in order to inform users of any warnings that arise in each
-   pairwise comparison, this function clears general warnings and saves any
-   sub-function related warning that occurs. Please note that running this 
-   function will clear the warning cache, so we suggest saving previous 
-   warnings to a log or file prior to running this code if users are 
-   interested in reviewing past warnings. Additionally, if users receive the
-   error: "Error in assign("last.warning", NULL, envir = baseenv()) :
-   cannot add binding of 'last.warning' to the base environment," we suggest
-   calling unlockBinding("last.warning", baseenv()) prior to using this 
-   function.
 }
 \examples{
 \donttest{
@@ -239,7 +228,6 @@ rand.potential <- potentialDurations(calves.dist.rand, blocking = TRUE,
                                      blockUnit = "hours", blockLength = 1, 
                                      distFunction = "dist2All_df") 
 
-unlockBinding("last.warning", baseenv()) #this code ensures that we can always clear warnings
 
 contactCompare_binom(x.summary = emp.summary, y.summary = rand.summary, 
                      x.potential = emp.potential, y.potential = rand.potential,

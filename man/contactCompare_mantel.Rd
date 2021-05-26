@@ -59,17 +59,6 @@ Tests for similarity of the x.summary input to y.summary. Please note that
    networks created using our pipeline of contact:: functions.
    Please understand that ape::mantel.test does not allow for missing
    values in matrices, so all NAs will be treated as zeroes.
-   
-Note that in order to inform users of any warnings that arise in each
-   pairwise comparison, this function clears general warnings and saves any
-   sub-function related warning that occurs. Please note that running this 
-   function will clear the warning cache, so we suggest saving previous 
-   warnings to a log or file prior to running this code if users are 
-   interested in reviewing past warnings. Additionally, if users receive the
-   error: "Error in assign("last.warning", NULL, envir = baseenv()) :
-   cannot add binding of 'last.warning' to the base environment," we suggest
-   calling unlockBinding("last.warning", baseenv()) prior to using this 
-   function.
 }
 \examples{
 \donttest{
@@ -113,7 +102,6 @@ calves.contact.rand<-contactDur.all(x = calves.dist.rand,
 rand.summary <- summarizeContacts(calves.contact.rand, avg = TRUE,
                                   importBlocks = TRUE) #NULL contact summary
 
-unlockBinding("last.warning", baseenv()) #this code ensures that we can always clear warnings
 
 contactCompare_mantel(x.summary = emp.summary, y.summary = rand.summary,
                     importBlocks = FALSE, numPermutations = 100,

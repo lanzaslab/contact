@@ -53,4 +53,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ## contact 1.2.7
 * Fixed error in the contactTest functions that prevent examples from being run in development environments with last.warning logs locked.
 
+## contact 1.2.8
+* Replaced "assign("last.warning", NULL, envir = baseenv())" in contactCompare functions with "warn1 <- NULL" to prevent CRAN errors. (Note: This may lead to bugs in the future, but we have to do this this to make CRAN cooperate....) 
+
+
 ```

@@ -60,17 +60,6 @@
 #'    per block in y.summary and y.potential, are representative of mean 
 #'    randomized durations per block across each shuffle unit (e.g., day 1 is 
 #'    representative of day 3, etc.).#'    
-#' 
-#' Additionally, in order to inform users of any warnings that arise in each
-#'    pairwise comparison, this function clears general warnings and saves any
-#'    sub-function related warning that occurs. Please note that running this 
-#'    function will clear the warning cache, so we suggest saving previous 
-#'    warnings to a log or file prior to running this code if users are 
-#'    interested in reviewing past warnings. Additionally, if users receive the
-#'    error: "Error in assign("last.warning", NULL, envir = baseenv()) :
-#'    cannot add binding of 'last.warning' to the base environment," we suggest
-#'    calling unlockBinding("last.warning", baseenv()) prior to using this 
-#'    function.
 #'    
 #' Finally, if X-square expected values will be very small, 
 #'    approximations of p may not be correct (and in fact, all estimates will 
@@ -226,7 +215,6 @@
 #'                                      blockUnit = "hours", blockLength = 1, 
 #'                                      distFunction = "dist2All_df") 
 #' 
-#' unlockBinding("last.warning", baseenv()) #this code ensures that we can always clear warnings
 #' 
 #' contactCompare_chisq(x.summary = emp.summary, y.summary = rand.summary, 
 #'                      x.potential = emp.potential, y.potential = rand.potential,
@@ -388,7 +376,7 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
           
         }
         
-        assign("last.warning", NULL, envir = baseenv()) #clears the warnings
+        warn1 <- NULL #clear warn1
         
         test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb, ...))$value
         warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb, ...))$warning$message
@@ -875,8 +863,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
             
           }
           
-          assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
-        
+          warn1 <- NULL #clear warn1
+          
           test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
           warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
         
@@ -962,8 +950,8 @@ contactCompare_chisq<-function(x.summary, y.summary, x.potential, y.potential = 
             expectedProb <- c(0,1) #here we force expected probability to be (0, 1) (i.e., 100% probability of no contact), which would be the case if the individual was not observed.
             
           }
-        
-          assign("last.warning", NULL, envir = baseenv()) #clears previous warnings so that we may record any new warnings
+          
+          warn1 <- NULL #clear warn1
         
           test<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$value #get the chisq values
           warn1<-tryCatch.W.E(stats::chisq.test(x = observedVec, p = expectedProb))$warning$message #get any warning message that the chisq may have triggered
