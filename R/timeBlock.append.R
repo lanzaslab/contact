@@ -7,6 +7,10 @@
 #'    will be a data frame with "dateTime" and block-related columns.
 #' 
 #' This is a sub-function that can be found in the contactDur functions.
+#' 
+#' Note that if x = NULL, users should ensure that data in the dateTime vector 
+#'    input are arranged in chronological order.
+#'    
 #' @param x Data frame containing dateTime information, and to which block 
 #'    information will be appended. if NULL, dateTime input relies solely on 
 #'    the dateTime argument.
