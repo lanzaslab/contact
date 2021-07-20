@@ -58,6 +58,9 @@ Appends "block," "block.start," "block.end," and "numBlocks" columns to an
 }
 \details{
 This is a sub-function that can be found in the contactDur functions.
+
+Note that if x = NULL, users should ensure that data in the dateTime vector 
+   input are arranged in chronological order.
 }
 \examples{
 data("calves")

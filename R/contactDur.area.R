@@ -345,6 +345,8 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           
           #the code below comes from the contact::timeBlock.append function. We just refrain from calling it here to prevent the inputs being cloned within the function, and thus save memory.
           
+          dayConversion <- 86400 #we must record the conversion of seconds to days (i.e., 24-hr periods), as all difftime calculations will be carried out using "units = 'days'" to avoid erroneous Daylight Savings Time issues.
+          
           if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){
             blockLength1 <- blockLength
           }
@@ -363,7 +365,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           
           if(length(blockingStartTime) == 1){ #if the blockingStartTime argument is defined, we calculate how far it is away (in seconds) from the minimum timepoint in x
             
-            blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
+            blockTimeAdjustment <- as.numeric(difftime(x$dateTime[1], blockingStartTime, units = c("days")))*dayConversion
             
           }else{ #if the blockingStartTime argument is NOT defined, the adjustment is 0
             
@@ -374,7 +376,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
           totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
           if(nrow(x) > length(totSecond)){
-            totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+            totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("days")))*dayConversion
           }else{
             totSecond2 <- NULL
           }
@@ -383,22 +385,13 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
           numblocks <- as.integer(ceiling(max(studySecond)/blockLength1))
           block<- ceiling(studySecond/blockLength1)
           
-          #numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
-          #block <-rep(0,length(studySecond))
-          #for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
-          #  block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
-          #}
-          #if(length(which(block == 0)) > 0){ #identifies the last block
-          #  block[which(block == 0)] = numblocks
-          #}
+          block.start<-as.character((as.POSIXct(x$dateTime[1], tz = "UTC") - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution). Note that we specify "tz = 'UTC'" here to prevent a Daylight Savings Time-related error. Because we convert the vector to character data however, it ultimately doesn't matter. 
+          block.end<-as.character((as.POSIXct(x$dateTime[1], tz = "UTC") - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution). Note that we specify "tz = 'UTC'" here to prevent a Daylight Savings Time-related error. Because we convert the vector to character data however, it ultimately doesn't matter.
           
-          block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
-          block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
-          
-          x$block <- block
+          x$block <- as.integer(block)
           x$block.start <- block.start
           x$block.end <- block.end
-          x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
+          x$numBlocks <- max(block)
           
           x<-x[order(x$block, x$id, studySecond),] #reorder x to ensure that block and individual ids are prioritized over dateTime information
           
@@ -704,6 +697,8 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         
         #the code below comes from the contact::timeBlock.append function. We just refrain from calling it here to prevent the inputs being cloned within the function, and thus save memory.
         
+        dayConversion <- 86400 #we must record the conversion of seconds to days (i.e., 24-hr periods), as all difftime calculations will be carried out using "units = 'days'" to avoid erroneous Daylight Savings Time issues.
+        
         if(blockUnit == "Secs" || blockUnit == "SECS" || blockUnit == "secs"){
           blockLength1 <- blockLength
         }
@@ -722,7 +717,7 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         
         if(length(blockingStartTime) == 1){ #if the blockingStartTime argument is defined, we calculate how far it is away (in seconds) from the minimum timepoint in x
           
-          blockTimeAdjustment <- difftime(x$dateTime[1], blockingStartTime, units = c("secs"))
+          blockTimeAdjustment <- as.numeric(difftime(x$dateTime[1], blockingStartTime, units = c("days")))*dayConversion
           
         }else{ #if the blockingStartTime argument is NOT defined, the adjustment is 0
           
@@ -733,28 +728,22 @@ contactDur.area<-function(x,dist.threshold=1,sec.threshold=10, blocking = FALSE,
         #for some odd reason, difftime will output mostly zeroes (incorrectly) if there are > 1 correct 0 at the beginning. We use a crude fix here to address this. Basically, we create the zeroes first and combine it with other values afterwards
         totSecond <- rep(0, length(which(x$dateTime == x$dateTime[1])))
         if(nrow(x) > length(totSecond)){
-          totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1], units = c("secs")))
+          totSecond2<-as.integer(difftime(x$dateTime[(length(totSecond) +1): nrow(x)] ,x$dateTime[1] , units = c("days")))*dayConversion
         }else{
           totSecond2 <- NULL
         }
         studySecond <- as.integer((c(totSecond, totSecond2) -min(c(totSecond, totSecond2))) + 1) + blockTimeAdjustment
         
-        numblocks <- as.integer(ceiling((max(studySecond) - 1)/blockLength1))
-        block <-rep(0,length(studySecond))
-        for(g in 1:(numblocks -1)){ #numblocks - 1 because the last block in the dataset may be smaller than previous blocks (if blockLength1 does not divide evenly into timedif)
-          block[which(studySecond >= ((g-1)*blockLength1 + 1) & studySecond <= (g*blockLength1))] = g
-        }
-        if(length(which(block == 0)) > 0){ #identifies the last block
-          block[which(block == 0)] = numblocks
-        }
+        numblocks <- as.integer(ceiling(max(studySecond)/blockLength1))
+        block<- ceiling(studySecond/blockLength1)
         
-        block.start<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution)
-        block.end<-as.character((as.POSIXct(x$dateTime[1]) - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution)
+        block.start<-as.character((as.POSIXct(x$dateTime[1], tz = "UTC") - blockTimeAdjustment) + ((block - 1)*blockLength1)) #identify the timepoint where each block starts (down to the second resolution). Note that we specify "tz = 'UTC'" here to prevent a Daylight Savings Time-related error. Because we convert the vector to character data however, it ultimately doesn't matter. 
+        block.end<-as.character((as.POSIXct(x$dateTime[1], tz = "UTC") - blockTimeAdjustment) + ((block - 1)*blockLength1) + (blockLength1 -1)) #identify the timepoint where each block ends (down to the second resolution). Note that we specify "tz = 'UTC'" here to prevent a Daylight Savings Time-related error. Because we convert the vector to character data however, it ultimately doesn't matter.
         
-        x$block <- block
+        x$block <- as.integer(block)
         x$block.start <- block.start
         x$block.end <- block.end
-        x$numBlocks <- max(block) #the contactTest function will require this information (i.e. the number of blocks in the dataset)
+        x$numBlocks <- max(block)
         
         x<-x[order(x$block, x$id, studySecond),] #reorder x to ensure that block and individual ids are prioritized over dateTime information
         
