@@ -31,14 +31,15 @@
 #' @import foreach
 #' @export
 #' @return Output is a list containing 5 named vectors. The first vector 
-#'    describes summary statistics of the simulated distance distribution. The
-#'    second and third vectors describes varied confidence intervals (50-99%)
-#'    for the simulated distribiution. The fourth vector describes adjusted 
-#'    spTh values that will capture approximately 84, 98, and 100% of true 
-#'    contacts given the pre-determined spTh value (all calculated using the 
-#'    Empirical rule). Finally, the fifth vector describes the actial observed 
-#'    frequency of captured true contact given the spTh adjustments listed in 
-#'    the fourth vector. 
+#'    describes summary statistics of the simulated distance distribution 
+#'    (i.e., the mean, standard deviation, minimum, maximum, and true positive 
+#'    rate), the second and third vectors describes varied confidence 
+#'    intervals (50-99%) for the simulated distribution. The fourth vector 
+#'    describes adjusted spTh values that will capture approximately 84, 98, 
+#'    and 100% of true contacts given the pre-determined spTh value (all 
+#'    calculated using the Empirical rule). Finally, the fifth vector describes
+#'    the actual observed frequency of captured true contact given the spTh 
+#'    adjustments listed in the fourth vector. 
 #' @examples
 #' findDistThresh(n = 10,  acc.Dist1 = 0.5, acc.Dist2 = NULL, 
 #'    pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) 

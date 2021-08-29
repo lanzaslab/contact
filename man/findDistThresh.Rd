@@ -33,14 +33,15 @@ threshold for contact.}
 }
 \value{
 Output is a list containing 5 named vectors. The first vector 
-   describes summary statistics of the simulated distance distribution. The
-   second and third vectors describes varied confidence intervals (50-99%)
-   for the simulated distribiution. The fourth vector describes adjusted 
-   spTh values that will capture approximately 84, 98, and 100% of true 
-   contacts given the pre-determined spTh value (all calculated using the 
-   Empirical rule). Finally, the fifth vector describes the actial observed 
-   frequency of captured true contact given the spTh adjustments listed in 
-   the fourth vector.
+   describes summary statistics of the simulated distance distribution 
+   (i.e., the mean, standard deviation, minimum, maximum, and true positive 
+   rate), the second and third vectors describes varied confidence 
+   intervals (50-99%) for the simulated distribution. The fourth vector 
+   describes adjusted spTh values that will capture approximately 84, 98, 
+   and 100% of true contacts given the pre-determined spTh value (all 
+   calculated using the Empirical rule). Finally, the fifth vector describes
+   the actual observed frequency of captured true contact given the spTh 
+   adjustments listed in the fourth vector.
 }
 \description{
 Sample from a multivariate normal distribution to create "in-contact" n 
