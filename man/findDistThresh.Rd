@@ -23,10 +23,11 @@ expected-distance distribution(s). Defaults to 1000.}
 defaults to acc.Dist1 value.}
 
 \item{pWithin1}{Numerical. Percentage of data points within acc.Dist of true
-locations for point 1.}
+locations for point 1. Note that this value should range from 1-100.}
 
 \item{pWithin2}{Numerical. Percentage of data points within acc.Dist of true
-locations for point 2. If == NULL, defaults to pWithin1 value.}
+locations for point 2. If == NULL, defaults to pWithin1 value. Note that 
+this value should range from 1-100.}
 
 \item{spTh}{Numerical. Pre-determined distance representing biological 
 threshold for contact.}
@@ -37,7 +38,7 @@ Output is a list containing 5 named vectors. The first vector
    (i.e., the mean, standard deviation, minimum, maximum, and true positive 
    rate), the second and third vectors describes varied confidence 
    intervals (50-99%) for the simulated distribution. The fourth vector 
-   describes adjusted spTh values that will capture approximately 84, 98, 
+   describes adjusted spTh values that will capture approximately 68, 95, 
    and 100% of true contacts given the pre-determined spTh value (all 
    calculated using the Empirical rule). Finally, the fifth vector describes
    the actual observed frequency of captured true contact given the spTh 

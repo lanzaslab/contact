@@ -19,9 +19,10 @@
 #' @param acc.Dist2 Numerical. Accuracy distance for point 2. If == NULL, 
 #'    defaults to acc.Dist1 value.
 #' @param pWithin1 Numerical. Percentage of data points within acc.Dist of true
-#'    locations for point 1. 
+#'    locations for point 1. Note that this value should range from 1-100. 
 #' @param pWithin2 Numerical. Percentage of data points within acc.Dist of true
-#'    locations for point 2. If == NULL, defaults to pWithin1 value.
+#'    locations for point 2. If == NULL, defaults to pWithin1 value. Note that 
+#'    this value should range from 1-100. 
 #' @param spTh Numerical. Pre-determined distance representing biological 
 #'    threshold for contact.
 #' @keywords contact location point
@@ -35,7 +36,7 @@
 #'    (i.e., the mean, standard deviation, minimum, maximum, and true positive 
 #'    rate), the second and third vectors describes varied confidence 
 #'    intervals (50-99%) for the simulated distribution. The fourth vector 
-#'    describes adjusted spTh values that will capture approximately 84, 98, 
+#'    describes adjusted spTh values that will capture approximately 68, 95, 
 #'    and 100% of true contacts given the pre-determined spTh value (all 
 #'    calculated using the Empirical rule). Finally, the fifth vector describes
 #'    the actual observed frequency of captured true contact given the spTh 
@@ -83,8 +84,8 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     dist.mean<-mean(dist.distr)
     dist.sd<-stats::sd(dist.distr)
 
-    dataFall84_98_100 <- c((dist.mean + dist.sd), (dist.mean + (dist.sd*2)), (dist.mean + (dist.sd*3))) #due to the empirical rule, approximately we can calculate where 68, 95, and 99% of data fall (i.e., the distances required to capture contacts in these cases).
-    names(dataFall84_98_100 ) <- c("spTh_84%Capture", "spTh_98%Capture", "spTh_100%Capture") #names
+    dataFall68_95_100 <- c((dist.mean + dist.sd), (dist.mean + (dist.sd*2)), (dist.mean + (dist.sd*3))) #due to the empirical rule, approximately we can calculate where 68, 95, and 99% of data fall (i.e., the distances required to capture contacts in these cases).
+    names(dataFall68_95_100 ) <- c("spTh_68%Capture", "spTh_95%Capture", "spTh_100%Capture") #names
     
     TruePositive <- length(which(dist.distr <= as.numeric(x[6]))) #number of contacts correctly identified.
     TPR<- TruePositive/as.integer(x[1]) #True positive rate (i.e., sensitivity)
@@ -92,8 +93,8 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     distr.summary <- c(dist.mean, dist.sd, min(dist.distr), max(dist.distr), TPR)
     names(distr.summary) <- c("mean", "sd", "min", "max", "TPR")
     
-    dataFall.noise <- (unlist(foreach::foreach(i = 1:length(dataFall84_98_100)) %do% length(which(dist.distr <= as.numeric(dataFall84_98_100[i])))) / as.integer(x[1])) #this gives you the proportion of observed contact durations for each sd interval, relative to the SpTh value. It's a measure of noise, as we expect the TPR to be constant, but observed positive-contact rates reported here inflate this value.
-    names(dataFall.noise) <- paste("freq_",c("84%Capture", "98%Capture", "100%Capture"), sep ="") 
+    dataFall.noise <- (unlist(foreach::foreach(i = 1:length(dataFall68_95_100)) %do% length(which(dist.distr <= as.numeric(dataFall68_95_100[i])))) / as.integer(x[1])) #this gives you the proportion of observed contact durations for each sd interval, relative to the SpTh value. It's a measure of noise, as we expect the TPR to be constant, but observed positive-contact rates reported here inflate this value.
+    names(dataFall.noise) <- paste("freq_",c("68%Capture", "95%Capture", "100%Capture"), sep ="") 
     
     #now we calculate various confidence intervals (50-99%) to report.
     CIseq <- seq(50, 95, 5)
@@ -111,7 +112,7 @@ findDistThresh<-function(n = 1000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 =
     names(CIvec_lwr) <- paste(CIseq, "%-CI", sep = "")
     
     
-    out.list <- list(distr.summary, CIvec_upper, CIvec_lwr, dataFall84_98_100 , dataFall.noise)
+    out.list <- list(distr.summary, CIvec_upper, CIvec_lwr, dataFall68_95_100 , dataFall.noise)
     names(out.list) <- c("distribution.summary", "CI_upper", "CI_lwr", "spTh.adjustments", "contact.frequency")
     
     return(out.list)
