@@ -65,7 +65,23 @@ calves<-droplevels(calves[1:1000,]) #reduce the size to reduce processing time f
 
 head(calves)#The calves data set does not have a singular dateTime column. Rather, it has "date" and "time" columns. We must append a dateTime column to the data frame.
 
-system.time(calves.dateTime<- contact::datetime.append(x = calves, date = calves$date, time= calves$time, dateTime = NULL, dateFormat = "mdy", dateFake = FALSE, startYear = NULL, tz.in = "UTC", tz.out = NULL, month = FALSE, day = FALSE, year = FALSE, hour = FALSE, minute = FALSE, second = FALSE, daySecond = FALSE, totalSecond = FALSE))
+system.time(calves.dateTime<- contact::datetime.append(x = calves, 
+                                                       date = calves$date,
+                                                       time= calves$time,
+                                                       dateTime = NULL,
+                                                       dateFormat = "mdy",
+                                                       dateFake = FALSE,
+                                                       startYear = NULL, 
+                                                       tz.in = "UTC", 
+                                                       tz.out = NULL, 
+                                                       month = FALSE, 
+                                                       day = FALSE, 
+                                                       year = FALSE, 
+                                                       hour = FALSE, 
+                                                       minute = FALSE, 
+                                                       second = FALSE,
+                                                       daySecond = FALSE,
+                                                       totalSecond = FALSE))
 
 ```
 
@@ -75,7 +91,8 @@ First, we must define the location of the water trough. To do this, we read in p
 
 ```{r, echo=TRUE, warning = FALSE, eval = TRUE}
 
-water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622), y = c(62.44815, 62.73341, 61.93864, 61.67411)) #This is a data frame containing the x and y coordinates of the four trough vertices.
+water<- data.frame(x = c(61.43315, 61.89377, 62.37518, 61.82622), 
+                   y = c(62.44815, 62.73341, 61.93864, 61.67411)) #This is a data frame containing the x and y coordinates of the four trough vertices.
 
 ```
 
@@ -97,7 +114,18 @@ Calculate distances between calves and the water polygon at every timestep.
 
 ```{r, echo=TRUE, warning = FALSE, eval = TRUE}
 
-system.time(water_distance<-contact::dist2Area_df(x = calves.dateTime, y = water_poly, x.id = "calftag", y.id = "water", dateTime = "dateTime", point.x = calves.dateTime$x, point.y = calves.dateTime$y, poly.xy = NULL, parallel = FALSE, dataType = "Point", lonlat = FALSE, numVertices = NULL)) #note that the poly.xy and numVertices arguments refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," these arguments are irrelevant here.
+system.time(water_distance<-contact::dist2Area_df(x = calves.dateTime, 
+                                                  y = water_poly, 
+                                                  x.id = "calftag", 
+                                                  y.id = "water", 
+                                                  dateTime = "dateTime", 
+                                                  point.x = calves.dateTime$x, 
+                                                  point.y = calves.dateTime$y, 
+                                                  poly.xy = NULL, 
+                                                  parallel = FALSE, 
+                                                  dataType = "Point", 
+                                                  lonlat = FALSE, 
+                                                  numVertices = NULL)) #note that the poly.xy and numVertices arguments refer to vertices of polygons in x, not y. Because dataType is "Point," not "Polygon," these arguments are irrelevant here.
 
 head(water_distance)
 
@@ -107,7 +135,12 @@ head(water_distance)
 
 ```{r, echo=TRUE, warning = FALSE, eval = TRUE}
 
-SpThValues<-contact::findDistThresh(n = 100000, acc.Dist1 = 0.5, acc.Dist2 = NULL, pWithin1 = 90, pWithin2 = NULL, spTh = 0.5) #spTh represents the initially-defined spatial threshold for contact. Note that we've chosen to use 100,000 in-contact point-location pairs here.
+SpThValues<-contact::findDistThresh(n = 100000, 
+                                    acc.Dist1 = 0.5, 
+                                    acc.Dist2 = NULL, 
+                                    pWithin1 = 90, 
+                                    pWithin2 = NULL, 
+                                    spTh = 0.5) #spTh represents the initially-defined spatial threshold for contact. Note that we've chosen to use 100,000 in-contact point-location pairs here.
 
 SpThValues #it looks like an adjusted SpTh value of approximately 1.74 m will likely capture 99 to 100% of contacts, defined as instances when point-locations were within 0.333 m of the water trough, given the RTLS accuracy. #Note that because these confidence intervals are obtained from distributions generated from random samples, every time this function is run, results will be slightly different. 
 
@@ -152,7 +185,7 @@ igraph::plot.igraph(water.network, layout = watercoords1)
 ```
 ### Section 2.) Creating polygon-intersection-based direct-contacts network using point-location data
 
-**Note that this section was run with eval = FALSE because otherwise the processing time for this vignette is longer than what is allotted by CRAN**
+**Note that this section was run with eval = FALSE because otherwise the processing time for this vignette is longer than what is allotted by CRAN.**
 
 Here, we show how to create contact networks detailing the number of direct, physical contacts between tracked individuals. We derive polygons represntative of animals' physical space from point-locations. We then define "contact" as occuring when polygons intersect (i.e., SpTh == 0). However, we re-define this SpTh to account for RTLS accuracy using the findDistThresh function below. 
 

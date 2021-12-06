@@ -21,7 +21,7 @@
 #'    https://doi.org/10.1016/j.epidem.2018.08.003/
 #'     
 #' @param x Output from the dist2All or dist2Area function. Can be either a 
-#'     data frame or non-data-frame list.
+#'     data frame or list of data frames.
 #' @param blocking Logical. If TRUE, contacts will be evaluated for temporal 
 #'     blocks spanning blockLength blockUnit (e.g., 6 hours) within the data 
 #'     set. Defaults to FALSE.
